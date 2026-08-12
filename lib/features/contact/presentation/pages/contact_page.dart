@@ -299,6 +299,8 @@ class _SubjectDropdown extends StatelessWidget {
           child: DropdownButton<String>(
             value: value,
             isExpanded: true,
+            // Intrinsic item height — avoids clipping when .sp/.h scale up.
+            itemHeight: null,
             dropdownColor: ApaColors.black,
             icon: Icon(
               Icons.keyboard_arrow_down,
@@ -309,6 +311,7 @@ class _SubjectDropdown extends StatelessWidget {
               color: ApaColors.nearBlack,
               fontSize: 15.sp,
               fontWeight: FontWeight.w500,
+              height: 1.3,
             ),
             selectedItemBuilder: (context) => options
                 .map(
@@ -322,6 +325,7 @@ class _SubjectDropdown extends StatelessWidget {
                         color: ApaColors.nearBlack,
                         fontSize: 15.sp,
                         fontWeight: FontWeight.w500,
+                        height: 1.3,
                       ),
                     ),
                   ),
@@ -329,30 +333,38 @@ class _SubjectDropdown extends StatelessWidget {
                 .toList(),
             items: options
                 .map(
-                  (o) => DropdownMenuItem<String>(
-                    value: o,
-                    child: Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 8.w,
-                        vertical: 8.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: o == value
-                            ? ApaColors.primaryRed
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(4.r),
-                      ),
-                      child: Text(
-                        o,
-                        style: ApaFonts.inter(
-                          color: ApaColors.white,
-                          fontSize: 15.sp,
-                          fontWeight: FontWeight.w500,
+                  (o) {
+                    final selected = o == value;
+                    return DropdownMenuItem<String>(
+                      value: o,
+                      child: Container(
+                        width: double.infinity,
+                        alignment: Alignment.centerLeft,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12.w,
+                          vertical: 14.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? ApaColors.primaryRed
+                              : Colors.transparent,
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                        child: Text(
+                          o,
+                          maxLines: 1,
+                          softWrap: false,
+                          overflow: TextOverflow.ellipsis,
+                          style: ApaFonts.inter(
+                            color: ApaColors.white,
+                            fontSize: 15.sp,
+                            fontWeight: FontWeight.w500,
+                            height: 1.3,
+                          ),
                         ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 )
                 .toList(),
             onChanged: onChanged,
