@@ -22,7 +22,7 @@ class LocationBadge extends StatelessWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 2, sigmaY: 2),
         child: Container(
-          padding: const EdgeInsets.symmetric(
+          padding: EdgeInsets.symmetric(
             horizontal: ApaDimens.locationBadgeHorizontalPadding,
             vertical: ApaDimens.locationBadgeVerticalPadding,
           ),

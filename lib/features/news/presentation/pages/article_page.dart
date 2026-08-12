@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/constants/apa_assets.dart';
 import '../../../../core/theme/apa_colors.dart';
+import '../../../../core/theme/apa_fonts.dart';
 import '../../../../core/widgets/apa_svg_icon.dart';
 
 /// Article / Read More page — Figma frame `14:811`.
@@ -18,14 +20,6 @@ class ArticlePage extends StatelessWidget {
   final VoidCallback? onDonatePressed;
   final VoidCallback? onBackToNews;
 
-  static const TextStyle _headlineWhite = TextStyle(
-    color: ApaColors.white,
-    fontSize: 34,
-    fontWeight: FontWeight.w800,
-    height: 40 / 34,
-    letterSpacing: -0.5,
-  );
-
   @override
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top;
@@ -39,7 +33,7 @@ class ArticlePage extends StatelessWidget {
           slivers: [
             SliverToBoxAdapter(
               child: SizedBox(
-                height: 620 + top,
+                height: 620.h + top,
                 width: double.infinity,
                 child: Stack(
                   fit: StackFit.expand,
@@ -54,43 +48,49 @@ class ArticlePage extends StatelessWidget {
                     SafeArea(
                       bottom: false,
                       child: Padding(
-                        padding: const EdgeInsets.fromLTRB(24, 24, 24, 40),
+                        padding: EdgeInsets.fromLTRB(24.w, 24.h, 24.w, 40.h),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Center(
                               child: Image.asset(
                                 ApaAssets.apaLogo,
-                                width: 180,
-                                height: 67.5,
+                                width: 180.w,
+                                height: 67.5.h,
                                 fit: BoxFit.contain,
                               ),
                             ),
                             const Spacer(),
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 13,
-                                vertical: 7,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 13.w,
+                                vertical: 7.h,
                               ),
                               decoration: BoxDecoration(
                                 color: ApaColors.locationYellowFill,
                                 borderRadius: BorderRadius.circular(9999),
                                 border: Border.all(color: ApaColors.white20),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'FIELD REPORT',
-                                style: TextStyle(
+                                style: ApaFonts.inter(
                                   color: ApaColors.locationYellow,
-                                  fontSize: 12,
+                                  fontSize: 12.sp,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: 0.6,
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 16),
-                            const Text(
+                            SizedBox(height: 16.h),
+                            Text(
                               'Light returns to the market road',
-                              style: _headlineWhite,
+                              style: ApaFonts.inter(
+                                color: ApaColors.white,
+                                fontSize: 34.sp,
+                                fontWeight: FontWeight.w800,
+                                height: 40 / 34,
+                                letterSpacing: -0.5,
+                              ),
                             ),
                           ],
                         ),
@@ -103,30 +103,30 @@ class ArticlePage extends StatelessWidget {
             SliverToBoxAdapter(
               child: Padding(
                 padding: EdgeInsets.fromLTRB(
-                  24,
-                  40,
-                  24,
-                  48 + MediaQuery.paddingOf(context).bottom,
+                  24.w,
+                  40.h,
+                  24.w,
+                  48.h + MediaQuery.paddingOf(context).bottom,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     InkWell(
                       onTap: onBackToNews ?? () => Navigator.of(context).pop(),
-                      child: const Row(
+                      child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          ApaSvgIcon(
+                          const ApaSvgIcon(
                             assetPath: ApaAssets.icBack,
                             size: 16,
-                            color: ApaColors.nearBlack,
+                            color: ApaColors.primaryRed,
                           ),
-                          SizedBox(width: 8),
+                          SizedBox(width: 8.w),
                           Text(
                             'BACK TO NEWS',
-                            style: TextStyle(
-                              color: ApaColors.nearBlack,
-                              fontSize: 13,
+                            style: ApaFonts.inter(
+                              color: ApaColors.primaryRed,
+                              fontSize: 13.sp,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 1,
                             ),
@@ -134,25 +134,25 @@ class ArticlePage extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
-                    const Text(
+                    SizedBox(height: 20.h),
+                    Text(
                       'FEATURED  ·  MARCH 2026  ·  SUD, HAITI',
-                      style: TextStyle(
+                      style: ApaFonts.inter(
                         color: ApaColors.gray500,
-                        fontSize: 12,
+                        fontSize: 12.sp,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 0.8,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    const Text(
+                    SizedBox(height: 8.h),
+                    Text(
                       'By the APA field team',
-                      style: TextStyle(
+                      style: ApaFonts.inter(
                         color: ApaColors.gray600,
-                        fontSize: 14,
+                        fontSize: 14.sp,
                       ),
                     ),
-                    const SizedBox(height: 28),
+                    SizedBox(height: 28.h),
                     const _BodyText(
                       'For years, the stretch of road linking the Sainte-Anne '
                       'neighborhood to the market in Les Cayes went dark after '
@@ -161,7 +161,7 @@ class ArticlePage extends StatelessWidget {
                       'but because there was no light, and the road itself was '
                       'more pothole than pavement.',
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20.h),
                     const _BodyText(
                       'That changed this spring. As part of phase one of our '
                       'infrastructure work in Sud, Haiti, a 400-metre section '
@@ -170,26 +170,26 @@ class ArticlePage extends StatelessWidget {
                       'most measures. On the ground, it has changed how the '
                       'neighborhood uses its evenings.',
                     ),
-                    const SizedBox(height: 28),
+                    SizedBox(height: 28.h),
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(8.r),
                       child: Image.asset(
                         ApaAssets.articleRoad,
                         fit: BoxFit.cover,
                         width: double.infinity,
                       ),
                     ),
-                    const SizedBox(height: 36),
-                    const Text(
+                    SizedBox(height: 36.h),
+                    Text(
                       'What actually got built',
-                      style: TextStyle(
+                      style: ApaFonts.inter(
                         color: ApaColors.black,
-                        fontSize: 28,
+                        fontSize: 28.sp,
                         fontWeight: FontWeight.w800,
                         height: 34 / 28,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16.h),
                     const _BodyText(
                       'The work combined two of our three standing project '
                       'categories: road improvement and renewable street '
@@ -198,7 +198,7 @@ class ArticlePage extends StatelessWidget {
                       'itself came out of three community meetings held before '
                       'a single tool touched the ground.',
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20.h),
                     const _DotItem(
                       '400 metres of road resurfaced with durable materials',
                     ),
@@ -208,22 +208,22 @@ class ArticlePage extends StatelessWidget {
                     const _DotItem(
                       'Three community meetings before construction began',
                     ),
-                    const SizedBox(height: 24),
-                    const Row(
+                    SizedBox(height: 24.h),
+                    Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         ColoredBox(
                           color: ApaColors.primaryRed,
-                          child: SizedBox(width: 3, height: 100),
+                          child: SizedBox(width: 3.w, height: 100.h),
                         ),
-                        SizedBox(width: 16),
+                        SizedBox(width: 16.w),
                         Expanded(
                           child: Text(
                             '"Now the children walk to the shop after dark. '
                             'That is the measure that matters."',
-                            style: TextStyle(
+                            style: ApaFonts.inter(
                               color: ApaColors.gray800,
-                              fontSize: 18,
+                              fontSize: 18.sp,
                               fontWeight: FontWeight.w600,
                               fontStyle: FontStyle.italic,
                               height: 26 / 18,
@@ -232,17 +232,17 @@ class ArticlePage extends StatelessWidget {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 40),
-                    const Text(
+                    SizedBox(height: 40.h),
+                    Text(
                       "What's next",
-                      style: TextStyle(
+                      style: ApaFonts.inter(
                         color: ApaColors.black,
-                        fontSize: 28,
+                        fontSize: 28.sp,
                         fontWeight: FontWeight.w800,
                         height: 34 / 28,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16.h),
                     const _BodyText(
                       'This project is one line item in a larger phase-one '
                       'goal of \$120,000 for the Sud region. Road and lighting '
@@ -251,86 +251,92 @@ class ArticlePage extends StatelessWidget {
                       'Every stage, as always, is reported back to donors and '
                       'to the neighborhood it serves.',
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20.h),
                     const _BodyText(
                       'If you would like to see exactly where funds for '
                       'projects like this one come from and go, our '
                       'transparency page keeps a running ledger, updated as '
                       'each project moves forward.',
                     ),
-                    const SizedBox(height: 28),
+                    SizedBox(height: 28.h),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.all(24),
+                      padding: EdgeInsets.all(24.w),
                       decoration: BoxDecoration(
                         color: ApaColors.white,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12.r),
                         border: Border.all(color: ApaColors.gray200),
                       ),
-                      child: const Column(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             'Project quick facts',
-                            style: TextStyle(
+                            style: ApaFonts.inter(
                               color: ApaColors.black,
-                              fontSize: 20,
+                              fontSize: 20.sp,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
-                          SizedBox(height: 20),
-                          _FactRow(label: 'Location', value: 'Sainte-Anne, Les Cayes'),
-                          _FactRow(label: 'Length', value: '400 metres'),
-                          _FactRow(label: 'Category', value: 'Roads + Lighting'),
-                          _FactRow(label: 'Status', value: 'Complete'),
+                          SizedBox(height: 20.h),
+                          const _FactRow(
+                            label: 'Location',
+                            value: 'Sainte-Anne, Les Cayes',
+                          ),
+                          const _FactRow(label: 'Length', value: '400 metres'),
+                          const _FactRow(
+                            label: 'Category',
+                            value: 'Roads + Lighting',
+                          ),
+                          const _FactRow(label: 'Status', value: 'Complete'),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 32),
+                    SizedBox(height: 32.h),
                     Container(
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 36,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 32.w,
+                        vertical: 36.h,
                       ),
                       decoration: BoxDecoration(
                         color: ApaColors.black,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(16.r),
                       ),
                       child: Column(
                         children: [
-                          const Text(
+                          Text(
                             'Help fund the next stretch',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: ApaFonts.inter(
                               color: ApaColors.white,
-                              fontSize: 24,
+                              fontSize: 24.sp,
                               fontWeight: FontWeight.w800,
                               height: 30 / 24,
                             ),
                           ),
-                          const SizedBox(height: 12),
-                          const Text(
+                          SizedBox(height: 12.h),
+                          Text(
                             'Every gift moves phase one forward in Sud.',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: ApaFonts.inter(
                               color: ApaColors.white80,
-                              fontSize: 14,
+                              fontSize: 14.sp,
                               height: 20 / 14,
                             ),
                           ),
-                          const SizedBox(height: 24),
+                          SizedBox(height: 24.h),
                           Material(
                             color: Colors.transparent,
                             child: InkWell(
                               onTap: onDonatePressed,
-                              child: const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 8),
+                              child: Padding(
+                                padding: EdgeInsets.symmetric(vertical: 8.h),
                                 child: Text(
                                   'DONATE →',
-                                  style: TextStyle(
+                                  style: ApaFonts.inter(
                                     color: ApaColors.primaryRed,
-                                    fontSize: 16,
+                                    fontSize: 16.sp,
                                     fontWeight: FontWeight.w800,
                                     letterSpacing: 1.2,
                                   ),
@@ -341,19 +347,19 @@ class ArticlePage extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 48),
-                    const Text(
+                    SizedBox(height: 48.h),
+                    Text(
                       'MORE STORIES',
-                      style: TextStyle(
+                      style: ApaFonts.inter(
                         color: ApaColors.black,
-                        fontSize: 28,
+                        fontSize: 28.sp,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24.h),
                     Container(
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12.r),
                         border: Border.all(color: ApaColors.gray200),
                       ),
                       clipBehavior: Clip.antiAlias,
@@ -368,36 +374,38 @@ class ArticlePage extends StatelessWidget {
                               width: double.infinity,
                             ),
                           ),
-                          const Padding(
-                            padding: EdgeInsets.fromLTRB(32, 28, 32, 28),
+                          Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              32.w, 28.h, 32.w, 28.h,
+                            ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   'COMMUNITY',
-                                  style: TextStyle(
+                                  style: ApaFonts.inter(
                                     color: ApaColors.navy,
-                                    fontSize: 12,
+                                    fontSize: 12.sp,
                                     fontWeight: FontWeight.w700,
                                     letterSpacing: 1.2,
                                   ),
                                 ),
-                                SizedBox(height: 12),
+                                SizedBox(height: 12.h),
                                 Text(
                                   'New development project begins',
-                                  style: TextStyle(
+                                  style: ApaFonts.inter(
                                     color: ApaColors.black,
-                                    fontSize: 20,
+                                    fontSize: 20.sp,
                                     fontWeight: FontWeight.w800,
                                     height: 26 / 20,
                                   ),
                                 ),
-                                SizedBox(height: 8),
+                                SizedBox(height: 8.h),
                                 Text(
                                   'Short article description.',
-                                  style: TextStyle(
+                                  style: ApaFonts.inter(
                                     color: ApaColors.gray600,
-                                    fontSize: 14,
+                                    fontSize: 14.sp,
                                     height: 20 / 14,
                                   ),
                                 ),
@@ -427,9 +435,9 @@ class _BodyText extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
+      style: ApaFonts.inter(
         color: ApaColors.gray800,
-        fontSize: 16,
+        fontSize: 16.sp,
         height: 26 / 16,
       ),
     );
@@ -444,26 +452,26 @@ class _DotItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: EdgeInsets.only(bottom: 14.h),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            margin: const EdgeInsets.only(top: 8),
-            width: 8,
-            height: 8,
+            margin: EdgeInsets.only(top: 8.h),
+            width: 8.w,
+            height: 8.w,
             decoration: const BoxDecoration(
               color: ApaColors.navy,
               shape: BoxShape.circle,
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: 12.w),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
+              style: ApaFonts.inter(
                 color: ApaColors.gray800,
-                fontSize: 15,
+                fontSize: 15.sp,
                 height: 22 / 15,
               ),
             ),
@@ -483,23 +491,23 @@ class _FactRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: 12.h),
       child: Row(
         children: [
           Text(
             label,
-            style: const TextStyle(
+            style: ApaFonts.inter(
               color: ApaColors.gray500,
-              fontSize: 14,
+              fontSize: 14.sp,
               fontWeight: FontWeight.w600,
             ),
           ),
           const Spacer(),
           Text(
             value,
-            style: const TextStyle(
+            style: ApaFonts.inter(
               color: ApaColors.nearBlack,
-              fontSize: 14,
+              fontSize: 14.sp,
               fontWeight: FontWeight.w700,
             ),
           ),

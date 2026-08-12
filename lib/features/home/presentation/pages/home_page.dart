@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/constants/apa_assets.dart';
 import '../../../../core/constants/apa_dimens.dart';
+import '../../../../core/constants/apa_shell_insets.dart';
+import '../../../../core/utils/responsive.dart';
 import '../widgets/donate_button.dart';
 import '../widgets/donation_amount_card.dart';
 import '../widgets/home_background.dart';
@@ -25,7 +28,7 @@ class HomePage extends StatelessWidget {
     final width = media.size.width;
     final isWide = width >= ApaDimens.tabletBreakpoint;
     final horizontalPadding = isWide
-        ? (width - ApaDimens.maxContentWidth).clamp(24.0, 120.0) / 2
+        ? R.cw((width - ApaDimens.kMaxContentWidth).clamp(24.0, 120.0) / 2, context)
         : ApaDimens.horizontalPadding;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
@@ -39,13 +42,13 @@ class HomePage extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.fromLTRB(
                 horizontalPadding,
-                ApaDimens.topPadding - (topInset > 0 ? 8 : 0),
+                ApaDimens.topPadding - (topInset > 0 ? 8.h : 0),
                 horizontalPadding,
-                ApaDimens.contentBottomInset,
+                ApaShellInsets.contentBottom(context),
               ),
               child: Column(
                 children: [
-                  const SizedBox(height: ApaDimens.headerTopSpacing),
+                  SizedBox(height: ApaDimens.headerTopSpacing),
                   Center(
                     child: Image.asset(
                       ApaAssets.apaLogo,
@@ -57,22 +60,22 @@ class HomePage extends StatelessWidget {
                   Expanded(
                     child: Center(
                       child: ConstrainedBox(
-                        constraints: const BoxConstraints(
+                        constraints: BoxConstraints(
                           maxWidth: ApaDimens.maxContentWidth,
                         ),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             const LocationBadge(),
-                            const SizedBox(
+                            SizedBox(
                               height: ApaDimens.locationBadgeBottomSpacing,
                             ),
                             const DonationAmountCard(),
-                            const SizedBox(
+                            SizedBox(
                               height: ApaDimens.donationCardBottomSpacing,
                             ),
                             DonateButton(onPressed: onDonatePressed),
-                            const SizedBox(
+                            SizedBox(
                               height: ApaDimens.donateButtonBottomSpacing,
                             ),
                             const HomeFooterNote(),

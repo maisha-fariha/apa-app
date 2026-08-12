@@ -1,44 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/constants/apa_assets.dart';
+import '../../../../core/constants/apa_shell_insets.dart';
 import '../../../../core/theme/apa_colors.dart';
+import '../../../../core/theme/apa_fonts.dart';
 import '../../../../core/widgets/apa_shared_widgets.dart';
 
 /// Projects Page — Figma frame `6:203`.
 class ProjectsPage extends StatelessWidget {
   const ProjectsPage({
     super.key,
+    this.scrollController,
     this.onFundPressed,
   });
 
+  final ScrollController? scrollController;
   final VoidCallback? onFundPressed;
-
-  static const double _navBottomPad = 120;
-
-  static const TextStyle _headlineWhite = TextStyle(
-    color: ApaColors.white,
-    fontSize: 36,
-    fontWeight: FontWeight.w800,
-    height: 40 / 36,
-    letterSpacing: -0.5,
-  );
-
-  static const TextStyle _headlineRed = TextStyle(
-    color: ApaColors.primaryRed,
-    fontSize: 36,
-    fontWeight: FontWeight.w800,
-    height: 40 / 36,
-    letterSpacing: -0.5,
-  );
 
   @override
   Widget build(BuildContext context) {
+    final navBottomPad = ApaShellInsets.contentBottom(context);
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: ColoredBox(
         color: ApaColors.white,
         child: CustomScrollView(
+          controller: scrollController,
           physics: const BouncingScrollPhysics(),
           slivers: [
             SliverToBoxAdapter(
@@ -49,9 +39,27 @@ class ProjectsPage extends StatelessWidget {
                 logoWidth: 180,
                 logoHeight: 67.5,
                 badge: 'PHASE ONE · HAITI',
-                headline: const [
-                  TextSpan(text: 'THREE THINGS\n', style: _headlineWhite),
-                  TextSpan(text: 'A STREET NEEDS.', style: _headlineRed),
+                headline: [
+                  TextSpan(
+                    text: 'THREE THINGS\n',
+                    style: ApaFonts.inter(
+                      color: ApaColors.white,
+                      fontSize: 36.sp,
+                      fontWeight: FontWeight.w800,
+                      height: 40 / 36,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  TextSpan(
+                    text: 'A STREET NEEDS.',
+                    style: ApaFonts.inter(
+                      color: ApaColors.primaryRed,
+                      fontSize: 36.sp,
+                      fontWeight: FontWeight.w800,
+                      height: 40 / 36,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
                 ],
                 subtitle:
                     'Every project is chosen the same way: it must solve '
@@ -61,7 +69,7 @@ class ProjectsPage extends StatelessWidget {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 48, 24, _navBottomPad),
+                padding: EdgeInsets.fromLTRB(24.w, 48.h, 24.w, navBottomPad),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -100,30 +108,30 @@ class ProjectsPage extends StatelessWidget {
                       ],
                     ),
                     const _BlackSeparator(),
-                    const Text(
+                    Text(
                       'HOW WE WORK',
-                      style: TextStyle(
+                      style: ApaFonts.inter(
                         color: ApaColors.black,
-                        fontSize: 36,
+                        fontSize: 36.sp,
                         fontWeight: FontWeight.w800,
                         height: 40 / 36,
                         letterSpacing: -0.5,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    const Text(
+                    SizedBox(height: 16.h),
+                    Text(
                       'Communities help choose, shape, and maintain each '
                       'project. Local crews are hired first. Materials are '
                       'sourced in Haiti wherever they can be. Every stage is '
                       'reported back to donors and to the neighborhood it '
                       'serves.',
-                      style: TextStyle(
+                      style: ApaFonts.inter(
                         color: ApaColors.gray700,
-                        fontSize: 16,
+                        fontSize: 16.sp,
                         height: 24 / 16,
                       ),
                     ),
-                    const SizedBox(height: 28),
+                    SizedBox(height: 28.h),
                     Center(
                       child: ApaBlackPillButton(
                         label: 'FUND A PROJECT',
@@ -146,9 +154,9 @@ class _BlackSeparator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 20),
-      child: ColoredBox(
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 20.h),
+      child: const ColoredBox(
         color: ApaColors.black,
         child: SizedBox(height: 1, width: double.infinity),
       ),
@@ -175,26 +183,26 @@ class _ProjectSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ApaSectionLabel(label),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.h),
         Text(
           title,
-          style: const TextStyle(
+          style: ApaFonts.inter(
             color: ApaColors.black,
-            fontSize: 28,
+            fontSize: 28.sp,
             fontWeight: FontWeight.w800,
             height: 32 / 28,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.h),
         Text(
           body,
-          style: const TextStyle(
+          style: ApaFonts.inter(
             color: ApaColors.gray700,
-            fontSize: 15,
+            fontSize: 15.sp,
             height: 22.5 / 15,
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: 12.h),
         ...bullets.map((b) => ApaBulletItem(text: b)),
       ],
     );

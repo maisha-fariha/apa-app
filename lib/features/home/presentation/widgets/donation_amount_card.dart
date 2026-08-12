@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/constants/apa_assets.dart';
 import '../../../../core/constants/apa_dimens.dart';
@@ -29,7 +30,7 @@ class DonationAmountCard extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 6.5, sigmaY: 6.5),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(ApaDimens.donationCardPadding),
+          padding: EdgeInsets.all(ApaDimens.donationCardPadding),
           decoration: BoxDecoration(
             color: ApaColors.white10,
             borderRadius: BorderRadius.circular(ApaDimens.donationCardRadius),
@@ -41,43 +42,43 @@ class DonationAmountCard extends StatelessWidget {
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const ApaSvgIcon(
+                  ApaSvgIcon(
                     assetPath: ApaAssets.icCalendar,
-                    size: ApaDimens.donationDateIconSize,
+                    size: ApaDimens.kDonationDateIconSize,
                   ),
-                  const SizedBox(width: ApaDimens.donationDateGap),
+                  SizedBox(width: ApaDimens.donationDateGap),
                   Text(
                     dateLabel.toUpperCase(),
                     style: ApaTypography.donationDate,
                   ),
                 ],
               ),
-              const SizedBox(height: ApaDimens.donationDividerSpacingTop),
+              SizedBox(height: ApaDimens.donationDividerSpacingTop),
               const Divider(
                 height: 1,
                 thickness: 1,
                 color: ApaColors.white20,
               ),
-              const SizedBox(height: ApaDimens.donationDividerSpacingBottom),
+              SizedBox(height: ApaDimens.donationDividerSpacingBottom),
               Row(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 3),
+                    padding: EdgeInsets.only(bottom: 3.h),
                     child: Text(
                       '\$',
                       style: ApaTypography.currencySymbol,
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8.w),
                   Text(
                     amountLabel,
                     style: ApaTypography.donationAmount,
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8.w),
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 7),
+                    padding: EdgeInsets.only(bottom: 7.h),
                     child: Text(
                       currencyCode.toUpperCase(),
                       style: ApaTypography.currencyCode,

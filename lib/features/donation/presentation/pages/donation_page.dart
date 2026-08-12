@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/constants/apa_assets.dart';
+import '../../../../core/constants/apa_shell_insets.dart';
 import '../../../../core/theme/apa_colors.dart';
+import '../../../../core/theme/apa_fonts.dart';
 import '../../../../core/widgets/apa_shared_widgets.dart';
 
 /// Donation Page — Figma frame `8:322`.
 class DonationPage extends StatefulWidget {
   const DonationPage({
     super.key,
+    this.scrollController,
     this.onContinuePressed,
   });
 
+  final ScrollController? scrollController;
   final VoidCallback? onContinuePressed;
 
   @override
@@ -19,28 +24,11 @@ class DonationPage extends StatefulWidget {
 }
 
 class _DonationPageState extends State<DonationPage> {
-  static const double _navBottomPad = 120;
   static const List<int> _amounts = [25, 50, 100, 250, 500, 1000];
 
   bool _monthly = false;
   int? _selectedAmount = 100;
   final TextEditingController _otherController = TextEditingController();
-
-  static const TextStyle _headlineWhite = TextStyle(
-    color: ApaColors.white,
-    fontSize: 42,
-    fontWeight: FontWeight.w800,
-    height: 46 / 42,
-    letterSpacing: -1,
-  );
-
-  static const TextStyle _headlineRed = TextStyle(
-    color: ApaColors.primaryRed,
-    fontSize: 42,
-    fontWeight: FontWeight.w800,
-    height: 46 / 42,
-    letterSpacing: -1,
-  );
 
   @override
   void dispose() {
@@ -65,12 +53,14 @@ class _DonationPageState extends State<DonationPage> {
   Widget build(BuildContext context) {
     final amount = _displayAmount;
     final cadence = _monthly ? 'MONTHLY' : 'ONE TIME';
+    final navBottomPad = ApaShellInsets.contentBottom(context);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: ColoredBox(
         color: ApaColors.white,
         child: CustomScrollView(
+          controller: widget.scrollController,
           physics: const BouncingScrollPhysics(),
           slivers: [
             SliverToBoxAdapter(
@@ -78,9 +68,27 @@ class _DonationPageState extends State<DonationPage> {
                 imageAsset: ApaAssets.donationHero,
                 height: 500,
                 badge: 'EVERY GIFT FUNDS WORK IN HAITI',
-                headline: const [
-                  TextSpan(text: 'CHOOSE YOUR\n', style: _headlineWhite),
-                  TextSpan(text: 'AMOUNT.', style: _headlineRed),
+                headline: [
+                  TextSpan(
+                    text: 'CHOOSE YOUR\n',
+                    style: ApaFonts.inter(
+                      color: ApaColors.white,
+                      fontSize: 42.sp,
+                      fontWeight: FontWeight.w800,
+                      height: 46 / 42,
+                      letterSpacing: -1,
+                    ),
+                  ),
+                  TextSpan(
+                    text: 'AMOUNT.',
+                    style: ApaFonts.inter(
+                      color: ApaColors.primaryRed,
+                      fontSize: 42.sp,
+                      fontWeight: FontWeight.w800,
+                      height: 46 / 42,
+                      letterSpacing: -1,
+                    ),
+                  ),
                 ],
                 subtitle:
                     'One-time or monthly — every dollar goes toward parks, '
@@ -89,103 +97,122 @@ class _DonationPageState extends State<DonationPage> {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+                padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 26,
-                        vertical: 18,
-                      ),
-                      decoration: BoxDecoration(
-                        color: ApaColors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: ApaColors.black, width: 2),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '\$$amount',
-                            style: const TextStyle(
-                              color: ApaColors.nearBlack,
-                              fontSize: 28,
-                              fontWeight: FontWeight.w800,
-                              height: 30 / 28,
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 26.w,
+                          vertical: 18.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: ApaColors.white,
+                          borderRadius: BorderRadius.circular(12.r),
+                          border: Border.all(color: ApaColors.black, width: 2),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              '\$$amount',
+                              style: ApaFonts.inter(
+                                color: ApaColors.nearBlack,
+                                fontSize: 28.sp,
+                                fontWeight: FontWeight.w800,
+                                height: 30 / 28,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            cadence,
-                            style: const TextStyle(
-                              color: ApaColors.primaryRed,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 1.2,
-                              height: 20 / 14,
+                            SizedBox(height: 4.h),
+                            Text(
+                              cadence,
+                              style: ApaFonts.inter(
+                                color: ApaColors.primaryRed,
+                                fontSize: 20.sp,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 1.2,
+                                height: 20 / 14,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: 16.h),
                     _FrequencyToggle(
                       monthly: _monthly,
                       onChanged: (v) => setState(() => _monthly = v),
                     ),
-                    const SizedBox(height: 24),
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: _amounts.length,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        mainAxisSpacing: 12,
-                        crossAxisSpacing: 12,
-                        childAspectRatio: 169 / 69,
-                      ),
-                      itemBuilder: (context, index) {
-                        final value = _amounts[index];
-                        final selected = _selectedAmount == value &&
-                            _otherController.text.isEmpty;
-                        return _AmountChip(
-                          amount: value,
-                          selected: selected,
-                          onTap: () => _selectAmount(value),
+                    SizedBox(height: 24.h),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        const crossAxisCount = 2;
+                        final rowCount =
+                            (_amounts.length / crossAxisCount).ceil();
+                        final mainSpacing = 12.h;
+                        final cellHeight = 69.h;
+                        final gridHeight = cellHeight * rowCount +
+                            mainSpacing * (rowCount - 1);
+
+                        return SizedBox(
+                          height: gridHeight,
+                          child: GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            padding: EdgeInsets.zero,
+                            itemCount: _amounts.length,
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: crossAxisCount,
+                              mainAxisExtent: cellHeight,
+                              mainAxisSpacing: mainSpacing,
+                              crossAxisSpacing: 12.w,
+                            ),
+                            itemBuilder: (context, index) {
+                              final value = _amounts[index];
+                              final selected = _selectedAmount == value &&
+                                  _otherController.text.isEmpty;
+                              return _AmountChip(
+                                amount: value,
+                                selected: selected,
+                                onTap: () => _selectAmount(value),
+                              );
+                            },
+                          ),
                         );
                       },
                     ),
-                    const SizedBox(height: 24),
-                    const Text(
+                    SizedBox(height: 24.h),
+                    Text(
                       'OTHER AMOUNT',
-                      style: TextStyle(
+                      style: ApaFonts.inter(
                         color: ApaColors.gray700,
-                        fontSize: 12,
+                        fontSize: 12.sp,
                         fontWeight: FontWeight.w700,
                         letterSpacing: 1.2,
                         height: 20 / 12,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: 8.h),
                     Container(
-                      height: 77,
+                      height: 77.h,
                       decoration: BoxDecoration(
                         color: ApaColors.white,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(12.r),
                         border: Border.all(color: ApaColors.gray200),
                       ),
                       child: Row(
                         children: [
-                          const Padding(
-                            padding: EdgeInsets.only(left: 24),
+                          Padding(
+                            padding: EdgeInsets.only(left: 24.w),
                             child: Text(
                               '\$',
-                              style: TextStyle(
+                              style: ApaFonts.inter(
                                 color: ApaColors.nearBlack,
-                                fontSize: 24,
+                                fontSize: 24.sp,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -200,22 +227,22 @@ class _DonationPageState extends State<DonationPage> {
                               onChanged: (_) {
                                 setState(() => _selectedAmount = null);
                               },
-                              style: const TextStyle(
+                              style: ApaFonts.inter(
                                 color: ApaColors.nearBlack,
-                                fontSize: 20,
+                                fontSize: 20.sp,
                                 fontWeight: FontWeight.w600,
                               ),
-                              decoration: const InputDecoration(
+                              decoration: InputDecoration(
                                 hintText: 'Enter an amount',
-                                hintStyle: TextStyle(
+                                hintStyle: ApaFonts.inter(
                                   color: ApaColors.gray400,
-                                  fontSize: 18,
+                                  fontSize: 18.sp,
                                   fontWeight: FontWeight.w500,
                                 ),
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 24,
+                                  horizontal: 12.w,
+                                  vertical: 24.h,
                                 ),
                               ),
                             ),
@@ -223,7 +250,7 @@ class _DonationPageState extends State<DonationPage> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24.h),
                     ApaBlackPillButton(
                       label: 'CONTINUE TO PAYMENT',
                       expanded: true,
@@ -232,21 +259,21 @@ class _DonationPageState extends State<DonationPage> {
                       horizontalPadding: 24,
                       onPressed: widget.onContinuePressed,
                     ),
-                    const SizedBox(height: 20),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
+                    SizedBox(height: 20.h),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.w),
                       child: Text(
                         'Gifts are processed securely. You will receive a '
                         'receipt and project updates by email.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: ApaFonts.inter(
                           color: ApaColors.gray500,
-                          fontSize: 13,
+                          fontSize: 13.sp,
                           height: 18 / 13,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 40),
+                    SizedBox(height: 40.h),
                   ],
                 ),
               ),
@@ -254,41 +281,41 @@ class _DonationPageState extends State<DonationPage> {
             const SliverToBoxAdapter(child: _WhatItPaysFor()),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 40, 24, _navBottomPad),
+                padding: EdgeInsets.fromLTRB(24.w, 40.h, 24.w, navBottomPad),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
+                  children: [
                     Text(
                       'WHERE SUPPORT\nCOMES FROM',
-                      style: TextStyle(
+                      style: ApaFonts.inter(
                         color: ApaColors.black,
-                        fontSize: 32,
+                        fontSize: 32.sp,
                         fontWeight: FontWeight.w800,
                         height: 38 / 32,
                       ),
                     ),
-                    SizedBox(height: 24),
-                    _SupportItem(
+                    SizedBox(height: 24.h),
+                    const _SupportItem(
                       bold: 'Individuals',
                       rest: ' who give once or monthly',
                     ),
-                    _SupportItem(
+                    const _SupportItem(
                       bold: 'Families',
                       rest: ' pooling a gift for a specific project',
                     ),
-                    _SupportItem(
+                    const _SupportItem(
                       bold: 'Diaspora',
                       rest: ' groups organizing community fundraisers',
                     ),
-                    _SupportItem(
+                    const _SupportItem(
                       bold: 'Churches',
                       rest: ' and faith communities',
                     ),
-                    _SupportItem(
+                    const _SupportItem(
                       bold: 'Small businesses',
                       rest: ' matching employee gifts',
                     ),
-                    _SupportItem(
+                    const _SupportItem(
                       bold: 'Foundations',
                       rest: ' backing phase-one infrastructure',
                     ),
@@ -315,8 +342,8 @@ class _FrequencyToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 55,
-      padding: const EdgeInsets.all(4),
+      height: 55.h,
+      padding: EdgeInsets.all(4.w),
       decoration: BoxDecoration(
         color: ApaColors.gray50,
         borderRadius: BorderRadius.circular(9999),
@@ -365,9 +392,9 @@ class _ToggleSegment extends StatelessWidget {
         child: Center(
           child: Text(
             label,
-            style: TextStyle(
+            style: ApaFonts.inter(
               color: selected ? ApaColors.white : ApaColors.gray700,
-              fontSize: 14,
+              fontSize: 14.sp,
               fontWeight: FontWeight.w700,
               letterSpacing: 0.8,
             ),
@@ -393,23 +420,23 @@ class _AmountChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: selected ? ApaColors.nearBlack : ApaColors.white,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(12.r),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         child: Container(
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(12.r),
             border: Border.all(
-              color: selected ? ApaColors.nearBlack : ApaColors.gray200,
+              color: ApaColors.nearBlack,
             ),
           ),
           child: Text(
             '\$$amount',
-            style: TextStyle(
+            style: ApaFonts.inter(
               color: selected ? ApaColors.white : ApaColors.nearBlack,
-              fontSize: 22,
+              fontSize: 22.sp,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -427,37 +454,37 @@ class _WhatItPaysFor extends StatelessWidget {
     return ColoredBox(
       color: ApaColors.gray50,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 40, 24, 40),
+        padding: EdgeInsets.fromLTRB(24.w, 40.h, 24.w, 40.h),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
+          children: [
             Text(
               'WHAT IT PAYS FOR',
-              style: TextStyle(
+              style: ApaFonts.inter(
                 color: ApaColors.black,
-                fontSize: 32,
+                fontSize: 32.sp,
                 fontWeight: FontWeight.w800,
                 height: 38 / 32,
               ),
             ),
-            SizedBox(height: 12),
+            SizedBox(height: 12.h),
             Text(
               'Estimated, based on phase-one costing in Haiti.',
-              style: TextStyle(
+              style: ApaFonts.inter(
                 color: ApaColors.gray600,
-                fontSize: 15,
+                fontSize: 15.sp,
                 height: 22.5 / 15,
               ),
             ),
-            SizedBox(height: 16),
-            ColoredBox(
+            SizedBox(height: 16.h),
+            const ColoredBox(
               color: ApaColors.black,
               child: SizedBox(height: 3, width: double.infinity),
             ),
-            _PaysRow(label: 'Solar street light', value: '1'),
-            _PaysRow(label: 'Days of local crew wages', value: '14'),
-            _PaysRow(label: 'Community meetings hosted', value: '2'),
-            _PaysRow(label: 'Metres of road repair', value: '4'),
+            const _PaysRow(label: 'Solar street light', value: '1'),
+            const _PaysRow(label: 'Days of local crew wages', value: '14'),
+            const _PaysRow(label: 'Community meetings hosted', value: '2'),
+            const _PaysRow(label: 'Metres of road repair', value: '4'),
           ],
         ),
       ),
@@ -474,7 +501,7 @@ class _PaysRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 60,
+      height: 60.h,
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: ApaColors.gray200)),
       ),
@@ -483,18 +510,18 @@ class _PaysRow extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
+              style: ApaFonts.inter(
                 color: ApaColors.gray800,
-                fontSize: 15,
+                fontSize: 15.sp,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
           Text(
             value,
-            style: const TextStyle(
+            style: ApaFonts.inter(
               color: ApaColors.nearBlack,
-              fontSize: 20,
+              fontSize: 20.sp,
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -513,24 +540,24 @@ class _SupportItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(bottom: 16.h),
       child: Text.rich(
         TextSpan(
           children: [
             TextSpan(
               text: bold,
-              style: const TextStyle(
+              style: ApaFonts.inter(
                 color: ApaColors.nearBlack,
-                fontSize: 16,
+                fontSize: 16.sp,
                 fontWeight: FontWeight.w800,
                 height: 24 / 16,
               ),
             ),
             TextSpan(
               text: rest,
-              style: const TextStyle(
+              style: ApaFonts.inter(
                 color: ApaColors.gray700,
-                fontSize: 16,
+                fontSize: 16.sp,
                 fontWeight: FontWeight.w400,
                 height: 24 / 16,
               ),

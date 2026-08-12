@@ -1,39 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/constants/apa_assets.dart';
+import '../../../../core/constants/apa_shell_insets.dart';
 import '../../../../core/theme/apa_colors.dart';
+import '../../../../core/theme/apa_fonts.dart';
 import '../../../../core/widgets/apa_shared_widgets.dart';
 
 /// Transparency Page — Figma frame `9:508`.
 class TransparencyPage extends StatelessWidget {
-  const TransparencyPage({super.key});
+  const TransparencyPage({
+    super.key,
+    this.scrollController,
+  });
 
-  static const double _navBottomPad = 120;
-
-  static const TextStyle _headlineWhite = TextStyle(
-    color: ApaColors.white,
-    fontSize: 36,
-    fontWeight: FontWeight.w800,
-    height: 40 / 36,
-    letterSpacing: -0.5,
-  );
-
-  static const TextStyle _headlineRed = TextStyle(
-    color: ApaColors.primaryRedDeep,
-    fontSize: 36,
-    fontWeight: FontWeight.w800,
-    height: 40 / 36,
-    letterSpacing: -0.5,
-  );
+  final ScrollController? scrollController;
 
   @override
   Widget build(BuildContext context) {
+    final navBottomPad = ApaShellInsets.contentBottom(context);
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: ColoredBox(
         color: ApaColors.white,
         child: CustomScrollView(
+          controller: scrollController,
           physics: const BouncingScrollPhysics(),
           slivers: [
             SliverToBoxAdapter(
@@ -41,9 +34,27 @@ class TransparencyPage extends StatelessWidget {
                 imageAsset: ApaAssets.transparencyHero,
                 height: 540,
                 badge: 'OPEN BOOKS',
-                headline: const [
-                  TextSpan(text: 'EVERY DOLLAR,\n', style: _headlineWhite),
-                  TextSpan(text: 'ON THE RECORD.', style: _headlineRed),
+                headline: [
+                  TextSpan(
+                    text: 'EVERY DOLLAR,\n',
+                    style: ApaFonts.inter(
+                      color: ApaColors.white,
+                      fontSize: 36.sp,
+                      fontWeight: FontWeight.w800,
+                      height: 40 / 36,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  TextSpan(
+                    text: 'ON THE RECORD.',
+                    style: ApaFonts.inter(
+                      color: ApaColors.primaryRedDeep,
+                      fontSize: 36.sp,
+                      fontWeight: FontWeight.w800,
+                      height: 40 / 36,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
                 ],
                 subtitle:
                     'A running ledger of phase-one work in Sud — updated as '
@@ -52,39 +63,39 @@ class TransparencyPage extends StatelessWidget {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 40, 24, _navBottomPad),
+                padding: EdgeInsets.fromLTRB(24.w, 40.h, 24.w, navBottomPad),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      width: 194,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
+                      width: 200.w,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 12.w,
+                        vertical: 12.h,
                       ),
                       decoration: BoxDecoration(
                         color: ApaColors.white,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8.r),
                         border: Border.all(color: ApaColors.black, width: 2),
                       ),
-                      child: const Column(
+                      child: Column(
                         children: [
                           Text(
                             '\$25,000',
-                            style: TextStyle(
+                            style: ApaFonts.inter(
                               color: ApaColors.nearBlack,
-                              fontSize: 28,
+                              fontSize: 32.sp,
                               fontWeight: FontWeight.w800,
                               height: 32 / 28,
                             ),
                           ),
-                          SizedBox(height: 4),
+                          SizedBox(height: 4.h),
                           Text(
                             'RAISED TO DATE',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: ApaColors.gray600,
-                              fontSize: 12,
+                            style: ApaFonts.inter(
+                              color: ApaColors.primaryRed,
+                              fontSize: 20.sp,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 1.2,
                               height: 20 / 12,
@@ -93,84 +104,81 @@ class TransparencyPage extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24.h),
                     ClipRRect(
                       borderRadius: BorderRadius.circular(9999),
-                      child: const SizedBox(
-                        height: 14,
-                        child: LinearProgressIndicator(
+                      child: SizedBox(
+                        height: 14.h,
+                        child: const LinearProgressIndicator(
                           value: 0.21,
                           backgroundColor: ApaColors.gray100,
                           color: ApaColors.navy,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    const Text(
+                    SizedBox(height: 12.h),
+                    Text(
                       '21% of phase-one goal — \$120,000 for Sud',
-                      style: TextStyle(
+                      style: ApaFonts.inter(
                         color: ApaColors.gray700,
-                        fontSize: 14,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.w600,
                         height: 20 / 14,
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: 24.h),
                     const ColoredBox(
                       color: ApaColors.black,
                       child: SizedBox(height: 1, width: double.infinity),
                     ),
-                    const SizedBox(height: 32),
-                    const Text(
+                    SizedBox(height: 32.h),
+                    Text(
                       'PROJECT LEDGER',
-                      style: TextStyle(
+                      style: ApaFonts.inter(
                         color: ApaColors.black,
-                        fontSize: 28,
+                        fontSize: 28.sp,
                         fontWeight: FontWeight.w800,
                         height: 34 / 28,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    SizedBox(height: 20.h),
                     const _LedgerHeader(),
                     const _LedgerRow(
                       project: 'Solar street lighting, phase 1',
-                      amount: '\$8,200',
-                      status: 'In progress',
-                      statusColor: ApaColors.navy,
-                      date: 'Mar 2026',
+                      community: 'Haiti',
+                      status: 'IN PROGRESS',
+                      committed: '\$9,400',
+                      statusHighlighted: true,
                     ),
                     const _LedgerRow(
                       project: 'Road repair — market route',
-                      amount: '\$12,400',
-                      status: 'Surveying',
-                      statusColor: ApaColors.gray700,
-                      date: 'Apr 2026',
+                      community: 'Torbeck',
+                      status: 'SURVEYING',
+                      committed: '\$7,200',
                     ),
                     const _LedgerRow(
-                      project: 'Community park — Sainte-Anne',
-                      amount: '\$4,400',
-                      status: 'Design',
-                      statusColor: ApaColors.gray600,
-                      date: '—',
+                      project: 'Community park & playground',
+                      community: 'Haiti',
+                      status: 'DESIGN',
+                      committed: '\$5,100',
                     ),
                     const _LedgerRow(
-                      project: 'Drainage study — market route',
-                      amount: '—',
-                      status: 'Planned',
-                      statusColor: ApaColors.gray500,
-                      date: 'Q3 2026',
+                      project: 'Operations & reporting',
+                      community: '—',
+                      status: 'ONGOING',
+                      committed: '\$3,300',
                     ),
-                    const SizedBox(height: 48),
-                    const Text(
+                    SizedBox(height: 48.h),
+                    Text(
                       'OUR COMMITMENT',
-                      style: TextStyle(
+                      style: ApaFonts.inter(
                         color: ApaColors.black,
-                        fontSize: 28,
+                        fontSize: 28.sp,
                         fontWeight: FontWeight.w800,
                         height: 34 / 28,
                       ),
                     ),
-                    const SizedBox(height: 28),
+                    SizedBox(height: 28.h),
                     const _CommitmentBlock(
                       title: 'Accountability',
                       body:
@@ -207,9 +215,9 @@ class _ThickSeparator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 20),
-      child: ColoredBox(
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 20.h),
+      child: const ColoredBox(
         color: ApaColors.gray200,
         child: SizedBox(height: 3, width: double.infinity),
       ),
@@ -230,19 +238,19 @@ class _CommitmentBlock extends StatelessWidget {
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: ApaFonts.inter(
             color: ApaColors.black,
-            fontSize: 22,
+            fontSize: 22.sp,
             fontWeight: FontWeight.w800,
             height: 28 / 22,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.h),
         Text(
           body,
-          style: const TextStyle(
+          style: ApaFonts.inter(
             color: ApaColors.gray700,
-            fontSize: 15,
+            fontSize: 15.sp,
             height: 22 / 15,
           ),
         ),
@@ -256,25 +264,36 @@ class _LedgerHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const style = TextStyle(
+    final style = ApaFonts.inter(
       color: ApaColors.gray500,
-      fontSize: 11,
+      fontSize: 11.sp,
       fontWeight: FontWeight.w700,
       letterSpacing: 0.6,
     );
-    return const Padding(
-      padding: EdgeInsets.only(bottom: 12),
-      child: Row(
-        children: [
-          Expanded(flex: 3, child: Text('PROJECT', style: style)),
-          Expanded(flex: 2, child: Text('AMOUNT', style: style)),
-          Expanded(flex: 2, child: Text('STATUS', style: style)),
-          Expanded(
-            flex: 2,
-            child: Text('DATE', style: style, textAlign: TextAlign.right),
-          ),
-        ],
-      ),
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(flex: 3, child: Text('PROJECT', style: style)),
+            Expanded(flex: 2, child: Text('COMMUNITY', style: style)),
+            Expanded(flex: 2, child: Text('STATUS', style: style)),
+            Expanded(
+              flex: 2,
+              child: Text(
+                'COMMITTED',
+                style: style,
+                textAlign: TextAlign.right,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: 12.h),
+        const ColoredBox(
+          color: ApaColors.black,
+          child: SizedBox(height: 2, width: double.infinity),
+        ),
+      ],
     );
   }
 }
@@ -282,22 +301,27 @@ class _LedgerHeader extends StatelessWidget {
 class _LedgerRow extends StatelessWidget {
   const _LedgerRow({
     required this.project,
-    required this.amount,
+    required this.community,
     required this.status,
-    required this.statusColor,
-    required this.date,
+    required this.committed,
+    this.statusHighlighted = false,
   });
 
   final String project;
-  final String amount;
+  final String community;
   final String status;
-  final Color statusColor;
-  final String date;
+  final String committed;
+  final bool statusHighlighted;
 
   @override
   Widget build(BuildContext context) {
+    final statusBackground =
+        statusHighlighted ? ApaColors.navy : ApaColors.gray100;
+    final statusTextColor =
+        statusHighlighted ? ApaColors.white : ApaColors.nearBlack;
+
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14),
+      padding: EdgeInsets.symmetric(vertical: 14.h),
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: ApaColors.gray200)),
       ),
@@ -308,9 +332,9 @@ class _LedgerRow extends StatelessWidget {
             flex: 3,
             child: Text(
               project,
-              style: const TextStyle(
+              style: ApaFonts.inter(
                 color: ApaColors.nearBlack,
-                fontSize: 12,
+                fontSize: 12.sp,
                 fontWeight: FontWeight.w600,
                 height: 16 / 12,
               ),
@@ -319,11 +343,11 @@ class _LedgerRow extends StatelessWidget {
           Expanded(
             flex: 2,
             child: Text(
-              amount,
-              style: const TextStyle(
+              community,
+              style: ApaFonts.inter(
                 color: ApaColors.gray800,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -332,17 +356,18 @@ class _LedgerRow extends StatelessWidget {
             child: Align(
               alignment: Alignment.centerLeft,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                 decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.12),
+                  color: statusBackground,
                   borderRadius: BorderRadius.circular(9999),
                 ),
                 child: Text(
                   status,
-                  style: TextStyle(
-                    color: statusColor,
-                    fontSize: 10,
+                  style: ApaFonts.inter(
+                    color: statusTextColor,
+                    fontSize: 10.sp,
                     fontWeight: FontWeight.w700,
+                    letterSpacing: 0.4,
                   ),
                 ),
               ),
@@ -351,12 +376,12 @@ class _LedgerRow extends StatelessWidget {
           Expanded(
             flex: 2,
             child: Text(
-              date,
+              committed,
               textAlign: TextAlign.right,
-              style: const TextStyle(
-                color: ApaColors.gray600,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+              style: ApaFonts.inter(
+                color: ApaColors.nearBlack,
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),

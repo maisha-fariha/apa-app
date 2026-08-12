@@ -39,6 +39,13 @@ class ApaShell extends StatefulWidget {
 class _ApaShellState extends State<ApaShell> {
   ApaShellPage _page = ApaShellPage.home;
 
+  final _projectsScroll = ScrollController();
+  final _donationScroll = ScrollController();
+  final _transparencyScroll = ScrollController();
+  final _newsScroll = ScrollController();
+  final _visionScroll = ScrollController();
+  final _contactScroll = ScrollController();
+
   ApaNavItem get _navSelected {
     switch (_page) {
       case ApaShellPage.home:
@@ -56,8 +63,53 @@ class _ApaShellState extends State<ApaShell> {
     }
   }
 
+  @override
+  void dispose() {
+    _projectsScroll.dispose();
+    _donationScroll.dispose();
+    _transparencyScroll.dispose();
+    _newsScroll.dispose();
+    _visionScroll.dispose();
+    _contactScroll.dispose();
+    super.dispose();
+  }
+
+  ScrollController? _scrollControllerFor(ApaShellPage page) {
+    switch (page) {
+      case ApaShellPage.home:
+        return null;
+      case ApaShellPage.projects:
+        return _projectsScroll;
+      case ApaShellPage.donation:
+        return _donationScroll;
+      case ApaShellPage.transparency:
+        return _transparencyScroll;
+      case ApaShellPage.news:
+        return _newsScroll;
+      case ApaShellPage.vision:
+        return _visionScroll;
+      case ApaShellPage.contact:
+        return _contactScroll;
+    }
+  }
+
+  void _scrollToTop(ApaShellPage page) {
+    final controller = _scrollControllerFor(page);
+    if (controller == null) return;
+
+    void jump() {
+      if (controller.hasClients) {
+        controller.jumpTo(0);
+      }
+    }
+
+    jump();
+    WidgetsBinding.instance.addPostFrameCallback((_) => jump());
+  }
+
   void _go(ApaShellPage page) {
     setState(() => _page = page);
+    _scrollToTop(page);
   }
 
   void _handleNav(ApaNavItem item) {
@@ -97,7 +149,10 @@ class _ApaShellState extends State<ApaShell> {
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (context) => ArticlePage(
-          onBackToNews: () => Navigator.of(context).pop(),
+          onBackToNews: () {
+            Navigator.of(context).pop();
+            _scrollToTop(ApaShellPage.news);
+          },
           onDonatePressed: () {
             Navigator.of(context).pop();
             _go(ApaShellPage.donation);
@@ -116,12 +171,21 @@ class _ApaShellState extends State<ApaShell> {
         index: _page.index,
         children: [
           HomePage(onDonatePressed: () => _go(ApaShellPage.donation)),
-          ProjectsPage(onFundPressed: () => _go(ApaShellPage.donation)),
-          const DonationPage(),
-          const TransparencyPage(),
-          NewsPage(onReadMore: _openArticle),
-          VisionPage(onLearnMore: () => _go(ApaShellPage.contact)),
-          const ContactPage(),
+          ProjectsPage(
+            scrollController: _projectsScroll,
+            onFundPressed: () => _go(ApaShellPage.donation),
+          ),
+          DonationPage(scrollController: _donationScroll),
+          TransparencyPage(scrollController: _transparencyScroll),
+          NewsPage(
+            scrollController: _newsScroll,
+            onReadMore: _openArticle,
+          ),
+          VisionPage(
+            scrollController: _visionScroll,
+            onLearnMore: () => _go(ApaShellPage.contact),
+          ),
+          ContactPage(scrollController: _contactScroll),
         ],
       ),
       bottomNavigationBar: ApaBottomNav(

@@ -1,44 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/constants/apa_assets.dart';
+import '../../../../core/constants/apa_shell_insets.dart';
 import '../../../../core/theme/apa_colors.dart';
+import '../../../../core/theme/apa_fonts.dart';
 import '../../../../core/widgets/apa_shared_widgets.dart';
 
 /// News Page — Figma frame `13:738`.
 class NewsPage extends StatelessWidget {
   const NewsPage({
     super.key,
+    this.scrollController,
     this.onReadMore,
   });
 
+  final ScrollController? scrollController;
   final VoidCallback? onReadMore;
-
-  static const double _navBottomPad = 120;
-
-  static const TextStyle _headlineWhite = TextStyle(
-    color: ApaColors.white,
-    fontSize: 36,
-    fontWeight: FontWeight.w800,
-    height: 40 / 36,
-    letterSpacing: -0.5,
-  );
-
-  static const TextStyle _headlineRed = TextStyle(
-    color: ApaColors.primaryRedAlt,
-    fontSize: 36,
-    fontWeight: FontWeight.w800,
-    height: 40 / 36,
-    letterSpacing: -0.5,
-  );
 
   @override
   Widget build(BuildContext context) {
+    final navBottomPad = ApaShellInsets.contentBottom(context);
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: ColoredBox(
         color: ApaColors.white,
         child: CustomScrollView(
+          controller: scrollController,
           physics: const BouncingScrollPhysics(),
           slivers: [
             SliverToBoxAdapter(
@@ -46,9 +36,27 @@ class NewsPage extends StatelessWidget {
                 imageAsset: ApaAssets.newsHero,
                 height: 480,
                 badge: 'NEWS & UPDATES',
-                headline: const [
-                  TextSpan(text: 'LATEST\n', style: _headlineWhite),
-                  TextSpan(text: 'NEWS.', style: _headlineRed),
+                headline: [
+                  TextSpan(
+                    text: 'LATEST ',
+                    style: ApaFonts.inter(
+                      color: ApaColors.white,
+                      fontSize: 36.sp,
+                      fontWeight: FontWeight.w800,
+                      height: 40 / 36,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  TextSpan(
+                    text: 'NEWS.',
+                    style: ApaFonts.inter(
+                      color: ApaColors.primaryRedAlt,
+                      fontSize: 36.sp,
+                      fontWeight: FontWeight.w800,
+                      height: 40 / 36,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
                 ],
                 subtitle:
                     'Field notes from Sud — projects starting, finishing, '
@@ -57,7 +65,7 @@ class NewsPage extends StatelessWidget {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 40, 20, _navBottomPad),
+                padding: EdgeInsets.fromLTRB(20.w, 40.h, 20.w, navBottomPad),
                 child: Column(
                   children: [
                     _NewsCard(
@@ -71,7 +79,7 @@ class NewsPage extends StatelessWidget {
                       showReadMore: true,
                       onReadMore: onReadMore,
                     ),
-                    const SizedBox(height: 32),
+                    SizedBox(height: 32.h),
                     const _NewsCard(
                       imageAsset: ApaAssets.newsCommunity,
                       category: 'COMMUNITY',
@@ -111,7 +119,7 @@ class _NewsCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: ApaColors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12.r),
         border: Border.all(color: ApaColors.gray200),
       ),
       clipBehavior: Clip.antiAlias,
@@ -127,41 +135,41 @@ class _NewsCard extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+            padding: EdgeInsets.all(24.w),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   category,
-                  style: const TextStyle(
+                  style: ApaFonts.inter(
                     color: ApaColors.navy,
-                    fontSize: 12,
+                    fontSize: 12.sp,
                     fontWeight: FontWeight.w700,
                     letterSpacing: 1.2,
                     height: 16 / 12,
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: ApaFonts.inter(
                     color: ApaColors.black,
-                    fontSize: 24,
+                    fontSize: 24.sp,
                     fontWeight: FontWeight.w800,
                     height: 30 / 24,
                   ),
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12.h),
                 Text(
                   description,
-                  style: const TextStyle(
+                  style: ApaFonts.inter(
                     color: ApaColors.gray600,
-                    fontSize: 15,
+                    fontSize: 15.sp,
                     height: 22 / 15,
                   ),
                 ),
                 if (showReadMore) ...[
-                  const SizedBox(height: 20),
+                  SizedBox(height: 20.h),
                   ApaBlackPillButton(
                     label: 'READ MORE',
                     fontSize: 14,

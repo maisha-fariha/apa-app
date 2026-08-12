@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../constants/apa_assets.dart';
 import '../constants/apa_dimens.dart';
 import '../theme/apa_colors.dart';
+import '../theme/apa_fonts.dart';
 
 /// Reusable hero header used across content screens.
 class ApaHeroHeader extends StatelessWidget {
@@ -36,7 +38,7 @@ class ApaHeroHeader extends StatelessWidget {
     final top = MediaQuery.paddingOf(context).top;
 
     return SizedBox(
-      height: height + top,
+      height: height.h + top,
       width: double.infinity,
       child: Stack(
         fit: StackFit.expand,
@@ -50,64 +52,71 @@ class ApaHeroHeader extends StatelessWidget {
           SafeArea(
             bottom: false,
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(
+              padding: EdgeInsets.fromLTRB(
                 ApaDimens.horizontalPadding,
-                24,
+                24.h,
                 ApaDimens.horizontalPadding,
-                40,
+                40.h,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Stack(
                 children: [
                   Align(
                     alignment: alignLogoCenter
-                        ? Alignment.center
-                        : Alignment.centerLeft,
+                        ? Alignment.topCenter
+                        : Alignment.topLeft,
                     child: Image.asset(
                       ApaAssets.apaLogo,
-                      width: logoWidth,
-                      height: logoHeight,
+                      width: logoWidth.w,
+                      height: logoHeight.h,
                       fit: BoxFit.contain,
                     ),
                   ),
-                  const Spacer(),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 13,
-                      vertical: 7,
-                    ),
-                    decoration: BoxDecoration(
-                      color: ApaColors.locationYellowFill,
-                      borderRadius: BorderRadius.circular(9999),
-                      border: Border.all(color: ApaColors.white20),
-                    ),
-                    child: Text(
-                      badge.toUpperCase(),
-                      style: const TextStyle(
-                        color: ApaColors.locationYellow,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.6,
-                        height: 16 / 12,
-                      ),
+                  Align(
+                    alignment: Alignment.bottomLeft,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 13.w,
+                            vertical: 7.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: ApaColors.locationYellowFill,
+                            borderRadius: BorderRadius.circular(9999),
+                            border: Border.all(color: ApaColors.white20),
+                          ),
+                          child: Text(
+                            badge.toUpperCase(),
+                            style: ApaFonts.inter(
+                              color: ApaColors.locationYellow,
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.6.sp,
+                              height: 16 / 12,
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 16.h),
+                        Text.rich(
+                          TextSpan(children: headline),
+                        ),
+                        if (subtitle != null) ...[
+                          SizedBox(height: 16.h),
+                          Text(
+                            subtitle!,
+                            style: ApaFonts.inter(
+                              color: ApaColors.white,
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.w500,
+                              height: 20.63 / 15,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  Text.rich(
-                    TextSpan(children: headline),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 16),
-                    Text(
-                      subtitle!,
-                      style: const TextStyle(
-                        color: ApaColors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w500,
-                        height: 20.63 / 15,
-                      ),
-                    ),
-                  ],
                 ],
               ),
             ),
@@ -147,15 +156,15 @@ class ApaBlackPillButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(9999),
         child: Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: horizontalPadding,
-            vertical: verticalPadding,
+            horizontal: horizontalPadding.w,
+            vertical: verticalPadding.h,
           ),
           child: Text(
             label.toUpperCase(),
             textAlign: TextAlign.center,
-            style: TextStyle(
+            style: ApaFonts.inter(
               color: ApaColors.white,
-              fontSize: fontSize,
+              fontSize: fontSize.sp,
               fontWeight: FontWeight.w700,
               letterSpacing: fontSize * 0.025,
               height: 1.4,
@@ -179,16 +188,16 @@ class ApaBulletItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(bottom: 12.h),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(
-            width: 23.25,
+          SizedBox(
+            width: 23.25.w,
             child: Text(
               '•',
-              style: TextStyle(
-                fontSize: 20,
+              style: ApaFonts.inter(
+                fontSize: 20.sp,
                 height: 1,
                 color: ApaColors.black,
               ),
@@ -197,9 +206,9 @@ class ApaBulletItem extends StatelessWidget {
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
+              style: ApaFonts.inter(
                 color: ApaColors.gray900,
-                fontSize: 15,
+                fontSize: 15.sp,
                 height: 22.5 / 15,
               ),
             ),
@@ -219,9 +228,9 @@ class ApaSectionLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text.toUpperCase(),
-      style: const TextStyle(
+      style: ApaFonts.inter(
         color: ApaColors.navy,
-        fontSize: 12,
+        fontSize: 12.sp,
         fontWeight: FontWeight.w700,
         letterSpacing: 1.2,
         height: 16 / 12,

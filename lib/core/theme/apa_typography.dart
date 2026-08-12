@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'apa_colors.dart';
+import 'apa_fonts.dart';
 
-/// Typography styles matching the Figma Home Page (Nimbus Sans Bold).
+/// Typography styles using Inter (Google Fonts).
 ///
-/// Until `Nimbus Sans` font files are added under `assets/fonts/`, Flutter
-/// falls back to the platform bold sans-serif while preserving size, weight,
-/// letter-spacing, and line-height from the design.
+/// All font sizes, line heights, and letter spacings are responsive via
+/// flutter_screenutil's `.sp` extension.
 abstract final class ApaTypography {
-  static const String? fontFamily = null;
-
   static TextStyle _base({
     required double fontSize,
     required double height,
@@ -17,17 +16,17 @@ abstract final class ApaTypography {
     required Color color,
     double letterSpacing = 0,
   }) {
-    return TextStyle(
-      fontFamily: fontFamily,
-      fontSize: fontSize,
+    final sp = fontSize.sp;
+    return ApaFonts.inter(
+      fontSize: sp,
       height: height / fontSize,
       fontWeight: fontWeight,
       color: color,
-      letterSpacing: letterSpacing,
+      letterSpacing: letterSpacing.sp,
     );
   }
 
-  static TextStyle locationBadge = _base(
+  static TextStyle get locationBadge => _base(
     fontSize: 12,
     height: 16,
     fontWeight: FontWeight.w700,
@@ -35,7 +34,7 @@ abstract final class ApaTypography {
     letterSpacing: 1.2,
   );
 
-  static TextStyle donationDate = _base(
+  static TextStyle get donationDate => _base(
     fontSize: 12,
     height: 16,
     fontWeight: FontWeight.w700,
@@ -43,14 +42,14 @@ abstract final class ApaTypography {
     letterSpacing: 1.2,
   );
 
-  static TextStyle currencySymbol = _base(
+  static TextStyle get currencySymbol => _base(
     fontSize: 20,
     height: 28,
     fontWeight: FontWeight.w700,
     color: ApaColors.white80,
   );
 
-  static TextStyle donationAmount = _base(
+  static TextStyle get donationAmount => _base(
     fontSize: 36,
     height: 40,
     fontWeight: FontWeight.w700,
@@ -58,7 +57,7 @@ abstract final class ApaTypography {
     letterSpacing: -1.8,
   );
 
-  static TextStyle currencyCode = _base(
+  static TextStyle get currencyCode => _base(
     fontSize: 12,
     height: 16,
     fontWeight: FontWeight.w700,
@@ -66,7 +65,7 @@ abstract final class ApaTypography {
     letterSpacing: 1.2,
   );
 
-  static TextStyle donateButton = _base(
+  static TextStyle get donateButton => _base(
     fontSize: 20,
     height: 28,
     fontWeight: FontWeight.w700,
@@ -74,7 +73,7 @@ abstract final class ApaTypography {
     letterSpacing: 2,
   );
 
-  static TextStyle footerNote = _base(
+  static TextStyle get footerNote => _base(
     fontSize: 10,
     height: 15,
     fontWeight: FontWeight.w700,
@@ -82,23 +81,23 @@ abstract final class ApaTypography {
     letterSpacing: 1,
   );
 
-  static TextStyle navLabel = _base(
+  static TextStyle get navLabel => _base(
     fontSize: 9,
     height: 13.5,
     fontWeight: FontWeight.w700,
     color: ApaColors.white,
-    letterSpacing: 0.9,
+    letterSpacing: 0.5,
   );
 
-  static TextStyle navLabelActive = navLabel.copyWith(
+  static TextStyle get navLabelActive => navLabel.copyWith(
     color: ApaColors.primaryRed,
   );
 
-  static TextStyle navDonationLabel = _base(
+  static TextStyle get navDonationLabel => _base(
     fontSize: 12,
     height: 16,
     fontWeight: FontWeight.w700,
     color: ApaColors.white,
-    letterSpacing: 1.2,
+    letterSpacing: 0.8,
   );
 }

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../../core/theme/apa_colors.dart';
+import '../../../../core/theme/apa_fonts.dart';
 
 /// Destinations available from the More bottom sheet.
 enum ApaMoreDestination {
@@ -56,27 +58,27 @@ class _ApaMoreSheetState extends State<ApaMoreSheet> {
 
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: ApaColors.black,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
       ),
-      padding: EdgeInsets.fromLTRB(24, 20, 24, 28 + bottom),
+      padding: EdgeInsets.fromLTRB(24.w, 20.h, 24.w, 28.h + bottom),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 40,
-            height: 4,
+            width: 40.w,
+            height: 4.h,
             decoration: BoxDecoration(
               color: ApaColors.white30,
               borderRadius: BorderRadius.circular(9999),
             ),
           ),
-          const SizedBox(height: 28),
+          SizedBox(height: 28.h),
           ...ApaMoreDestination.values.map((destination) {
             final isPressed = _pressed == destination;
             return Padding(
-              padding: const EdgeInsets.only(bottom: 8),
+              padding: EdgeInsets.only(bottom: 8.h),
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
@@ -87,19 +89,19 @@ class _ApaMoreSheetState extends State<ApaMoreSheet> {
                   onHighlightChanged: (v) {
                     setState(() => _pressed = v ? destination : null);
                   },
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8.r),
                   child: SizedBox(
                     width: double.infinity,
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      padding: EdgeInsets.symmetric(vertical: 18.h),
                       child: Text(
                         destination.label,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: ApaFonts.inter(
                           color: isPressed
                               ? ApaColors.primaryRed
                               : ApaColors.white,
-                          fontSize: 18,
+                          fontSize: 18.sp,
                           fontWeight: FontWeight.w800,
                           letterSpacing: 1.5,
                         ),
