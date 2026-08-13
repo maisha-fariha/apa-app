@@ -6,6 +6,7 @@ import '../../../../core/constants/apa_assets.dart';
 import '../../../../core/constants/apa_shell_insets.dart';
 import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
+import '../../../../core/utils/responsive.dart';
 import '../../../../core/widgets/apa_shared_widgets.dart';
 
 /// Projects Page — Figma frame `6:203`.
@@ -68,47 +69,103 @@ class ProjectsPage extends StatelessWidget {
               ),
             ),
             SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(24.w, 48.h, 24.w, navBottomPad),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const _ProjectSection(
-                      label: 'PARKS & COMMUNITY SPACES',
-                      title: 'Somewhere to gather',
-                      body: 'Modern public parks for families and children.',
-                      bullets: [
-                        'Playgrounds built for daily use',
-                        'Recreational spaces for families',
-                        'Safe gathering places that stay open after dark',
+              child: ApaPageWidth(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    R.isTabletLandscape(context) ? 48 : 24.w,
+                    48.h,
+                    R.isTabletLandscape(context) ? 48 : 24.w,
+                    navBottomPad,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (R.isTabletLandscape(context))
+                        const Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: _ProjectSection(
+                                label: 'PARKS & COMMUNITY SPACES',
+                                title: 'Somewhere to gather',
+                                body:
+                                    'Modern public parks for families and children.',
+                                bullets: [
+                                  'Playgrounds built for daily use',
+                                  'Recreational spaces for families',
+                                  'Safe gathering places that stay open after dark',
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: 28),
+                            Expanded(
+                              child: _ProjectSection(
+                                label: 'ROAD IMPROVEMENT',
+                                title: 'Somewhere to go',
+                                body:
+                                    'Repairing damaged roads in underserved communities.',
+                                bullets: [
+                                  'Access to markets, schools, and clinics',
+                                  'Safer routes for pedestrians and vendors',
+                                  'Durable materials chosen for Haitian conditions',
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: 28),
+                            Expanded(
+                              child: _ProjectSection(
+                                label: 'RENEWABLE STREET LIGHTING',
+                                title: 'Something to see by',
+                                body:
+                                    'Solar-powered lights where the grid does not reach.',
+                                bullets: [
+                                  'Solar units that need no grid connection',
+                                  'Safer streets after sunset',
+                                  'Lower long-term maintenance for neighborhoods',
+                                ],
+                              ),
+                            ),
+                          ],
+                        )
+                      else ...[
+                        const _ProjectSection(
+                          label: 'PARKS & COMMUNITY SPACES',
+                          title: 'Somewhere to gather',
+                          body:
+                              'Modern public parks for families and children.',
+                          bullets: [
+                            'Playgrounds built for daily use',
+                            'Recreational spaces for families',
+                            'Safe gathering places that stay open after dark',
+                          ],
+                        ),
+                        const _BlackSeparator(),
+                        const _ProjectSection(
+                          label: 'ROAD IMPROVEMENT',
+                          title: 'Somewhere to go',
+                          body:
+                              'Repairing damaged roads in underserved communities.',
+                          bullets: [
+                            'Access to markets, schools, and clinics',
+                            'Safer routes for pedestrians and vendors',
+                            'Durable materials chosen for Haitian conditions',
+                          ],
+                        ),
+                        const _BlackSeparator(),
+                        const _ProjectSection(
+                          label: 'RENEWABLE STREET LIGHTING',
+                          title: 'Something to see by',
+                          body:
+                              'Solar-powered lights where the grid does not reach.',
+                          bullets: [
+                            'Solar units that need no grid connection',
+                            'Safer streets after sunset',
+                            'Lower long-term maintenance for neighborhoods',
+                          ],
+                        ),
                       ],
-                    ),
-                    const _BlackSeparator(),
-                    const _ProjectSection(
-                      label: 'ROAD IMPROVEMENT',
-                      title: 'Somewhere to go',
-                      body:
-                          'Repairing damaged roads in underserved communities.',
-                      bullets: [
-                        'Access to markets, schools, and clinics',
-                        'Safer routes for pedestrians and vendors',
-                        'Durable materials chosen for Haitian conditions',
-                      ],
-                    ),
-                    const _BlackSeparator(),
-                    const _ProjectSection(
-                      label: 'RENEWABLE STREET LIGHTING',
-                      title: 'Something to see by',
-                      body:
-                          'Solar-powered lights where the grid does not reach.',
-                      bullets: [
-                        'Solar units that need no grid connection',
-                        'Safer streets after sunset',
-                        'Lower long-term maintenance for neighborhoods',
-                      ],
-                    ),
-                    const _BlackSeparator(),
-                    Text(
+                      const _BlackSeparator(),
+                      Text(
                       'HOW WE WORK',
                       style: ApaFonts.inter(
                         color: ApaColors.black,
@@ -141,6 +198,7 @@ class ProjectsPage extends StatelessWidget {
                   ],
                 ),
               ),
+            ),
             ),
           ],
         ),

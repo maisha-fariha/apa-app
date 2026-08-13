@@ -1,3 +1,14 @@
+/// Internal shell page state (includes More destinations).
+enum ApaShellPage {
+  home,
+  projects,
+  donation,
+  transparency,
+  news,
+  vision,
+  contact,
+}
+
 enum ApaNavItem {
   home,
   projects,

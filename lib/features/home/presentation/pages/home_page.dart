@@ -16,20 +16,20 @@ import '../widgets/location_badge.dart';
 class HomePage extends StatelessWidget {
   const HomePage({
     super.key,
+    this.scrollController,
     this.onDonatePressed,
   });
 
+  final ScrollController? scrollController;
   final VoidCallback? onDonatePressed;
 
   @override
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
     final topInset = media.padding.top;
-    final width = media.size.width;
-    final isWide = width >= ApaDimens.tabletBreakpoint;
-    final horizontalPadding = isWide
-        ? R.cw((width - ApaDimens.kMaxContentWidth).clamp(24.0, 120.0) / 2, context)
-        : ApaDimens.horizontalPadding;
+    final landscape = R.isTabletLandscape(context);
+    final horizontalPadding =
+        landscape ? R.pagePadding(context) : ApaDimens.horizontalPadding;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -46,50 +46,120 @@ class HomePage extends StatelessWidget {
                 horizontalPadding,
                 ApaShellInsets.contentBottom(context),
               ),
-              child: Column(
-                children: [
-                  SizedBox(height: ApaDimens.headerTopSpacing),
-                  Center(
-                    child: Image.asset(
-                      ApaAssets.apaLogo,
-                      width: ApaDimens.logoWidth,
-                      height: ApaDimens.logoHeight,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: ApaDimens.maxContentWidth,
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const LocationBadge(),
-                            SizedBox(
-                              height: ApaDimens.locationBadgeBottomSpacing,
-                            ),
-                            const DonationAmountCard(),
-                            SizedBox(
-                              height: ApaDimens.donationCardBottomSpacing,
-                            ),
-                            DonateButton(onPressed: onDonatePressed),
-                            SizedBox(
-                              height: ApaDimens.donateButtonBottomSpacing,
-                            ),
-                            const HomeFooterNote(),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              child: landscape
+                  ? _LandscapeHome(
+                      scrollController: scrollController,
+                      onDonatePressed: onDonatePressed,
+                    )
+                  : _PhoneHome(onDonatePressed: onDonatePressed),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PhoneHome extends StatelessWidget {
+  const _PhoneHome({this.onDonatePressed});
+
+  final VoidCallback? onDonatePressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SizedBox(height: ApaDimens.headerTopSpacing),
+        const _HomeLogo(),
+        Expanded(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: ApaDimens.maxContentWidth,
+              ),
+              child: _HomeBody(onDonatePressed: onDonatePressed),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LandscapeHome extends StatelessWidget {
+  const _LandscapeHome({
+    this.scrollController,
+    this.onDonatePressed,
+  });
+
+  final ScrollController? scrollController;
+  final VoidCallback? onDonatePressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          controller: scrollController,
+          physics: const BouncingScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: ApaDimens.kMaxContentWidth,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const _HomeLogo(),
+                    SizedBox(height: ApaDimens.locationBadgeBottomSpacing),
+                    _HomeBody(onDonatePressed: onDonatePressed),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _HomeLogo extends StatelessWidget {
+  const _HomeLogo();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Image.asset(
+        ApaAssets.apaLogo,
+        width: ApaDimens.logoWidth,
+        height: ApaDimens.logoHeight,
+        fit: BoxFit.contain,
+      ),
+    );
+  }
+}
+
+class _HomeBody extends StatelessWidget {
+  const _HomeBody({this.onDonatePressed});
+
+  final VoidCallback? onDonatePressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const LocationBadge(),
+        SizedBox(height: ApaDimens.locationBadgeBottomSpacing),
+        const DonationAmountCard(),
+        SizedBox(height: ApaDimens.donationCardBottomSpacing),
+        DonateButton(onPressed: onDonatePressed),
+        SizedBox(height: ApaDimens.donateButtonBottomSpacing),
+        const HomeFooterNote(),
+      ],
     );
   }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/utils/responsive.dart';
 import '../../../contact/presentation/pages/contact_page.dart';
 import '../../../donation/presentation/pages/donation_page.dart';
 import '../../../home/presentation/pages/home_page.dart';
@@ -10,20 +11,10 @@ import '../../../transparency/presentation/pages/transparency_page.dart';
 import '../../../vision/presentation/pages/vision_page.dart';
 import '../models/apa_nav_item.dart';
 import '../widgets/apa_bottom_nav.dart';
+import '../widgets/apa_desktop_nav.dart';
 import '../widgets/apa_more_sheet.dart';
 
-/// Internal shell page state (includes More destinations).
-enum ApaShellPage {
-  home,
-  projects,
-  donation,
-  transparency,
-  news,
-  vision,
-  contact,
-}
-
-/// Root shell hosting APA screens with bottom navigation.
+/// Root shell hosting APA screens with bottom / desktop navigation.
 class ApaShell extends StatefulWidget {
   const ApaShell({
     super.key,
@@ -39,6 +30,7 @@ class ApaShell extends StatefulWidget {
 class _ApaShellState extends State<ApaShell> {
   ApaShellPage _page = ApaShellPage.home;
 
+  final _homeScroll = ScrollController();
   final _projectsScroll = ScrollController();
   final _donationScroll = ScrollController();
   final _transparencyScroll = ScrollController();
@@ -65,6 +57,7 @@ class _ApaShellState extends State<ApaShell> {
 
   @override
   void dispose() {
+    _homeScroll.dispose();
     _projectsScroll.dispose();
     _donationScroll.dispose();
     _transparencyScroll.dispose();
@@ -77,7 +70,7 @@ class _ApaShellState extends State<ApaShell> {
   ScrollController? _scrollControllerFor(ApaShellPage page) {
     switch (page) {
       case ApaShellPage.home:
-        return null;
+        return _homeScroll;
       case ApaShellPage.projects:
         return _projectsScroll;
       case ApaShellPage.donation:
@@ -164,34 +157,45 @@ class _ApaShellState extends State<ApaShell> {
 
   @override
   Widget build(BuildContext context) {
+    final desktop = R.isTabletLandscape(context);
+    final pages = IndexedStack(
+      index: _page.index,
+      children: [
+        HomePage(
+          scrollController: _homeScroll,
+          onDonatePressed: () => _go(ApaShellPage.donation),
+        ),
+        ProjectsPage(
+          scrollController: _projectsScroll,
+          onFundPressed: () => _go(ApaShellPage.donation),
+        ),
+        DonationPage(scrollController: _donationScroll),
+        TransparencyPage(scrollController: _transparencyScroll),
+        NewsPage(
+          scrollController: _newsScroll,
+          onReadMore: _openArticle,
+        ),
+        VisionPage(
+          scrollController: _visionScroll,
+          onLearnMore: () => _go(ApaShellPage.contact),
+        ),
+        ContactPage(scrollController: _contactScroll),
+      ],
+    );
+
     return Scaffold(
       backgroundColor: Colors.black,
       extendBody: true,
-      body: IndexedStack(
-        index: _page.index,
-        children: [
-          HomePage(onDonatePressed: () => _go(ApaShellPage.donation)),
-          ProjectsPage(
-            scrollController: _projectsScroll,
-            onFundPressed: () => _go(ApaShellPage.donation),
-          ),
-          DonationPage(scrollController: _donationScroll),
-          TransparencyPage(scrollController: _transparencyScroll),
-          NewsPage(
-            scrollController: _newsScroll,
-            onReadMore: _openArticle,
-          ),
-          VisionPage(
-            scrollController: _visionScroll,
-            onLearnMore: () => _go(ApaShellPage.contact),
-          ),
-          ContactPage(scrollController: _contactScroll),
-        ],
-      ),
-      bottomNavigationBar: ApaBottomNav(
-        selected: _navSelected,
-        onItemSelected: _handleNav,
-      ),
+      body: pages,
+      bottomNavigationBar: desktop
+          ? ApaDesktopNav(
+              selected: _navSelected,
+              onItemSelected: _handleNav,
+            )
+          : ApaBottomNav(
+              selected: _navSelected,
+              onItemSelected: _handleNav,
+            ),
     );
   }
 }

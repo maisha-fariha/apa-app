@@ -34,14 +34,14 @@ abstract final class ApaDimens {
   static const double kDonateArrowSize = 20;
   static const double kDonateArrowLeading = 12;
 
-  static const double kNavHorizontalPadding = 16;
-  static const double kNavTopPadding = 17;
-  static const double kNavBottomPadding = 16;
+  static const double kNavHorizontalPadding = 8;
+  static const double kNavTopPadding = 10;
+  static const double kNavBottomPadding = 10;
   static const double kNavIconSize = 24;
   static const double kNavLabelTopSpacing = 4;
+  static const double kNavLabelRowHeight = 16;
   static const double kNavFabSize = 60;
   static const double kNavFabIconSize = 30;
-  static const double kNavFabOverlap = 51.19;
   static const double kNavMinHeight = 75;
 
   static const double kMaxContentWidth = 384;
@@ -87,10 +87,20 @@ abstract final class ApaDimens {
   static double get navBottomPadding => kNavBottomPadding.h;
   static double get navIconSize => kNavIconSize.w;
   static double get navLabelTopSpacing => kNavLabelTopSpacing.h;
+  static double get navLabelRowHeight => kNavLabelRowHeight.h;
   static double get navFabSize => kNavFabSize.w;
   static double get navFabIconSize => kNavFabIconSize.w;
-  static double get navFabOverlap => kNavFabOverlap.h;
+  /// Half the FAB sits above the bar so the circle is centered on the top edge.
+  static double get navFabOverlap => navFabSize / 2;
   static double get navMinHeight => kNavMinHeight.h;
+
+  /// Inner bar height (icons + labels + padding), excluding safe area / FAB lift.
+  static double get navBarBodyHeight =>
+      navTopPadding +
+      navIconSize +
+      navLabelTopSpacing +
+      navLabelRowHeight +
+      navBottomPadding;
 
   static double get maxContentWidth => kMaxContentWidth.w;
   static double get tabletBreakpoint => kTabletBreakpoint;

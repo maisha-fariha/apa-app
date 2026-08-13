@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import 'core/theme/apa_fonts.dart';
 import 'core/theme/apa_theme.dart';
+import 'core/utils/responsive.dart';
 import 'features/shell/presentation/pages/apa_shell.dart';
 
 void main() {
@@ -15,23 +15,19 @@ class ApaApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ScreenUtilInit(
-      designSize: const Size(390, 884),
-      minTextAdapt: true,
+    return MaterialApp(
+      title: 'APA — Ansanm Pou Ayiti',
+      debugShowCheckedModeBanner: false,
+      theme: ApaTheme.light,
       builder: (context, child) {
-        return MaterialApp(
-          title: 'APA — Ansanm Pou Ayiti',
-          debugShowCheckedModeBanner: false,
-          theme: ApaTheme.light,
-          builder: (context, child) {
-            return DefaultTextStyle(
-              style: ApaFonts.inter(),
-              child: child ?? const SizedBox.shrink(),
-            );
-          },
-          home: const ApaShell(),
+        return ApaResponsiveFrame(
+          child: DefaultTextStyle(
+            style: ApaFonts.inter(),
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
       },
+      home: const ApaShell(),
     );
   }
 }

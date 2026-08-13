@@ -7,21 +7,12 @@ import 'apa_dimens.dart';
 abstract final class ApaShellInsets {
   static const double kExtraBottomGap = 20;
 
-  /// Matches [ApaBottomNav] visible height + safe area + breathing room.
+  /// Matches bottom nav visible height + safe area + breathing room.
   static double contentBottom(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    final topPad = ApaDimens.navTopPadding;
-    final iconSize = ApaDimens.navIconSize;
-    final labelGap = ApaDimens.navLabelTopSpacing;
-    final labelRowHeight = 16.h;
-    final bottomPad = ApaDimens.navBottomPadding;
-    final overlapLift = ApaDimens.navFabOverlap - topPad;
-    final barBodyHeight =
-        topPad + iconSize + labelGap + labelRowHeight + bottomPad;
-
-    return barBodyHeight +
+    return ApaDimens.navBarBodyHeight +
         bottomInset +
-        overlapLift +
+        ApaDimens.navFabOverlap +
         kExtraBottomGap.h;
   }
 }
