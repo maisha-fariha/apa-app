@@ -8,12 +8,12 @@ import '../../../../core/theme/apa_typography.dart';
 import '../../../../core/widgets/apa_svg_icon.dart';
 import '../models/apa_nav_item.dart';
 
-/// Bottom navigation matching the Figma reference.
+/// Tablet-landscape bottom nav — same design as the phone bar.
 ///
 /// Five equal columns share one icon row and one label baseline.
 /// The donation FAB is centered on the bar's top edge.
-class ApaBottomNav extends StatelessWidget {
-  const ApaBottomNav({
+class ApaDesktopNav extends StatelessWidget {
+  const ApaDesktopNav({
     super.key,
     required this.selected,
     this.onItemSelected,
@@ -154,7 +154,6 @@ class ApaBottomNav extends StatelessWidget {
           Positioned(
             left: 0,
             right: 0,
-            // Center the FAB on the bar's top edge (half above, half below).
             bottom: bottomInset + barBodyHeight - fabSize / 2,
             child: Center(
               child: _DonationFab(
@@ -169,7 +168,6 @@ class ApaBottomNav extends StatelessWidget {
   }
 }
 
-/// One nav slot: icon (or spacer) + label on a shared baseline.
 class _NavColumn extends StatelessWidget {
   const _NavColumn({
     required this.iconSize,

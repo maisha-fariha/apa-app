@@ -6,6 +6,7 @@ import '../../../../core/constants/apa_assets.dart';
 import '../../../../core/constants/apa_shell_insets.dart';
 import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
+import '../../../../core/utils/responsive.dart';
 import '../../../../core/widgets/apa_shared_widgets.dart';
 
 /// News Page — Figma frame `13:738`.
@@ -64,29 +65,64 @@ class NewsPage extends StatelessWidget {
               ),
             ),
             SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(20.w, 40.h, 20.w, navBottomPad),
-                child: Column(
-                  children: [
-                    _NewsCard(
-                      imageAsset: ApaAssets.newsFeatured,
-                      category: 'FEATURED',
-                      title:
-                          'Creating opportunities through community '
-                          'infrastructure',
-                      description:
-                          'Discover our latest initiatives and achievements.',
-                      showReadMore: true,
-                      onReadMore: onReadMore,
-                    ),
-                    SizedBox(height: 32.h),
-                    const _NewsCard(
-                      imageAsset: ApaAssets.newsCommunity,
-                      category: 'COMMUNITY',
-                      title: 'New development project begins',
-                      description: 'Short article description.',
-                    ),
-                  ],
+              child: ApaPageWidth(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    R.isTabletLandscape(context) ? 48 : 20.w,
+                    40.h,
+                    R.isTabletLandscape(context) ? 48 : 20.w,
+                    navBottomPad,
+                  ),
+                  child: R.isTabletLandscape(context)
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: _NewsCard(
+                                imageAsset: ApaAssets.newsFeatured,
+                                category: 'FEATURED',
+                                title:
+                                    'Creating opportunities through community '
+                                    'infrastructure',
+                                description:
+                                    'Discover our latest initiatives and achievements.',
+                                showReadMore: true,
+                                onReadMore: onReadMore,
+                              ),
+                            ),
+                            SizedBox(width: 24.w),
+                            const Expanded(
+                              child: _NewsCard(
+                                imageAsset: ApaAssets.newsCommunity,
+                                category: 'COMMUNITY',
+                                title: 'New development project begins',
+                                description: 'Short article description.',
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          children: [
+                            _NewsCard(
+                              imageAsset: ApaAssets.newsFeatured,
+                              category: 'FEATURED',
+                              title:
+                                  'Creating opportunities through community '
+                                  'infrastructure',
+                              description:
+                                  'Discover our latest initiatives and achievements.',
+                              showReadMore: true,
+                              onReadMore: onReadMore,
+                            ),
+                            SizedBox(height: 32.h),
+                            const _NewsCard(
+                              imageAsset: ApaAssets.newsCommunity,
+                              category: 'COMMUNITY',
+                              title: 'New development project begins',
+                              description: 'Short article description.',
+                            ),
+                          ],
+                        ),
                 ),
               ),
             ),

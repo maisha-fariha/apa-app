@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/constants/apa_assets.dart';
 import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
+import '../../../../core/utils/responsive.dart';
 import '../../../../core/widgets/apa_svg_icon.dart';
 
 /// Article / Read More page — Figma frame `14:811`.
@@ -33,7 +34,10 @@ class ArticlePage extends StatelessWidget {
           slivers: [
             SliverToBoxAdapter(
               child: SizedBox(
-                height: 620.h + top,
+                height: R.isTabletLandscape(context)
+                    ? (MediaQuery.sizeOf(context).height * 0.52)
+                        .clamp(340.0, 460.0)
+                    : 620.h + top,
                 width: double.infinity,
                 child: Stack(
                   fit: StackFit.expand,
@@ -48,19 +52,25 @@ class ArticlePage extends StatelessWidget {
                     SafeArea(
                       bottom: false,
                       child: Padding(
-                        padding: EdgeInsets.fromLTRB(24.w, 24.h, 24.w, 40.h),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Center(
-                              child: Image.asset(
-                                ApaAssets.apaLogo,
-                                width: 180.w,
-                                height: 67.5.h,
-                                fit: BoxFit.contain,
+                        padding: EdgeInsets.fromLTRB(
+                          R.isTabletLandscape(context) ? 48 : 24.w,
+                          24.h,
+                          R.isTabletLandscape(context) ? 48 : 24.w,
+                          40.h,
+                        ),
+                        child: ApaPageWidth(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Center(
+                                child: Image.asset(
+                                  ApaAssets.apaLogo,
+                                  width: 180.w,
+                                  height: 67.5.h,
+                                  fit: BoxFit.contain,
+                                ),
                               ),
-                            ),
-                            const Spacer(),
+                              const Spacer(),
                             Container(
                               padding: EdgeInsets.symmetric(
                                 horizontal: 13.w,
@@ -94,6 +104,7 @@ class ArticlePage extends StatelessWidget {
                             ),
                           ],
                         ),
+                        ),
                       ),
                     ),
                   ],
@@ -101,11 +112,13 @@ class ArticlePage extends StatelessWidget {
               ),
             ),
             SliverToBoxAdapter(
-              child: Padding(
+              child: ApaPageWidth(
+                maxWidth: 760,
+                child: Padding(
                 padding: EdgeInsets.fromLTRB(
-                  24.w,
+                  R.isTabletLandscape(context) ? 48 : 24.w,
                   40.h,
-                  24.w,
+                  R.isTabletLandscape(context) ? 48 : 24.w,
                   48.h + MediaQuery.paddingOf(context).bottom,
                 ),
                 child: Column(
@@ -417,6 +430,7 @@ class ArticlePage extends StatelessWidget {
                     ),
                   ],
                 ),
+              ),
               ),
             ),
           ],

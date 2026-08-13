@@ -6,6 +6,7 @@ import '../../../../core/constants/apa_assets.dart';
 import '../../../../core/constants/apa_shell_insets.dart';
 import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
+import '../../../../core/utils/responsive.dart';
 import '../../../../core/widgets/apa_shared_widgets.dart';
 
 /// Donation Page — Figma frame `8:322`.
@@ -96,236 +97,322 @@ class _DonationPageState extends State<DonationPage> {
               ),
             ),
             SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 26.w,
-                          vertical: 18.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: ApaColors.white,
-                          borderRadius: BorderRadius.circular(12.r),
-                          border: Border.all(color: ApaColors.black, width: 2),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          mainAxisSize: MainAxisSize.min,
+              child: ApaPageWidth(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    R.isTabletLandscape(context) ? 48 : 20.w,
+                    24.h,
+                    R.isTabletLandscape(context) ? 48 : 20.w,
+                    0,
+                  ),
+                  child: R.isTabletLandscape(context)
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              '\$$amount',
-                              style: ApaFonts.inter(
-                                color: ApaColors.nearBlack,
-                                fontSize: 28.sp,
-                                fontWeight: FontWeight.w800,
-                                height: 30 / 28,
-                              ),
+                            Expanded(
+                              flex: 5,
+                              child: _buildAmountColumn(context, amount, cadence),
                             ),
-                            SizedBox(height: 4.h),
-                            Text(
-                              cadence,
-                              style: ApaFonts.inter(
-                                color: ApaColors.primaryRed,
-                                fontSize: 20.sp,
-                                fontWeight: FontWeight.w700,
-                                letterSpacing: 1.2,
-                                height: 20 / 14,
-                              ),
+                            SizedBox(width: 40.w),
+                            const Expanded(
+                              flex: 4,
+                              child: _WhatItPaysFor(embedded: true),
                             ),
                           ],
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-                    _FrequencyToggle(
-                      monthly: _monthly,
-                      onChanged: (v) => setState(() => _monthly = v),
-                    ),
-                    SizedBox(height: 24.h),
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        const crossAxisCount = 2;
-                        final rowCount =
-                            (_amounts.length / crossAxisCount).ceil();
-                        final mainSpacing = 12.h;
-                        final cellHeight = 69.h;
-                        final gridHeight = cellHeight * rowCount +
-                            mainSpacing * (rowCount - 1);
-
-                        return SizedBox(
-                          height: gridHeight,
-                          child: GridView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            padding: EdgeInsets.zero,
-                            itemCount: _amounts.length,
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: crossAxisCount,
-                              mainAxisExtent: cellHeight,
-                              mainAxisSpacing: mainSpacing,
-                              crossAxisSpacing: 12.w,
-                            ),
-                            itemBuilder: (context, index) {
-                              final value = _amounts[index];
-                              final selected = _selectedAmount == value &&
-                                  _otherController.text.isEmpty;
-                              return _AmountChip(
-                                amount: value,
-                                selected: selected,
-                                onTap: () => _selectAmount(value),
-                              );
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                    SizedBox(height: 24.h),
-                    Text(
-                      'OTHER AMOUNT',
-                      style: ApaFonts.inter(
-                        color: ApaColors.gray700,
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.2,
-                        height: 20 / 12,
-                      ),
-                    ),
-                    SizedBox(height: 8.h),
-                    Container(
-                      height: 77.h,
-                      decoration: BoxDecoration(
-                        color: ApaColors.white,
-                        borderRadius: BorderRadius.circular(12.r),
-                        border: Border.all(color: ApaColors.gray200),
-                      ),
-                      child: Row(
-                        children: [
-                          Padding(
-                            padding: EdgeInsets.only(left: 24.w),
-                            child: Text(
-                              '\$',
-                              style: ApaFonts.inter(
-                                color: ApaColors.nearBlack,
-                                fontSize: 24.sp,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: TextField(
-                              controller: _otherController,
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                              ],
-                              onChanged: (_) {
-                                setState(() => _selectedAmount = null);
-                              },
-                              style: ApaFonts.inter(
-                                color: ApaColors.nearBlack,
-                                fontSize: 20.sp,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              decoration: InputDecoration(
-                                hintText: 'Enter an amount',
-                                hintStyle: ApaFonts.inter(
-                                  color: ApaColors.gray400,
-                                  fontSize: 18.sp,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                border: InputBorder.none,
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: 12.w,
-                                  vertical: 24.h,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 24.h),
-                    ApaBlackPillButton(
-                      label: 'CONTINUE TO PAYMENT',
-                      expanded: true,
-                      fontSize: 16,
-                      verticalPadding: 20,
-                      horizontalPadding: 24,
-                      onPressed: widget.onContinuePressed,
-                    ),
-                    SizedBox(height: 20.h),
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16.w),
-                      child: Text(
-                        'Gifts are processed securely. You will receive a '
-                        'receipt and project updates by email.',
-                        textAlign: TextAlign.center,
-                        style: ApaFonts.inter(
-                          color: ApaColors.gray500,
-                          fontSize: 13.sp,
-                          height: 18 / 13,
-                        ),
-                      ),
-                    ),
-                    SizedBox(height: 40.h),
-                  ],
+                        )
+                      : _buildAmountColumn(context, amount, cadence),
                 ),
               ),
             ),
-            const SliverToBoxAdapter(child: _WhatItPaysFor()),
+            if (!R.isTabletLandscape(context))
+              const SliverToBoxAdapter(child: _WhatItPaysFor()),
             SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(24.w, 40.h, 24.w, navBottomPad),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'WHERE SUPPORT\nCOMES FROM',
-                      style: ApaFonts.inter(
-                        color: ApaColors.black,
-                        fontSize: 32.sp,
-                        fontWeight: FontWeight.w800,
-                        height: 38 / 32,
+              child: ApaPageWidth(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    R.isTabletLandscape(context) ? 48 : 24.w,
+                    40.h,
+                    R.isTabletLandscape(context) ? 48 : 24.w,
+                    navBottomPad,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'WHERE SUPPORT\nCOMES FROM',
+                        style: ApaFonts.inter(
+                          color: ApaColors.black,
+                          fontSize: 32.sp,
+                          fontWeight: FontWeight.w800,
+                          height: 38 / 32,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: 24.h),
-                    const _SupportItem(
-                      bold: 'Individuals',
-                      rest: ' who give once or monthly',
-                    ),
-                    const _SupportItem(
-                      bold: 'Families',
-                      rest: ' pooling a gift for a specific project',
-                    ),
-                    const _SupportItem(
-                      bold: 'Diaspora',
-                      rest: ' groups organizing community fundraisers',
-                    ),
-                    const _SupportItem(
-                      bold: 'Churches',
-                      rest: ' and faith communities',
-                    ),
-                    const _SupportItem(
-                      bold: 'Small businesses',
-                      rest: ' matching employee gifts',
-                    ),
-                    const _SupportItem(
-                      bold: 'Foundations',
-                      rest: ' backing phase-one infrastructure',
-                    ),
-                  ],
+                      SizedBox(height: 24.h),
+                      if (R.isTabletLandscape(context))
+                        const Wrap(
+                          children: [
+                            SizedBox(
+                              width: 340,
+                              child: _SupportItem(
+                                bold: 'Individuals',
+                                rest: ' who give once or monthly',
+                              ),
+                            ),
+                            SizedBox(
+                              width: 340,
+                              child: _SupportItem(
+                                bold: 'Families',
+                                rest: ' pooling a gift for a specific project',
+                              ),
+                            ),
+                            SizedBox(
+                              width: 340,
+                              child: _SupportItem(
+                                bold: 'Diaspora',
+                                rest:
+                                    ' groups organizing community fundraisers',
+                              ),
+                            ),
+                            SizedBox(
+                              width: 340,
+                              child: _SupportItem(
+                                bold: 'Churches',
+                                rest: ' and faith communities',
+                              ),
+                            ),
+                            SizedBox(
+                              width: 340,
+                              child: _SupportItem(
+                                bold: 'Small businesses',
+                                rest: ' matching employee gifts',
+                              ),
+                            ),
+                            SizedBox(
+                              width: 340,
+                              child: _SupportItem(
+                                bold: 'Foundations',
+                                rest: ' backing phase-one infrastructure',
+                              ),
+                            ),
+                          ],
+                        )
+                      else ...[
+                        const _SupportItem(
+                          bold: 'Individuals',
+                          rest: ' who give once or monthly',
+                        ),
+                        const _SupportItem(
+                          bold: 'Families',
+                          rest: ' pooling a gift for a specific project',
+                        ),
+                        const _SupportItem(
+                          bold: 'Diaspora',
+                          rest: ' groups organizing community fundraisers',
+                        ),
+                        const _SupportItem(
+                          bold: 'Churches',
+                          rest: ' and faith communities',
+                        ),
+                        const _SupportItem(
+                          bold: 'Small businesses',
+                          rest: ' matching employee gifts',
+                        ),
+                        const _SupportItem(
+                          bold: 'Foundations',
+                          rest: ' backing phase-one infrastructure',
+                        ),
+                      ],
+                    ],
+                  ),
                 ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildAmountColumn(
+    BuildContext context,
+    int amount,
+    String cadence,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: 26.w,
+              vertical: 18.h,
+            ),
+            decoration: BoxDecoration(
+              color: ApaColors.white,
+              borderRadius: BorderRadius.circular(12.r),
+              border: Border.all(color: ApaColors.black, width: 2),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '\$$amount',
+                  style: ApaFonts.inter(
+                    color: ApaColors.nearBlack,
+                    fontSize: 28.sp,
+                    fontWeight: FontWeight.w800,
+                    height: 30 / 28,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  cadence,
+                  style: ApaFonts.inter(
+                    color: ApaColors.primaryRed,
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.2,
+                    height: 20 / 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        SizedBox(height: 16.h),
+        _FrequencyToggle(
+          monthly: _monthly,
+          onChanged: (v) => setState(() => _monthly = v),
+        ),
+        SizedBox(height: 24.h),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final crossAxisCount = R.isTabletLandscape(context) ? 3 : 2;
+            final rowCount = (_amounts.length / crossAxisCount).ceil();
+            final mainSpacing = 12.h;
+            final cellHeight = 69.h;
+            final gridHeight =
+                cellHeight * rowCount + mainSpacing * (rowCount - 1);
+
+            return SizedBox(
+              height: gridHeight,
+              child: GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                padding: EdgeInsets.zero,
+                itemCount: _amounts.length,
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  mainAxisExtent: cellHeight,
+                  mainAxisSpacing: mainSpacing,
+                  crossAxisSpacing: 12.w,
+                ),
+                itemBuilder: (context, index) {
+                  final value = _amounts[index];
+                  final selected = _selectedAmount == value &&
+                      _otherController.text.isEmpty;
+                  return _AmountChip(
+                    amount: value,
+                    selected: selected,
+                    onTap: () => _selectAmount(value),
+                  );
+                },
+              ),
+            );
+          },
+        ),
+        SizedBox(height: 24.h),
+        Text(
+          'OTHER AMOUNT',
+          style: ApaFonts.inter(
+            color: ApaColors.gray700,
+            fontSize: 12.sp,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.2,
+            height: 20 / 12,
+          ),
+        ),
+        SizedBox(height: 8.h),
+        Container(
+          height: 77.h,
+          decoration: BoxDecoration(
+            color: ApaColors.white,
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: ApaColors.gray200),
+          ),
+          child: Row(
+            children: [
+              Padding(
+                padding: EdgeInsets.only(left: 24.w),
+                child: Text(
+                  '\$',
+                  style: ApaFonts.inter(
+                    color: ApaColors.nearBlack,
+                    fontSize: 24.sp,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: TextField(
+                  controller: _otherController,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                  ],
+                  onChanged: (_) {
+                    setState(() => _selectedAmount = null);
+                  },
+                  style: ApaFonts.inter(
+                    color: ApaColors.nearBlack,
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Enter an amount',
+                    hintStyle: ApaFonts.inter(
+                      color: ApaColors.gray400,
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 24.h,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 24.h),
+        ApaBlackPillButton(
+          label: 'CONTINUE TO PAYMENT',
+          expanded: true,
+          fontSize: 16,
+          verticalPadding: 20,
+          horizontalPadding: 24,
+          onPressed: widget.onContinuePressed,
+        ),
+        SizedBox(height: 20.h),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16.w),
+          child: Text(
+            'Gifts are processed securely. You will receive a '
+            'receipt and project updates by email.',
+            textAlign: TextAlign.center,
+            style: ApaFonts.inter(
+              color: ApaColors.gray500,
+              fontSize: 13.sp,
+              height: 18 / 13,
+            ),
+          ),
+        ),
+        SizedBox(height: 40.h),
+      ],
     );
   }
 }
@@ -447,47 +534,66 @@ class _AmountChip extends StatelessWidget {
 }
 
 class _WhatItPaysFor extends StatelessWidget {
-  const _WhatItPaysFor();
+  const _WhatItPaysFor({this.embedded = false});
+
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
+    final content = Padding(
+      padding: EdgeInsets.fromLTRB(
+        embedded ? 28.w : (R.isTabletLandscape(context) ? 48 : 24.w),
+        40.h,
+        embedded ? 28.w : (R.isTabletLandscape(context) ? 48 : 24.w),
+        40.h,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'WHAT IT PAYS FOR',
+            style: ApaFonts.inter(
+              color: ApaColors.black,
+              fontSize: 32.sp,
+              fontWeight: FontWeight.w800,
+              height: 38 / 32,
+            ),
+          ),
+          SizedBox(height: 12.h),
+          Text(
+            'Estimated, based on phase-one costing in Haiti.',
+            style: ApaFonts.inter(
+              color: ApaColors.gray600,
+              fontSize: 15.sp,
+              height: 22.5 / 15,
+            ),
+          ),
+          SizedBox(height: 16.h),
+          const ColoredBox(
+            color: ApaColors.black,
+            child: SizedBox(height: 3, width: double.infinity),
+          ),
+          const _PaysRow(label: 'Solar street light', value: '1'),
+          const _PaysRow(label: 'Days of local crew wages', value: '14'),
+          const _PaysRow(label: 'Community meetings hosted', value: '2'),
+          const _PaysRow(label: 'Metres of road repair', value: '4'),
+        ],
+      ),
+    );
+
+    if (embedded) {
+      return DecoratedBox(
+        decoration: BoxDecoration(
+          color: ApaColors.gray50,
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        child: content,
+      );
+    }
+
     return ColoredBox(
       color: ApaColors.gray50,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(24.w, 40.h, 24.w, 40.h),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'WHAT IT PAYS FOR',
-              style: ApaFonts.inter(
-                color: ApaColors.black,
-                fontSize: 32.sp,
-                fontWeight: FontWeight.w800,
-                height: 38 / 32,
-              ),
-            ),
-            SizedBox(height: 12.h),
-            Text(
-              'Estimated, based on phase-one costing in Haiti.',
-              style: ApaFonts.inter(
-                color: ApaColors.gray600,
-                fontSize: 15.sp,
-                height: 22.5 / 15,
-              ),
-            ),
-            SizedBox(height: 16.h),
-            const ColoredBox(
-              color: ApaColors.black,
-              child: SizedBox(height: 3, width: double.infinity),
-            ),
-            const _PaysRow(label: 'Solar street light', value: '1'),
-            const _PaysRow(label: 'Days of local crew wages', value: '14'),
-            const _PaysRow(label: 'Community meetings hosted', value: '2'),
-            const _PaysRow(label: 'Metres of road repair', value: '4'),
-          ],
-        ),
-      ),
+      child: ApaPageWidth(child: content),
     );
   }
 }

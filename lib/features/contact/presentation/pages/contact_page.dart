@@ -6,6 +6,7 @@ import '../../../../core/constants/apa_assets.dart';
 import '../../../../core/constants/apa_shell_insets.dart';
 import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
+import '../../../../core/utils/responsive.dart';
 import '../../../../core/widgets/apa_shared_widgets.dart';
 
 /// Contact Us Page — Figma frame `17:1286`.
@@ -90,109 +91,31 @@ class _ContactPageState extends State<ContactPage> {
               ),
             ),
             SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(20.w, 32.h, 20.w, 0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const _FieldLabel('Name *'),
-                    _ApaTextField(controller: _nameController),
-                    SizedBox(height: 20.h),
-                    const _FieldLabel('Email Address'),
-                    _ApaTextField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    SizedBox(height: 20.h),
-                    const _FieldLabel("I'm reaching out about"),
-                    _SubjectDropdown(
-                      value: _subject,
-                      options: _subjects,
-                      onChanged: (v) {
-                        if (v != null) setState(() => _subject = v);
-                      },
-                    ),
-                    SizedBox(height: 20.h),
-                    const _FieldLabel('Message'),
-                    _ApaTextField(
-                      controller: _messageController,
-                      maxLines: 6,
-                      minHeight: 180,
-                    ),
-                    SizedBox(height: 24.h),
-                    ApaBlackPillButton(
-                      label: 'SEND MESSAGE',
-                      expanded: true,
-                      fontSize: 15,
-                      verticalPadding: 14,
-                      horizontalPadding: 24,
-                      onPressed: widget.onSendPressed,
-                    ),
-                    SizedBox(height: 48.h),
-                  ],
-                ),
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, navBottomPad),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'REACH US',
-                      style: ApaFonts.inter(
-                        color: ApaColors.black,
-                        fontSize: 32.sp,
-                        fontWeight: FontWeight.w800,
-                        height: 40 / 32,
-                      ),
-                    ),
-                    SizedBox(height: 24.h),
-                    const _ContactRow(
-                      label: 'Email',
-                      value: 'bonjou@ansanmpouhaiti.org',
-                    ),
-                    const _ContactRow(
-                      label: 'Phone',
-                      value: '+509 00 00 0000',
-                    ),
-                    const _ContactRow(
-                      label: 'Field office',
-                      value: 'Les Cayes, Sud, Haiti',
-                    ),
-                    const _ContactRow(
-                      label: 'Diaspora relations',
-                      value: 'diaspora@ansanmpouhaiti.org',
-                    ),
-                    SizedBox(height: 32.h),
-                    Text.rich(
-                      TextSpan(
-                        style: ApaFonts.inter(
-                          color: ApaColors.nearBlack,
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w700,
-                          height: 24 / 16,
-                          letterSpacing: 0.4,
+              child: ApaPageWidth(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    R.isTabletLandscape(context) ? 48 : 20.w,
+                    32.h,
+                    R.isTabletLandscape(context) ? 48 : 20.w,
+                    navBottomPad,
+                  ),
+                  child: R.isTabletLandscape(context)
+                      ? Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: _buildForm(context)),
+                            SizedBox(width: 48.w),
+                            Expanded(child: _buildReachUs(context)),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildForm(context),
+                            SizedBox(height: 24.h),
+                            _buildReachUs(context),
+                          ],
                         ),
-                        children: [
-                          const TextSpan(
-                            text:
-                                'TOGETHER, WE CAN BUILD SAFER ROADS, BRIGHTER '
-                                'COMMUNITIES, AND BETTER OPPORTUNITIES FOR ',
-                          ),
-                          TextSpan(
-                            text: 'FUTURE GENERATIONS',
-                            style: ApaFonts.inter(
-                              color: ApaColors.primaryRed,
-                              fontSize: 16.sp,
-                            ),
-                          ),
-                          const TextSpan(text: '.'),
-                        ],
-                      ),
-                    ),
-                  ],
                 ),
               ),
             ),
@@ -201,24 +124,138 @@ class _ContactPageState extends State<ContactPage> {
       ),
     );
   }
+
+  Widget _buildForm(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _FieldLabel('Name', required: true),
+        _ApaTextField(controller: _nameController),
+        SizedBox(height: 20.h),
+        const _FieldLabel('Email Address'),
+        _ApaTextField(
+          controller: _emailController,
+          keyboardType: TextInputType.emailAddress,
+        ),
+        SizedBox(height: 20.h),
+        const _FieldLabel("I'm reaching out about"),
+        _SubjectDropdown(
+          value: _subject,
+          options: _subjects,
+          onChanged: (v) {
+            if (v != null) setState(() => _subject = v);
+          },
+        ),
+        SizedBox(height: 20.h),
+        const _FieldLabel('Message'),
+        _ApaTextField(
+          controller: _messageController,
+          maxLines: 6,
+          minHeight: 180,
+        ),
+        SizedBox(height: 24.h),
+        ApaBlackPillButton(
+          label: 'SEND MESSAGE',
+          expanded: true,
+          fontSize: 15,
+          verticalPadding: 14,
+          horizontalPadding: 24,
+          onPressed: widget.onSendPressed,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildReachUs(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'REACH US',
+          style: ApaFonts.inter(
+            color: ApaColors.black,
+            fontSize: 32.sp,
+            fontWeight: FontWeight.w800,
+            height: 40 / 32,
+          ),
+        ),
+        SizedBox(height: 24.h),
+        const _ContactRow(
+          label: 'Email',
+          value: 'bonjou@ansanmpouhaiti.org',
+        ),
+        const _ContactRow(
+          label: 'Phone',
+          value: '+509 00 00 0000',
+        ),
+        const _ContactRow(
+          label: 'Field office',
+          value: 'Les Cayes, Sud, Haiti',
+        ),
+        const _ContactRow(
+          label: 'Diaspora relations',
+          value: 'diaspora@ansanmpouhaiti.org',
+        ),
+        SizedBox(height: 32.h),
+        Text.rich(
+          TextSpan(
+            style: ApaFonts.inter(
+              color: ApaColors.nearBlack,
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w700,
+              height: 24 / 16,
+              letterSpacing: 0.4,
+            ),
+            children: [
+              const TextSpan(
+                text:
+                    'TOGETHER, WE CAN BUILD SAFER ROADS, BRIGHTER '
+                    'COMMUNITIES, AND BETTER OPPORTUNITIES FOR ',
+              ),
+              TextSpan(
+                text: 'FUTURE GENERATIONS',
+                style: ApaFonts.inter(
+                  color: ApaColors.primaryRed,
+                  fontSize: 16.sp,
+                ),
+              ),
+              const TextSpan(text: '.'),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _FieldLabel extends StatelessWidget {
-  const _FieldLabel(this.text);
+  const _FieldLabel(this.text, {this.required = false});
 
   final String text;
+  final bool required;
 
   @override
   Widget build(BuildContext context) {
+    final labelStyle = ApaFonts.inter(
+      color: ApaColors.gray700,
+      fontSize: 13.sp,
+      fontWeight: FontWeight.w700,
+      height: 20 / 13,
+    );
+
     return Padding(
       padding: EdgeInsets.only(bottom: 6.h),
-      child: Text(
-        text,
-        style: ApaFonts.inter(
-          color: ApaColors.gray700,
-          fontSize: 13.sp,
-          fontWeight: FontWeight.w700,
-          height: 20 / 13,
+      child: Text.rich(
+        TextSpan(
+          style: labelStyle,
+          children: [
+            TextSpan(text: text),
+            if (required)
+              TextSpan(
+                text: ' *',
+                style: labelStyle.copyWith(color: ApaColors.primaryRed),
+              ),
+          ],
         ),
       ),
     );
