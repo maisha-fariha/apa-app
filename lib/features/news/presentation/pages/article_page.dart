@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
 
 import '../../../../core/constants/apa_assets.dart';
 import '../../../../core/theme/apa_colors.dart';
@@ -10,11 +11,14 @@ import '../../../../core/utils/responsive.dart';
 import '../../../../core/widgets/apa_svg_icon.dart';
 import '../../../../data/models/post/post_model.dart';
 import '../../../../data/models/post/post_item_extensions.dart';
+import '../../../shell/presentation/controllers/pages_controller.dart';
+import '../../../shell/presentation/mapping/apa_page_templates.dart';
+import '../../../shell/presentation/models/apa_nav_item.dart';
 
 /// Article / Read More page — Figma frame `14:811`.
 ///
 /// Pushed route (no bottom nav).
-class ArticlePage extends StatelessWidget {
+class ArticlePage extends StatefulWidget {
   const ArticlePage({
     super.key,
     required this.article,
@@ -29,8 +33,99 @@ class ArticlePage extends StatelessWidget {
   final VoidCallback? onBackToNews;
 
   @override
+  State<ArticlePage> createState() => _ArticlePageState();
+}
+
+class _ArticlePageState extends State<ArticlePage> {
+  PagesController? get _pagesController {
+    if (!Get.isRegistered<PagesController>()) return null;
+    return Get.find<PagesController>();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshLatest();
+    });
+  }
+
+  Future<void> _refreshLatest() async {
+    final controller = _pagesController;
+    if (controller == null) return;
+    await Future.wait<void>([
+      controller.loadDetailsForTemplate(
+        ApaPageTemplates.news,
+        force: true,
+      ),
+      if (widget.article.id > 0)
+        controller.loadPageDetails(widget.article.id, force: true),
+    ]);
+  }
+
+  PostItem _resolvedArticle(PagesController? controller) {
+    final id = widget.article.id;
+    if (controller != null && id > 0) {
+      final newsPosts =
+          controller.resolvedPageForShell(ApaShellPage.news)?.newsPosts ??
+              const <PostItem>[];
+      for (final post in newsPosts) {
+        if (post.id == id) return post;
+      }
+      final detailed = controller.detailsForPageId(id);
+      if (detailed != null) return detailed;
+    }
+    return widget.article;
+  }
+
+  List<PostItem> _resolvedMoreStories(
+    PagesController? controller,
+    int articleId,
+  ) {
+    final newsPosts =
+        controller?.resolvedPageForShell(ApaShellPage.news)?.newsPosts;
+    final source = (newsPosts != null && newsPosts.isNotEmpty)
+        ? newsPosts
+        : widget.moreStories;
+    return source.where((post) => post.id != articleId).take(3).toList();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final pagesController = _pagesController;
     final top = MediaQuery.paddingOf(context).top;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: ApaColors.white,
+        body: RefreshIndicator(
+          color: ApaColors.primaryRed,
+          onRefresh: _refreshLatest,
+          child: Obx(() {
+            pagesController?.items.length;
+            pagesController?.pageDetailsById.length;
+            final article = _resolvedArticle(pagesController);
+            final moreStories =
+                _resolvedMoreStories(pagesController, article.id);
+            return _buildScrollView(
+              context,
+              article: article,
+              moreStories: moreStories,
+              top: top,
+            );
+          }),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScrollView(
+    BuildContext context, {
+    required PostItem article,
+    required List<PostItem> moreStories,
+    required double top,
+  }) {
     final imageUrl = article.featuredImageUrl;
     final category = article.categoryLabel;
     final location = article.location ?? '';
@@ -49,12 +144,10 @@ class ArticlePage extends StatelessWidget {
     ];
     final metaLine = metaParts.join('  ·  ');
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
-      child: Scaffold(
-        backgroundColor: ApaColors.white,
-        body: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
+    return CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(
+            parent: BouncingScrollPhysics(),
+          ),
           slivers: [
             // Hero
             SliverToBoxAdapter(
@@ -166,7 +259,7 @@ class ArticlePage extends StatelessWidget {
                     children: [
                       // Back button
                       InkWell(
-                        onTap: onBackToNews ??
+                        onTap: widget.onBackToNews ??
                             () => Navigator.of(context).pop(),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -342,7 +435,7 @@ class ArticlePage extends StatelessWidget {
                             Material(
                               color: Colors.transparent,
                               child: InkWell(
-                                onTap: onDonatePressed,
+                                onTap: widget.onDonatePressed,
                                 child: Padding(
                                   padding:
                                       EdgeInsets.symmetric(vertical: 8.h),
@@ -390,20 +483,18 @@ class ArticlePage extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
     );
   }
 
   void _openStory(BuildContext context, PostItem post) {
-    final remaining = moreStories.where((p) => p.id != post.id).toList();
+    final remaining = _resolvedMoreStories(_pagesController, post.id);
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => ArticlePage(
           article: post,
           moreStories: remaining,
-          onDonatePressed: onDonatePressed,
-          onBackToNews: onBackToNews,
+          onDonatePressed: widget.onDonatePressed,
+          onBackToNews: widget.onBackToNews,
         ),
       ),
     );

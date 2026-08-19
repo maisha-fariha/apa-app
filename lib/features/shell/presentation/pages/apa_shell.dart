@@ -136,6 +136,16 @@ class _ApaShellState extends State<ApaShell> {
     if (page == ApaShellPage.projects) {
       _reloadProjects();
     }
+    if (page == ApaShellPage.news) {
+      _reloadNews();
+    }
+  }
+
+  void _reloadNews() {
+    _pagesController?.loadDetailsForTemplate(
+      ApaPageTemplates.news,
+      force: true,
+    );
   }
 
   void _reloadProjects() {

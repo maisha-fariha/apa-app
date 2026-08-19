@@ -126,7 +126,7 @@ class PagesController extends BaseListController<PostItem>
   Future<void> loadPageDetails(int pageId, {bool force = false}) async {
     if (pageId <= 0) return;
     if (!force && pageDetailsById.containsKey(pageId)) return;
-    if (_loadingDetails.contains(pageId)) return;
+    if (!force && _loadingDetails.contains(pageId)) return;
 
     _loadingDetails.add(pageId);
     try {

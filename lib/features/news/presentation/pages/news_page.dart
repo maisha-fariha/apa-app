@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
 
 import '../../../../core/constants/apa_assets.dart';
 import '../../../../core/constants/apa_shell_insets.dart';
@@ -10,6 +11,9 @@ import '../../../../core/utils/responsive.dart';
 import '../../../../core/widgets/apa_shared_widgets.dart';
 import '../../../../data/models/post/post_model.dart';
 import '../../../../data/models/post/post_item_extensions.dart';
+import '../../../shell/presentation/controllers/pages_controller.dart';
+import '../../../shell/presentation/mapping/apa_page_templates.dart';
+import '../../../shell/presentation/models/apa_nav_item.dart';
 
 /// News Page — Figma frame `13:738`.
 class NewsPage extends StatelessWidget {
@@ -26,10 +30,47 @@ class NewsPage extends StatelessWidget {
   final String? imageUrl;
   final PostItem? page;
 
+  PagesController? get _pagesController {
+    if (!Get.isRegistered<PagesController>()) return null;
+    return Get.find<PagesController>();
+  }
+
   @override
   Widget build(BuildContext context) {
     final navBottomPad = ApaShellInsets.contentBottom(context);
-    final commonHeader = page?.commonHeader ?? const <String, dynamic>{};
+    final pagesController = _pagesController;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: ColoredBox(
+        color: ApaColors.white,
+        child: RefreshIndicator(
+          color: ApaColors.primaryRed,
+          onRefresh: () async {
+            await pagesController?.loadDetailsForTemplate(
+              ApaPageTemplates.news,
+              force: true,
+            );
+          },
+          child: Obx(() {
+            pagesController?.items.length;
+            pagesController?.pageDetailsById.length;
+            final current =
+                pagesController?.resolvedPageForShell(ApaShellPage.news) ??
+                    page;
+            return _buildScrollView(context, current, navBottomPad);
+          }),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScrollView(
+    BuildContext context,
+    PostItem? current,
+    double navBottomPad,
+  ) {
+    final commonHeader = current?.commonHeader ?? const <String, dynamic>{};
 
     final badge =
         commonHeader['top_tag_line']?.toString() ?? '';
@@ -69,21 +110,21 @@ class NewsPage extends StatelessWidget {
       );
     }
 
-    final featured = page?.featuredPost;
-    final otherPosts = page?.nonFeaturedPosts ?? const [];
+    final featured = current?.featuredPost;
+    final otherPosts = current?.nonFeaturedPosts ?? const [];
+    final heroImage = current?.featuredImageUrl ?? imageUrl;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
-      child: ColoredBox(
-        color: ApaColors.white,
-        child: CustomScrollView(
-          controller: scrollController,
-          physics: const BouncingScrollPhysics(),
-          slivers: [
+    return CustomScrollView(
+      controller: scrollController,
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
+      slivers: [
             SliverToBoxAdapter(
               child: ApaHeroHeader(
                 imageAsset: ApaAssets.newsHero,
-                imageUrl: imageUrl,
+                imageUrl: heroImage,
+                useAssetFallback: false,
                 height: 480,
                 badge: badge,
                 headline: headline,
@@ -114,8 +155,6 @@ class NewsPage extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
     );
   }
 
