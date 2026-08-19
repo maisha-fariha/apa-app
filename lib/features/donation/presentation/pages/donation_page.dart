@@ -398,7 +398,14 @@ class _DonationPageState extends State<DonationPage> {
           fontSize: 16,
           verticalPadding: 20,
           horizontalPadding: 24,
-          onPressed: widget.onContinuePressed,
+          onPressed: () {
+            widget.onContinuePressed?.call();
+            _showCompleteDonationDialog(
+              context,
+              amount: amount,
+              cadence: cadence,
+            );
+          },
         ),
         SizedBox(height: 20.h),
         Padding(
@@ -416,6 +423,273 @@ class _DonationPageState extends State<DonationPage> {
         ),
         SizedBox(height: 40.h),
       ],
+    );
+  }
+
+  Future<void> _showCompleteDonationDialog(
+    BuildContext context, {
+    required int amount,
+    required String cadence,
+  }) async {
+    final frequencyLabel =
+        cadence == 'MONTHLY' ? 'Monthly' : 'One-time';
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return _CompleteDonationDialog(
+          amount: amount,
+          frequencyLabel: frequencyLabel,
+        );
+      },
+    );
+  }
+}
+
+class _CompleteDonationDialog extends StatefulWidget {
+  const _CompleteDonationDialog({
+    required this.amount,
+    required this.frequencyLabel,
+  });
+
+  final int amount;
+  final String frequencyLabel;
+
+  @override
+  State<_CompleteDonationDialog> createState() =>
+      _CompleteDonationDialogState();
+}
+
+class _CompleteDonationDialogState extends State<_CompleteDonationDialog> {
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedDonation =
+        '\$${widget.amount} USD (${widget.frequencyLabel})';
+    final media = MediaQuery.of(context);
+    final screenWidth = media.size.width;
+    final landscape = R.isLandscape(context);
+    final tablet = R.isTablet(context);
+
+    final outerHorizontal = R.pick(context, s: 12.0, m: 20.0, l: 32.0);
+    final outerVertical = landscape ? 12.0 : R.pick(context, s: 20.0, m: 24.0, l: 32.0);
+    final innerHorizontal = R.pick(context, s: 14.0, m: 18.0, l: 22.0);
+    final innerVertical = R.pick(context, s: 18.0, m: 22.0, l: 24.0);
+    final maxDialogWidth = R.pick(
+      context,
+      s: screenWidth - outerHorizontal * 2,
+      m: 440.0,
+      l: tablet && landscape ? 520.0 : 480.0,
+    ).clamp(280.0, 560.0);
+
+    final titleSize = R.csp(R.pick(context, s: 26.0, m: 26.0, l: 30.0), context);
+    final labelSize = R.csp(13, context);
+    final fieldSize = R.csp(R.pick(context, s: 17.0, m: 18.0, l: 19.0), context);
+    final summarySize = R.csp(15, context);
+    final fieldPaddingH = R.pick(context, s: 12.0, m: 14.0, l: 16.0);
+    final fieldPaddingV = R.pick(context, s: 14.0, m: 16.0, l: 18.0);
+
+    InputDecoration fieldDecoration(String hint) {
+      final border = OutlineInputBorder(
+        borderSide: const BorderSide(color: ApaColors.black),
+        borderRadius: BorderRadius.circular(0),
+      );
+
+      return InputDecoration(
+        hintText: hint,
+        hintStyle: ApaFonts.inter(
+          color: ApaColors.gray400,
+          fontSize: fieldSize,
+          fontWeight: FontWeight.w500,
+        ),
+        border: border,
+        enabledBorder: border,
+        focusedBorder: border.copyWith(
+          borderSide: const BorderSide(color: ApaColors.black, width: 2),
+        ),
+        contentPadding: EdgeInsets.symmetric(
+          horizontal: fieldPaddingH,
+          vertical: fieldPaddingV,
+        ),
+        isDense: true,
+      );
+    }
+
+    return Dialog(
+      backgroundColor: Colors.white,
+      insetPadding: EdgeInsets.symmetric(
+        horizontal: outerHorizontal,
+        vertical: outerVertical,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(R.pick(context, s: 16.0, m: 20.0, l: 24.0)),
+      ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: maxDialogWidth,
+          maxHeight: media.size.height * (landscape ? 0.92 : 0.88),
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final stackSummary = constraints.maxWidth < 340;
+
+            return SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                innerHorizontal,
+                innerVertical,
+                innerHorizontal,
+                innerVertical,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'COMPLETE DONATION',
+                          style: ApaFonts.inter(
+                            color: ApaColors.black,
+                            fontSize: titleSize,
+                            fontWeight: FontWeight.w800,
+                            height: 1.05,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        icon: const Icon(Icons.close),
+                        color: ApaColors.black,
+                        iconSize: R.pick(context, s: 24.0, m: 26.0, l: 28.0),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: R.ch(12, context)),
+                  const Divider(thickness: 1, height: 1),
+                  SizedBox(height: R.ch(20, context)),
+
+                  Text(
+                    'YOUR FULL NAME',
+                    style: ApaFonts.inter(
+                      color: ApaColors.black,
+                      fontSize: labelSize,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  SizedBox(height: R.ch(8, context)),
+                  TextField(
+                    controller: _nameController,
+                    decoration: fieldDecoration('John Doe'),
+                    style: ApaFonts.inter(
+                      color: ApaColors.nearBlack,
+                      fontSize: fieldSize,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(height: R.ch(18, context)),
+
+                  Text(
+                    'YOUR EMAIL ADDRESS',
+                    style: ApaFonts.inter(
+                      color: ApaColors.black,
+                      fontSize: labelSize,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  SizedBox(height: R.ch(8, context)),
+                  TextField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: fieldDecoration('john@example.com'),
+                    style: ApaFonts.inter(
+                      color: ApaColors.nearBlack,
+                      fontSize: fieldSize,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+
+                  SizedBox(height: R.ch(18, context)),
+                  if (stackSummary)
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Selected Donation:',
+                          style: ApaFonts.inter(
+                            color: ApaColors.black,
+                            fontSize: summarySize,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        SizedBox(height: R.ch(4, context)),
+                        Text(
+                          selectedDonation,
+                          style: ApaFonts.inter(
+                            color: ApaColors.black,
+                            fontSize: summarySize,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    )
+                  else
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Selected Donation:',
+                            style: ApaFonts.inter(
+                              color: ApaColors.black,
+                              fontSize: summarySize,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        Flexible(
+                          child: Text(
+                            selectedDonation,
+                            textAlign: TextAlign.end,
+                            style: ApaFonts.inter(
+                              color: ApaColors.black,
+                              fontSize: summarySize,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                  SizedBox(height: R.ch(22, context)),
+                  ApaBlackPillButton(
+                    label: 'PROCEED TO SECURE PAYMENT',
+                    expanded: true,
+                    fontSize: R.pick(context, s: 16.0, m: 18.0, l: 20.0),
+                    verticalPadding: R.pick(context, s: 18.0, m: 20.0, l: 22.0),
+                    horizontalPadding: R.pick(context, s: 16.0, m: 22.0, l: 28.0),
+                    onPressed: () => Navigator.of(context).pop(),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }
