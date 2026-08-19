@@ -285,6 +285,9 @@ class DonationController extends GetxController {
     try {
       final outcome = await checkout.presentPaymentSheet(
         clientSecret: session.clientSecret,
+        publishableKey: session.publishableKey.isNotEmpty
+            ? session.publishableKey
+            : loaded.config.publishableKey,
         testMode: loaded.config.isTestMode,
         email: email?.trim(),
         name: name?.trim(),

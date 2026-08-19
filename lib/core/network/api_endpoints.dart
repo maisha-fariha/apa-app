@@ -16,4 +16,7 @@ abstract final class ApiEndpoints {
 
   static String stripeSubscriptionStatus(String subscriptionReference) =>
       '$stripeSubscriptions/$subscriptionReference';
+
+  /// Custom scheme used by PaymentSheet redirect methods (Cash App Pay, 3DS).
+  static const String stripeReturnUrl = 'apa://safepay';
 }

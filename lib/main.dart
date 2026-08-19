@@ -1,4 +1,8 @@
+import 'dart:async';
+
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:gems_core/gems_core.dart';
 import 'package:get/get.dart';
 
@@ -35,8 +39,35 @@ Future<void> main() async {
   runApp(const ApaApp());
 }
 
-class ApaApp extends StatelessWidget {
+class ApaApp extends StatefulWidget {
   const ApaApp({super.key});
+
+  @override
+  State<ApaApp> createState() => _ApaAppState();
+}
+
+class _ApaAppState extends State<ApaApp> {
+  StreamSubscription<Uri>? _linkSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _listenForStripeReturnUrls();
+  }
+
+  void _listenForStripeReturnUrls() {
+    final appLinks = AppLinks();
+    _linkSubscription = appLinks.uriLinkStream.listen((uri) {
+      if (uri.scheme != 'apa') return;
+      Stripe.instance.handleURLCallback(uri.toString());
+    }, onError: (_) {});
+  }
+
+  @override
+  void dispose() {
+    _linkSubscription?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {

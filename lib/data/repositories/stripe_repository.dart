@@ -103,6 +103,7 @@ class StripeRepository {
         'currency': currency,
         'email': email,
         'name': name,
+        'return_url': ApiEndpoints.stripeReturnUrl,
       },
     );
   }
@@ -118,6 +119,7 @@ class StripeRepository {
         'price_id': priceId,
         'email': email,
         'name': name,
+        'return_url': ApiEndpoints.stripeReturnUrl,
       },
     );
   }
