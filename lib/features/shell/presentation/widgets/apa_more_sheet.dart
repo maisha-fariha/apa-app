@@ -29,19 +29,25 @@ class ApaMoreSheet extends StatefulWidget {
   const ApaMoreSheet({
     super.key,
     required this.onSelected,
+    this.labelFor,
   });
 
   final ValueChanged<ApaMoreDestination> onSelected;
+  final String Function(ApaMoreDestination destination)? labelFor;
 
   static Future<void> show(
     BuildContext context, {
     required ValueChanged<ApaMoreDestination> onSelected,
+    String Function(ApaMoreDestination destination)? labelFor,
   }) {
     return showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => ApaMoreSheet(onSelected: onSelected),
+      builder: (context) => ApaMoreSheet(
+        onSelected: onSelected,
+        labelFor: labelFor,
+      ),
     );
   }
 
@@ -95,7 +101,8 @@ class _ApaMoreSheetState extends State<ApaMoreSheet> {
                     child: Padding(
                       padding: EdgeInsets.symmetric(vertical: 18.h),
                       child: Text(
-                        destination.label,
+                        widget.labelFor?.call(destination) ??
+                            destination.label,
                         textAlign: TextAlign.center,
                         style: ApaFonts.inter(
                           color: isPressed

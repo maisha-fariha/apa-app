@@ -17,10 +17,14 @@ class ApaBottomNav extends StatelessWidget {
     super.key,
     required this.selected,
     this.onItemSelected,
+    this.labelFor,
   });
 
   final ApaNavItem selected;
   final ValueChanged<ApaNavItem>? onItemSelected;
+  final String Function(ApaNavItem item)? labelFor;
+
+  String _label(ApaNavItem item) => labelFor?.call(item) ?? item.label;
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +76,7 @@ class ApaBottomNav extends StatelessWidget {
                             ? null
                             : ApaColors.white,
                       ),
-                      label: ApaNavItem.home.label,
+                      label: _label(ApaNavItem.home),
                       labelStyle: selected == ApaNavItem.home
                           ? ApaTypography.navLabelActive
                           : ApaTypography.navLabel,
@@ -91,7 +95,7 @@ class ApaBottomNav extends StatelessWidget {
                             ? ApaColors.primaryRed
                             : ApaColors.white,
                       ),
-                      label: ApaNavItem.projects.label,
+                      label: _label(ApaNavItem.projects),
                       labelStyle: selected == ApaNavItem.projects
                           ? ApaTypography.navLabelActive
                           : ApaTypography.navLabel,
@@ -104,7 +108,7 @@ class ApaBottomNav extends StatelessWidget {
                       labelRowHeight: labelRowHeight,
                       onTap: () => onItemSelected?.call(ApaNavItem.donation),
                       icon: SizedBox(width: iconSize, height: iconSize),
-                      label: ApaNavItem.donation.label,
+                      label: _label(ApaNavItem.donation),
                       labelStyle: ApaTypography.navDonationLabel,
                     ),
                   ),
@@ -122,7 +126,7 @@ class ApaBottomNav extends StatelessWidget {
                             ? ApaColors.primaryRed
                             : ApaColors.white,
                       ),
-                      label: ApaNavItem.transparency.label,
+                      label: _label(ApaNavItem.transparency),
                       labelStyle: selected == ApaNavItem.transparency
                           ? ApaTypography.navLabelActive
                           : ApaTypography.navLabel,
@@ -141,7 +145,7 @@ class ApaBottomNav extends StatelessWidget {
                             ? ApaColors.primaryRed
                             : ApaColors.white,
                       ),
-                      label: ApaNavItem.more.label,
+                      label: _label(ApaNavItem.more),
                       labelStyle: selected == ApaNavItem.more
                           ? ApaTypography.navLabelActive
                           : ApaTypography.navLabel,

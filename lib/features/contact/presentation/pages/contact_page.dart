@@ -15,10 +15,12 @@ class ContactPage extends StatefulWidget {
     super.key,
     this.scrollController,
     this.onSendPressed,
+    this.imageUrl,
   });
 
   final ScrollController? scrollController;
   final VoidCallback? onSendPressed;
+  final String? imageUrl;
 
   @override
   State<ContactPage> createState() => _ContactPageState();
@@ -61,6 +63,7 @@ class _ContactPageState extends State<ContactPage> {
             SliverToBoxAdapter(
               child: ApaHeroHeader(
                 imageAsset: ApaAssets.contactHero,
+                imageUrl: widget.imageUrl,
                 height: 500,
                 badge: 'JOIN OUR MISSION',
                 headline: [

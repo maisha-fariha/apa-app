@@ -38,6 +38,16 @@ dependencies:
   flutter_screenutil: ^5.9.3
   google_fonts: ^6.2.1
 
+  gems_core:
+    path: flutter_gems/packages/gems_core
+  gems_data_layer:
+    path: flutter_gems/packages/gems_data_layer
+
+  get: ^4.6.6
+  get_it: ^7.7.0
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.9.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -48,6 +58,9 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  build_runner: ^2.4.7
+  freezed: ^2.4.7
+  json_serializable: ^6.7.1
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

@@ -18,10 +18,12 @@ class HomePage extends StatelessWidget {
     super.key,
     this.scrollController,
     this.onDonatePressed,
+    this.imageUrl,
   });
 
   final ScrollController? scrollController;
   final VoidCallback? onDonatePressed;
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +38,7 @@ class HomePage extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          const HomeBackground(),
+          HomeBackground(imageUrl: imageUrl),
           SafeArea(
             bottom: false,
             child: Padding(
