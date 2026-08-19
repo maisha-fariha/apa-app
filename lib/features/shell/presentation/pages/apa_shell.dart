@@ -124,6 +124,16 @@ class _ApaShellState extends State<ApaShell> {
     if (page == ApaShellPage.contact) {
       _reloadContact();
     }
+    if (page == ApaShellPage.vision) {
+      _reloadVision();
+    }
+  }
+
+  void _reloadVision() {
+    _pagesController?.loadDetailsForTemplate(
+      ApaPageTemplates.vision,
+      force: true,
+    );
   }
 
   void _reloadContact() {
@@ -247,7 +257,6 @@ class _ApaShellState extends State<ApaShell> {
               ApaPageTemplates.contact,
               ApaShellPage.contact,
             ),
-            imageUrl: _imageUrl(ApaShellPage.vision),
           ),
           ContactPage(
             scrollController: _contactScroll,

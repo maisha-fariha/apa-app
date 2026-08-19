@@ -235,4 +235,33 @@ class PostsRepository extends BaseRepository<PostItem> {
       jsonEncode(item.toJson()),
     );
   }
+
+  static String _mediaCacheKey(int mediaId) => 'wp-media-url_$mediaId';
+
+  /// Resolves a WordPress attachment id to its `source_url`.
+  Future<String?> mediaSourceUrl(int mediaId) async {
+    if (mediaId <= 0) return null;
+
+    final cached = databaseService.get<String>(_mediaCacheKey(mediaId));
+    if (cached != null && cached.trim().isNotEmpty) return cached.trim();
+
+    try {
+      final response = await apiService.get<Map<String, dynamic>>(
+        '${ApiEndpoints.wpMedia}/$mediaId',
+        fromJson: (data) {
+          if (data is! Map) {
+            throw const FormatException('Malformed media response');
+          }
+          return Map<String, dynamic>.from(data);
+        },
+      );
+      if (!response.success || response.data == null) return null;
+      final url = response.data!['source_url']?.toString().trim() ?? '';
+      if (url.isEmpty) return null;
+      await databaseService.save(_mediaCacheKey(mediaId), url);
+      return url;
+    } catch (_) {
+      return null;
+    }
+  }
 }

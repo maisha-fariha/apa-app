@@ -153,6 +153,10 @@ class PagesController extends BaseListController<PostItem>
     await loadPageDetails(page.id, force: force);
   }
 
+  Future<String?> mediaSourceUrl(int mediaId) {
+    return repository.mediaSourceUrl(mediaId);
+  }
+
   String navLabel(ApaNavItem item) {
     final page = pageForNavItem(item);
     final title = page?.title.trim();

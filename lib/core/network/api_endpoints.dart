@@ -4,4 +4,5 @@ abstract final class ApiEndpoints {
   static const String getPostDetails = '/ansanm-pou-haiti/v1/get-post-details/';
   static const String getForm = '/ansanm-pou-haiti/v1/get-form/';
   static const String submitForm = '/ansanm-pou-haiti/v1/submit-form/';
+  static const String wpMedia = '/wp/v2/media';
 }
