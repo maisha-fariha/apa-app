@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
 
 import '../../../../core/constants/apa_assets.dart';
 import '../../../../core/constants/apa_shell_insets.dart';
@@ -8,9 +9,10 @@ import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../core/widgets/apa_shared_widgets.dart';
+import '../controllers/donation_controller.dart';
 
 /// Donation Page — Figma frame `8:322`.
-class DonationPage extends StatefulWidget {
+class DonationPage extends StatelessWidget {
   const DonationPage({
     super.key,
     this.scrollController,
@@ -22,368 +24,193 @@ class DonationPage extends StatefulWidget {
   final VoidCallback? onContinuePressed;
   final String? imageUrl;
 
-  @override
-  State<DonationPage> createState() => _DonationPageState();
-}
-
-class _DonationPageState extends State<DonationPage> {
-  static const List<int> _amounts = [25, 50, 100, 250, 500, 1000];
-
-  bool _monthly = false;
-  int? _selectedAmount = 100;
-  final TextEditingController _otherController = TextEditingController();
-
-  @override
-  void dispose() {
-    _otherController.dispose();
-    super.dispose();
-  }
-
-  int get _displayAmount {
-    final other = int.tryParse(_otherController.text.trim());
-    if (other != null && other > 0) return other;
-    return _selectedAmount ?? 0;
-  }
-
-  void _selectAmount(int amount) {
-    setState(() {
-      _selectedAmount = amount;
-      _otherController.clear();
-    });
+  DonationController? get _controller {
+    if (!Get.isRegistered<DonationController>()) return null;
+    return Get.find<DonationController>();
   }
 
   @override
   Widget build(BuildContext context) {
-    final amount = _displayAmount;
-    final cadence = _monthly ? 'MONTHLY' : 'ONE TIME';
     final navBottomPad = ApaShellInsets.contentBottom(context);
+    final controller = _controller;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: ColoredBox(
         color: ApaColors.white,
-        child: CustomScrollView(
-          controller: widget.scrollController,
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: ApaHeroHeader(
-                imageAsset: ApaAssets.donationHero,
-                imageUrl: widget.imageUrl,
-                height: 500,
-                badge: 'EVERY GIFT FUNDS WORK IN HAITI',
-                headline: [
-                  TextSpan(
-                    text: 'CHOOSE YOUR\n',
-                    style: ApaFonts.inter(
-                      color: ApaColors.white,
-                      fontSize: 42.sp,
-                      fontWeight: FontWeight.w800,
-                      height: 46 / 42,
-                      letterSpacing: -1,
-                    ),
-                  ),
-                  TextSpan(
-                    text: 'AMOUNT.',
-                    style: ApaFonts.inter(
-                      color: ApaColors.primaryRed,
-                      fontSize: 42.sp,
-                      fontWeight: FontWeight.w800,
-                      height: 46 / 42,
-                      letterSpacing: -1,
-                    ),
-                  ),
-                ],
-                subtitle:
-                    'One-time or monthly — every dollar goes toward parks, '
-                    'roads, and solar lighting in Sud, Haiti.',
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: ApaPageWidth(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    R.isTabletLandscape(context) ? 48 : 20.w,
-                    24.h,
-                    R.isTabletLandscape(context) ? 48 : 20.w,
-                    0,
-                  ),
-                  child: R.isTabletLandscape(context)
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              flex: 5,
-                              child: _buildAmountColumn(context, amount, cadence),
-                            ),
-                            SizedBox(width: 40.w),
-                            const Expanded(
-                              flex: 4,
-                              child: _WhatItPaysFor(embedded: true),
-                            ),
-                          ],
-                        )
-                      : _buildAmountColumn(context, amount, cadence),
-                ),
-              ),
-            ),
-            if (!R.isTabletLandscape(context))
-              const SliverToBoxAdapter(child: _WhatItPaysFor()),
-            SliverToBoxAdapter(
-              child: ApaPageWidth(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    R.isTabletLandscape(context) ? 48 : 24.w,
-                    40.h,
-                    R.isTabletLandscape(context) ? 48 : 24.w,
-                    navBottomPad,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'WHERE SUPPORT\nCOMES FROM',
-                        style: ApaFonts.inter(
-                          color: ApaColors.black,
-                          fontSize: 32.sp,
-                          fontWeight: FontWeight.w800,
-                          height: 38 / 32,
-                        ),
-                      ),
-                      SizedBox(height: 24.h),
-                      if (R.isTabletLandscape(context))
-                        const Wrap(
-                          children: [
-                            SizedBox(
-                              width: 340,
-                              child: _SupportItem(
-                                bold: 'Individuals',
-                                rest: ' who give once or monthly',
-                              ),
-                            ),
-                            SizedBox(
-                              width: 340,
-                              child: _SupportItem(
-                                bold: 'Families',
-                                rest: ' pooling a gift for a specific project',
-                              ),
-                            ),
-                            SizedBox(
-                              width: 340,
-                              child: _SupportItem(
-                                bold: 'Diaspora',
-                                rest:
-                                    ' groups organizing community fundraisers',
-                              ),
-                            ),
-                            SizedBox(
-                              width: 340,
-                              child: _SupportItem(
-                                bold: 'Churches',
-                                rest: ' and faith communities',
-                              ),
-                            ),
-                            SizedBox(
-                              width: 340,
-                              child: _SupportItem(
-                                bold: 'Small businesses',
-                                rest: ' matching employee gifts',
-                              ),
-                            ),
-                            SizedBox(
-                              width: 340,
-                              child: _SupportItem(
-                                bold: 'Foundations',
-                                rest: ' backing phase-one infrastructure',
-                              ),
-                            ),
-                          ],
-                        )
-                      else ...[
-                        const _SupportItem(
-                          bold: 'Individuals',
-                          rest: ' who give once or monthly',
-                        ),
-                        const _SupportItem(
-                          bold: 'Families',
-                          rest: ' pooling a gift for a specific project',
-                        ),
-                        const _SupportItem(
-                          bold: 'Diaspora',
-                          rest: ' groups organizing community fundraisers',
-                        ),
-                        const _SupportItem(
-                          bold: 'Churches',
-                          rest: ' and faith communities',
-                        ),
-                        const _SupportItem(
-                          bold: 'Small businesses',
-                          rest: ' matching employee gifts',
-                        ),
-                        const _SupportItem(
-                          bold: 'Foundations',
-                          rest: ' backing phase-one infrastructure',
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAmountColumn(
-    BuildContext context,
-    int amount,
-    String cadence,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: 26.w,
-              vertical: 18.h,
-            ),
-            decoration: BoxDecoration(
-              color: ApaColors.white,
-              borderRadius: BorderRadius.circular(12.r),
-              border: Border.all(color: ApaColors.black, width: 2),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '\$$amount',
-                  style: ApaFonts.inter(
-                    color: ApaColors.nearBlack,
-                    fontSize: 28.sp,
-                    fontWeight: FontWeight.w800,
-                    height: 30 / 28,
-                  ),
-                ),
-                SizedBox(height: 4.h),
-                Text(
-                  cadence,
-                  style: ApaFonts.inter(
-                    color: ApaColors.primaryRed,
-                    fontSize: 20.sp,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.2,
-                    height: 20 / 14,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        SizedBox(height: 16.h),
-        _FrequencyToggle(
-          monthly: _monthly,
-          onChanged: (v) => setState(() => _monthly = v),
-        ),
-        SizedBox(height: 24.h),
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final crossAxisCount = R.isTabletLandscape(context) ? 3 : 2;
-            final rowCount = (_amounts.length / crossAxisCount).ceil();
-            final mainSpacing = 12.h;
-            final cellHeight = 69.h;
-            final gridHeight =
-                cellHeight * rowCount + mainSpacing * (rowCount - 1);
-
-            return SizedBox(
-              height: gridHeight,
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                padding: EdgeInsets.zero,
-                itemCount: _amounts.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossAxisCount,
-                  mainAxisExtent: cellHeight,
-                  mainAxisSpacing: mainSpacing,
-                  crossAxisSpacing: 12.w,
-                ),
-                itemBuilder: (context, index) {
-                  final value = _amounts[index];
-                  final selected = _selectedAmount == value &&
-                      _otherController.text.isEmpty;
-                  return _AmountChip(
-                    amount: value,
-                    selected: selected,
-                    onTap: () => _selectAmount(value),
-                  );
-                },
-              ),
-            );
+        child: RefreshIndicator(
+          color: ApaColors.primaryRed,
+          onRefresh: () async {
+            await controller?.loadCatalog(force: true);
           },
-        ),
-        SizedBox(height: 24.h),
-        Text(
-          'OTHER AMOUNT',
-          style: ApaFonts.inter(
-            color: ApaColors.gray700,
-            fontSize: 12.sp,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.2,
-            height: 20 / 12,
-          ),
-        ),
-        SizedBox(height: 8.h),
-        Container(
-          height: 77.h,
-          decoration: BoxDecoration(
-            color: ApaColors.white,
-            borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(color: ApaColors.gray200),
-          ),
-          child: Row(
-            children: [
-              Padding(
-                padding: EdgeInsets.only(left: 24.w),
-                child: Text(
-                  '\$',
-                  style: ApaFonts.inter(
-                    color: ApaColors.nearBlack,
-                    fontSize: 24.sp,
-                    fontWeight: FontWeight.w700,
+          child: CustomScrollView(
+            controller: scrollController,
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            slivers: [
+              SliverToBoxAdapter(
+                child: ApaHeroHeader(
+                  imageAsset: ApaAssets.donationHero,
+                  imageUrl: imageUrl,
+                  height: 500,
+                  badge: 'EVERY GIFT FUNDS WORK IN HAITI',
+                  headline: [
+                    TextSpan(
+                      text: 'CHOOSE YOUR\n',
+                      style: ApaFonts.inter(
+                        color: ApaColors.white,
+                        fontSize: 42.sp,
+                        fontWeight: FontWeight.w800,
+                        height: 46 / 42,
+                        letterSpacing: -1,
+                      ),
+                    ),
+                    TextSpan(
+                      text: 'AMOUNT.',
+                      style: ApaFonts.inter(
+                        color: ApaColors.primaryRed,
+                        fontSize: 42.sp,
+                        fontWeight: FontWeight.w800,
+                        height: 46 / 42,
+                        letterSpacing: -1,
+                      ),
+                    ),
+                  ],
+                  subtitle:
+                      'One-time or monthly — every dollar goes toward parks, '
+                      'roads, and solar lighting in Sud, Haiti.',
+                ),
+              ),
+              SliverToBoxAdapter(
+                child: ApaPageWidth(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      R.isTabletLandscape(context) ? 48 : 20.w,
+                      24.h,
+                      R.isTabletLandscape(context) ? 48 : 20.w,
+                      0,
+                    ),
+                    child: R.isTabletLandscape(context)
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                flex: 5,
+                                child: _buildAmountColumn(context, controller),
+                              ),
+                              SizedBox(width: 40.w),
+                              const Expanded(
+                                flex: 4,
+                                child: _WhatItPaysFor(embedded: true),
+                              ),
+                            ],
+                          )
+                        : _buildAmountColumn(context, controller),
                   ),
                 ),
               ),
-              Expanded(
-                child: TextField(
-                  controller: _otherController,
-                  keyboardType: TextInputType.number,
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                  ],
-                  onChanged: (_) {
-                    setState(() => _selectedAmount = null);
-                  },
-                  style: ApaFonts.inter(
-                    color: ApaColors.nearBlack,
-                    fontSize: 20.sp,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  decoration: InputDecoration(
-                    hintText: 'Enter an amount',
-                    hintStyle: ApaFonts.inter(
-                      color: ApaColors.gray400,
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.w500,
+              if (!R.isTabletLandscape(context))
+                const SliverToBoxAdapter(child: _WhatItPaysFor()),
+              SliverToBoxAdapter(
+                child: ApaPageWidth(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      R.isTabletLandscape(context) ? 48 : 24.w,
+                      40.h,
+                      R.isTabletLandscape(context) ? 48 : 24.w,
+                      navBottomPad,
                     ),
-                    border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 12.w,
-                      vertical: 24.h,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'WHERE SUPPORT\nCOMES FROM',
+                          style: ApaFonts.inter(
+                            color: ApaColors.black,
+                            fontSize: 32.sp,
+                            fontWeight: FontWeight.w800,
+                            height: 38 / 32,
+                          ),
+                        ),
+                        SizedBox(height: 24.h),
+                        if (R.isTabletLandscape(context))
+                          const Wrap(
+                            children: [
+                              SizedBox(
+                                width: 340,
+                                child: _SupportItem(
+                                  bold: 'Individuals',
+                                  rest: ' who give once or monthly',
+                                ),
+                              ),
+                              SizedBox(
+                                width: 340,
+                                child: _SupportItem(
+                                  bold: 'Families',
+                                  rest:
+                                      ' pooling a gift for a specific project',
+                                ),
+                              ),
+                              SizedBox(
+                                width: 340,
+                                child: _SupportItem(
+                                  bold: 'Diaspora',
+                                  rest:
+                                      ' groups organizing community fundraisers',
+                                ),
+                              ),
+                              SizedBox(
+                                width: 340,
+                                child: _SupportItem(
+                                  bold: 'Churches',
+                                  rest: ' and faith communities',
+                                ),
+                              ),
+                              SizedBox(
+                                width: 340,
+                                child: _SupportItem(
+                                  bold: 'Small businesses',
+                                  rest: ' matching employee gifts',
+                                ),
+                              ),
+                              SizedBox(
+                                width: 340,
+                                child: _SupportItem(
+                                  bold: 'Foundations',
+                                  rest: ' backing phase-one infrastructure',
+                                ),
+                              ),
+                            ],
+                          )
+                        else ...[
+                          const _SupportItem(
+                            bold: 'Individuals',
+                            rest: ' who give once or monthly',
+                          ),
+                          const _SupportItem(
+                            bold: 'Families',
+                            rest: ' pooling a gift for a specific project',
+                          ),
+                          const _SupportItem(
+                            bold: 'Diaspora',
+                            rest:
+                                ' groups organizing community fundraisers',
+                          ),
+                          const _SupportItem(
+                            bold: 'Churches',
+                            rest: ' and faith communities',
+                          ),
+                          const _SupportItem(
+                            bold: 'Small businesses',
+                            rest: ' matching employee gifts',
+                          ),
+                          const _SupportItem(
+                            bold: 'Foundations',
+                            rest: ' backing phase-one infrastructure',
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ),
@@ -391,58 +218,314 @@ class _DonationPageState extends State<DonationPage> {
             ],
           ),
         ),
-        SizedBox(height: 24.h),
-        ApaBlackPillButton(
-          label: 'CONTINUE TO PAYMENT',
-          expanded: true,
-          fontSize: 16,
-          verticalPadding: 20,
-          horizontalPadding: 24,
-          onPressed: () {
-            widget.onContinuePressed?.call();
-            _showCompleteDonationDialog(
-              context,
-              amount: amount,
-              cadence: cadence,
-            );
-          },
-        ),
-        SizedBox(height: 20.h),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w),
-          child: Text(
-            'Gifts are processed securely. You will receive a '
-            'receipt and project updates by email.',
-            textAlign: TextAlign.center,
-            style: ApaFonts.inter(
-              color: ApaColors.gray500,
-              fontSize: 13.sp,
-              height: 18 / 13,
-            ),
-          ),
-        ),
-        SizedBox(height: 40.h),
-      ],
+      ),
     );
   }
 
+  Widget _buildAmountColumn(
+    BuildContext context,
+    DonationController? controller,
+  ) {
+    if (controller == null) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Text('Donations are currently unavailable.'),
+      );
+    }
+
+    return Obx(() {
+      if (controller.isLoading.value && controller.catalog.value == null) {
+        return Padding(
+          padding: EdgeInsets.symmetric(vertical: 48.h),
+          child: const Center(child: CircularProgressIndicator()),
+        );
+      }
+
+      if (controller.errorMessage.value.isNotEmpty &&
+          controller.catalog.value == null) {
+        return Padding(
+          padding: EdgeInsets.symmetric(vertical: 24.h),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                controller.errorMessage.value,
+                style: ApaFonts.inter(
+                  color: ApaColors.primaryRed,
+                  fontSize: 15.sp,
+                  height: 22 / 15,
+                ),
+              ),
+              SizedBox(height: 16.h),
+              ApaBlackPillButton(
+                label: 'TRY AGAIN',
+                expanded: true,
+                fontSize: 16,
+                verticalPadding: 16,
+                horizontalPadding: 24,
+                onPressed: () => controller.loadCatalog(force: true),
+              ),
+            ],
+          ),
+        );
+      }
+
+      final amount = controller.displayAmountDollars;
+      final cadence = controller.monthly.value ? 'MONTHLY' : 'ONE TIME';
+      final chips = controller.chips;
+      final customEnabled = controller.customEnabled;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: 26.w,
+                vertical: 18.h,
+              ),
+              decoration: BoxDecoration(
+                color: ApaColors.white,
+                borderRadius: BorderRadius.circular(12.r),
+                border: Border.all(color: ApaColors.black, width: 2),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '\$$amount',
+                    style: ApaFonts.inter(
+                      color: ApaColors.nearBlack,
+                      fontSize: 28.sp,
+                      fontWeight: FontWeight.w800,
+                      height: 30 / 28,
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    cadence,
+                    style: ApaFonts.inter(
+                      color: ApaColors.primaryRed,
+                      fontSize: 20.sp,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2,
+                      height: 20 / 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: 16.h),
+          _FrequencyToggle(
+            monthly: controller.monthly.value,
+            onChanged: controller.setMonthly,
+          ),
+          SizedBox(height: 24.h),
+          if (chips.isEmpty)
+            Text(
+              controller.monthly.value
+                  ? 'No monthly donation amounts are available yet.'
+                  : 'No one-time donation amounts are available yet.',
+              style: ApaFonts.inter(
+                color: ApaColors.gray600,
+                fontSize: 15.sp,
+              ),
+            )
+          else
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final crossAxisCount = R.isTabletLandscape(context) ? 3 : 2;
+                final rowCount = (chips.length / crossAxisCount).ceil();
+                final mainSpacing = 12.h;
+                final cellHeight = 69.h;
+                final gridHeight =
+                    cellHeight * rowCount + mainSpacing * (rowCount - 1);
+
+                return SizedBox(
+                  height: gridHeight,
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: EdgeInsets.zero,
+                    itemCount: chips.length,
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      mainAxisExtent: cellHeight,
+                      mainAxisSpacing: mainSpacing,
+                      crossAxisSpacing: 12.w,
+                    ),
+                    itemBuilder: (context, index) {
+                      final price = chips[index];
+                      final selected = controller.selectedPrice.value?.id ==
+                              price.id &&
+                          controller.customAmountText.value.isEmpty;
+                      return _AmountChip(
+                        amount: price.amountDollars,
+                        selected: selected,
+                        onTap: () => controller.selectPrice(price),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+          if (customEnabled) ...[
+            SizedBox(height: 24.h),
+            Text(
+              'OTHER AMOUNT',
+              style: ApaFonts.inter(
+                color: ApaColors.gray700,
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+                height: 20 / 12,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Container(
+              height: 77.h,
+              decoration: BoxDecoration(
+                color: ApaColors.white,
+                borderRadius: BorderRadius.circular(12.r),
+                border: Border.all(color: ApaColors.gray200),
+              ),
+              child: Row(
+                children: [
+                  Padding(
+                    padding: EdgeInsets.only(left: 24.w),
+                    child: Text(
+                      '\$',
+                      style: ApaFonts.inter(
+                        color: ApaColors.nearBlack,
+                        fontSize: 24.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: controller.customAmountController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
+                      style: ApaFonts.inter(
+                        color: ApaColors.nearBlack,
+                        fontSize: 20.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Enter an amount',
+                        hintStyle: ApaFonts.inter(
+                          color: ApaColors.gray400,
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 12.w,
+                          vertical: 24.h,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else if (controller.monthly.value) ...[
+            SizedBox(height: 16.h),
+            Text(
+              'Monthly gifts use the listed Stripe prices.',
+              style: ApaFonts.inter(
+                color: ApaColors.gray500,
+                fontSize: 13.sp,
+                height: 18 / 13,
+              ),
+            ),
+          ],
+          SizedBox(height: 24.h),
+          ApaBlackPillButton(
+            label: 'CONTINUE TO PAYMENT',
+            expanded: true,
+            fontSize: 16,
+            verticalPadding: 20,
+            horizontalPadding: 24,
+            onPressed: () {
+              final error = controller.validateCurrentSelection();
+              if (error != null) {
+                _showSnackBar(context, message: error, isError: true);
+                return;
+              }
+              onContinuePressed?.call();
+              _showCompleteDonationDialog(context, controller);
+            },
+          ),
+          SizedBox(height: 20.h),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
+            child: Text(
+              'Gifts are processed securely with Stripe. You will receive a '
+              'receipt and project updates by email.',
+              textAlign: TextAlign.center,
+              style: ApaFonts.inter(
+                color: ApaColors.gray500,
+                fontSize: 13.sp,
+                height: 18 / 13,
+              ),
+            ),
+          ),
+          SizedBox(height: 40.h),
+        ],
+      );
+    });
+  }
+
   Future<void> _showCompleteDonationDialog(
-    BuildContext context, {
-    required int amount,
-    required String cadence,
-  }) async {
+    BuildContext context,
+    DonationController controller,
+  ) async {
     final frequencyLabel =
-        cadence == 'MONTHLY' ? 'Monthly' : 'One-time';
+        controller.monthly.value ? 'Monthly' : 'One-time';
 
     await showDialog<void>(
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) {
         return _CompleteDonationDialog(
-          amount: amount,
+          amount: controller.displayAmountDollars,
           frequencyLabel: frequencyLabel,
+          controller: controller,
+          onFinished: (message, {required isError}) {
+            if (!context.mounted) return;
+            _showSnackBar(context, message: message, isError: isError);
+          },
         );
       },
+    );
+  }
+
+  void _showSnackBar(
+    BuildContext context, {
+    required String message,
+    required bool isError,
+  }) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: isError ? ApaColors.primaryRed : ApaColors.black,
+        content: Text(
+          message,
+          style: ApaFonts.inter(
+            color: ApaColors.white,
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -451,10 +534,14 @@ class _CompleteDonationDialog extends StatefulWidget {
   const _CompleteDonationDialog({
     required this.amount,
     required this.frequencyLabel,
+    required this.controller,
+    required this.onFinished,
   });
 
   final int amount;
   final String frequencyLabel;
+  final DonationController controller;
+  final void Function(String message, {required bool isError}) onFinished;
 
   @override
   State<_CompleteDonationDialog> createState() =>
@@ -464,12 +551,69 @@ class _CompleteDonationDialog extends StatefulWidget {
 class _CompleteDonationDialogState extends State<_CompleteDonationDialog> {
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
+  String? _localError;
+  bool _submitting = false;
 
   @override
   void dispose() {
     _nameController.dispose();
     _emailController.dispose();
     super.dispose();
+  }
+
+  Future<void> _proceed() async {
+    final validation = widget.controller.validateDonor(
+      name: _nameController.text,
+      email: _emailController.text,
+    );
+    if (validation != null) {
+      setState(() => _localError = validation);
+      return;
+    }
+
+    setState(() {
+      _localError = null;
+      _submitting = true;
+    });
+
+    final created = await widget.controller.createCheckoutSession(
+      name: _nameController.text,
+      email: _emailController.text,
+    );
+
+    if (!mounted) return;
+
+    if (created.session == null) {
+      setState(() {
+        _submitting = false;
+        _localError = created.message ?? 'Unable to start checkout.';
+      });
+      return;
+    }
+
+    final name = _nameController.text;
+    final email = _emailController.text;
+    Navigator.of(context).pop();
+
+    final result = await widget.controller.presentCheckout(
+      created.session!,
+      name: name,
+      email: email,
+    );
+
+    if (result.canceled) return;
+    if (!result.success) {
+      widget.onFinished(
+        result.message ?? 'Payment could not be completed.',
+        isError: true,
+      );
+      return;
+    }
+
+    widget.onFinished(
+      'Thank you. Your ${widget.frequencyLabel.toLowerCase()} gift of \$${widget.amount} was submitted.',
+      isError: false,
+    );
   }
 
   @override
@@ -676,13 +820,26 @@ class _CompleteDonationDialogState extends State<_CompleteDonationDialog> {
                     ),
 
                   SizedBox(height: R.ch(22, context)),
+                  if (_localError != null) ...[
+                    Text(
+                      _localError!,
+                      style: ApaFonts.inter(
+                        color: ApaColors.primaryRed,
+                        fontSize: summarySize,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: R.ch(12, context)),
+                  ],
                   ApaBlackPillButton(
-                    label: 'PROCEED TO SECURE PAYMENT',
+                    label: _submitting
+                        ? 'PROCESSING…'
+                        : 'PROCEED TO SECURE PAYMENT',
                     expanded: true,
                     fontSize: R.pick(context, s: 16.0, m: 18.0, l: 20.0),
                     verticalPadding: R.pick(context, s: 18.0, m: 20.0, l: 22.0),
                     horizontalPadding: R.pick(context, s: 16.0, m: 22.0, l: 28.0),
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: _submitting ? null : _proceed,
                   ),
                 ],
               ),
