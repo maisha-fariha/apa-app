@@ -182,15 +182,7 @@ class TransparencyPage extends StatelessWidget {
             SizedBox(height: 32.h),
           ],
           if (content.hasLedger) ...[
-            const _LedgerHeader(),
-            for (final item in content.ledgerItems)
-              _LedgerRow(
-                project: item.project,
-                community: item.community,
-                status: item.status,
-                committed: item.committed,
-                statusHighlighted: item.highlightStatus,
-              ),
+            _LedgerTable(items: content.ledgerItems),
             SizedBox(height: 48.h),
           ],
           if (content.hasCommitments) ...[
@@ -388,138 +380,189 @@ class _CommitmentBlock extends StatelessWidget {
   }
 }
 
-class _LedgerHeader extends StatelessWidget {
-  const _LedgerHeader();
+class _LedgerTable extends StatelessWidget {
+  const _LedgerTable({required this.items});
+
+  final List<TransparencyLedgerItem> items;
+
+  /// Comfortable width where 11/12sp table text fits without shrinking.
+  static const double _comfortableWidth = 560;
 
   @override
   Widget build(BuildContext context) {
-    final style = ApaFonts.inter(
-      color: ApaColors.gray500,
-      fontSize: 11.sp,
-      fontWeight: FontWeight.w700,
-      letterSpacing: 0.6,
-    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final scale = (constraints.maxWidth / _comfortableWidth).clamp(0.72, 1.0);
+        final gap = 8.0 * scale;
 
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(flex: 3, child: Text('PROJECT', style: style)),
-            Expanded(flex: 2, child: Text('COMMUNITY', style: style)),
-            Expanded(flex: 2, child: Text('STATUS', style: style)),
-            Expanded(
-              flex: 2,
+        final headerStyle = ApaFonts.inter(
+          color: ApaColors.gray500,
+          fontSize: 11.sp * scale,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.25 * scale,
+        );
+        final projectStyle = ApaFonts.inter(
+          color: ApaColors.nearBlack,
+          fontSize: 12.sp * scale,
+          fontWeight: FontWeight.w600,
+          height: 16 / 12,
+        );
+        final communityStyle = ApaFonts.inter(
+          color: ApaColors.gray800,
+          fontSize: 12.sp * scale,
+          fontWeight: FontWeight.w600,
+        );
+        final committedStyle = ApaFonts.inter(
+          color: ApaColors.nearBlack,
+          fontSize: 12.sp * scale,
+          fontWeight: FontWeight.w700,
+        );
+
+        Widget fitCell(
+          String text,
+          TextStyle style, {
+          TextAlign align = TextAlign.left,
+          EdgeInsetsGeometry? padding,
+        }) {
+          final alignment = align == TextAlign.right
+              ? Alignment.centerRight
+              : Alignment.centerLeft;
+          return Padding(
+            padding: padding ?? EdgeInsets.fromLTRB(0, 14.h, gap, 14.h),
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: alignment,
               child: Text(
-                'COMMITTED',
+                text,
                 style: style,
-                textAlign: TextAlign.right,
+                maxLines: 1,
+                softWrap: false,
+                textAlign: align,
               ),
             ),
+          );
+        }
+
+        return Table(
+          columnWidths: const {
+            0: FlexColumnWidth(2.8),
+            1: FlexColumnWidth(1.7),
+            2: FlexColumnWidth(2.3),
+            3: FlexColumnWidth(1.6),
+          },
+          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+          children: [
+            TableRow(
+              decoration: const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: ApaColors.black, width: 2),
+                ),
+              ),
+              children: [
+                fitCell(
+                  'PROJECT',
+                  headerStyle,
+                  padding: EdgeInsets.fromLTRB(0, 0, gap, 12.h),
+                ),
+                fitCell(
+                  'COMMUNITY',
+                  headerStyle,
+                  padding: EdgeInsets.fromLTRB(0, 0, gap, 12.h),
+                ),
+                fitCell(
+                  'STATUS',
+                  headerStyle,
+                  padding: EdgeInsets.fromLTRB(0, 0, gap, 12.h),
+                ),
+                fitCell(
+                  'COMMITTED',
+                  headerStyle,
+                  align: TextAlign.right,
+                  padding: EdgeInsets.fromLTRB(0, 0, 0, 12.h),
+                ),
+              ],
+            ),
+            for (final item in items)
+              TableRow(
+                decoration: const BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: ApaColors.gray200),
+                  ),
+                ),
+                children: [
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(0, 14.h, gap, 14.h),
+                    child: Text(
+                      item.project,
+                      style: projectStyle,
+                      softWrap: true,
+                    ),
+                  ),
+                  fitCell(item.community, communityStyle),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(0, 10.h, gap, 10.h),
+                    child: item.status.isEmpty
+                        ? const SizedBox.shrink()
+                        : FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerLeft,
+                            child: _StatusBadge(
+                              status: item.status,
+                              highlighted: item.highlightStatus,
+                              fontSize: 10.sp * scale,
+                              horizontalPadding: 8 * scale,
+                            ),
+                          ),
+                  ),
+                  fitCell(
+                    item.committed,
+                    committedStyle,
+                    align: TextAlign.right,
+                    padding: EdgeInsets.fromLTRB(0, 14.h, 0, 14.h),
+                  ),
+                ],
+              ),
           ],
-        ),
-        SizedBox(height: 12.h),
-        const ColoredBox(
-          color: ApaColors.black,
-          child: SizedBox(height: 2, width: double.infinity),
-        ),
-      ],
+        );
+      },
     );
   }
 }
 
-class _LedgerRow extends StatelessWidget {
-  const _LedgerRow({
-    required this.project,
-    required this.community,
+class _StatusBadge extends StatelessWidget {
+  const _StatusBadge({
     required this.status,
-    required this.committed,
-    this.statusHighlighted = false,
+    required this.highlighted,
+    required this.fontSize,
+    required this.horizontalPadding,
   });
 
-  final String project;
-  final String community;
   final String status;
-  final String committed;
-  final bool statusHighlighted;
+  final bool highlighted;
+  final double fontSize;
+  final double horizontalPadding;
 
   @override
   Widget build(BuildContext context) {
-    final statusBackground =
-        statusHighlighted ? ApaColors.navy : ApaColors.gray100;
-    final statusTextColor =
-        statusHighlighted ? ApaColors.white : ApaColors.nearBlack;
-
     return Container(
-      padding: EdgeInsets.symmetric(vertical: 14.h),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: ApaColors.gray200)),
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: 4.h,
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            flex: 3,
-            child: Text(
-              project,
-              style: ApaFonts.inter(
-                color: ApaColors.nearBlack,
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w600,
-                height: 16 / 12,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              community,
-              style: ApaFonts.inter(
-                color: ApaColors.gray800,
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: status.isEmpty
-                  ? const SizedBox.shrink()
-                  : Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 8.w,
-                        vertical: 4.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusBackground,
-                        borderRadius: BorderRadius.circular(9999),
-                      ),
-                      child: Text(
-                        status,
-                        style: ApaFonts.inter(
-                          color: statusTextColor,
-                          fontSize: 10.sp,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.4,
-                        ),
-                      ),
-                    ),
-            ),
-          ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              committed,
-              textAlign: TextAlign.right,
-              style: ApaFonts.inter(
-                color: ApaColors.nearBlack,
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ],
+      decoration: BoxDecoration(
+        color: highlighted ? ApaColors.navy : ApaColors.gray100,
+        borderRadius: BorderRadius.circular(9999),
+      ),
+      child: Text(
+        status,
+        maxLines: 1,
+        softWrap: false,
+        style: ApaFonts.inter(
+          color: highlighted ? ApaColors.white : ApaColors.nearBlack,
+          fontSize: fontSize,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.2,
+        ),
       ),
     );
   }
