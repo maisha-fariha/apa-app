@@ -171,6 +171,7 @@ class ApaBlackPillButton extends StatelessWidget {
     required this.label,
     this.onPressed,
     this.expanded = false,
+    this.isLoading = false,
     this.fontSize = 20,
     this.horizontalPadding = 48,
     this.verticalPadding = 16,
@@ -179,34 +180,50 @@ class ApaBlackPillButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
   final bool expanded;
+  final bool isLoading;
   final double fontSize;
   final double horizontalPadding;
   final double verticalPadding;
 
   @override
   Widget build(BuildContext context) {
+    final enabled = onPressed != null && !isLoading;
     final child = Material(
-      color: ApaColors.black,
+      color: enabled ? ApaColors.black : ApaColors.gray800,
       borderRadius: BorderRadius.circular(9999),
       child: InkWell(
-        onTap: onPressed,
+        onTap: enabled ? onPressed : null,
         borderRadius: BorderRadius.circular(9999),
         child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: horizontalPadding.w,
             vertical: verticalPadding.h,
           ),
-          child: Text(
-            label.toUpperCase(),
-            textAlign: TextAlign.center,
-            style: ApaFonts.inter(
-              color: ApaColors.white,
-              fontSize: fontSize.sp,
-              fontWeight: FontWeight.w700,
-              letterSpacing: fontSize * 0.025,
-              height: 1.4,
-            ),
-          ),
+          child: isLoading
+              ? SizedBox(
+                  height: fontSize.sp * 1.4,
+                  child: Center(
+                    child: SizedBox(
+                      width: 18.w,
+                      height: 18.w,
+                      child: const CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: ApaColors.white,
+                      ),
+                    ),
+                  ),
+                )
+              : Text(
+                  label.toUpperCase(),
+                  textAlign: TextAlign.center,
+                  style: ApaFonts.inter(
+                    color: ApaColors.white,
+                    fontSize: fontSize.sp,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: fontSize * 0.025,
+                    height: 1.4,
+                  ),
+                ),
         ),
       ),
     );

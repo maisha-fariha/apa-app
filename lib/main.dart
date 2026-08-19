@@ -6,6 +6,7 @@ import 'core/network/apa_api_config.dart';
 import 'core/theme/apa_fonts.dart';
 import 'core/theme/apa_theme.dart';
 import 'core/utils/responsive.dart';
+import 'features/contact/presentation/controllers/contact_controller.dart';
 import 'features/shell/presentation/controllers/pages_controller.dart';
 import 'features/shell/presentation/pages/apa_shell.dart';
 import 'services/app_services.dart';
@@ -27,6 +28,7 @@ Future<void> main() async {
   );
 
   Get.put(AppServices.getIt<PagesController>(), permanent: true);
+  Get.put(AppServices.getIt<ContactController>(), permanent: true);
 
   runApp(const ApaApp());
 }

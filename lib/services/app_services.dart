@@ -3,8 +3,11 @@ import 'package:gems_data_layer/gems_data_layer.dart';
 import 'package:get_it/get_it.dart';
 
 import '../core/network/apa_api_config.dart';
+import '../data/repositories/contact_repository.dart';
 import '../data/repositories/posts_repository.dart';
+import '../di/contact/contact_di.dart';
 import '../di/pages/pages_di.dart';
+import '../features/contact/presentation/controllers/contact_controller.dart';
 import '../features/shell/presentation/controllers/pages_controller.dart';
 
 /// App services using get_it, matching the flutter_gems initialization flow.
@@ -36,9 +39,12 @@ class AppServices {
 
     await setupDataLayerServices(apiConfig: apiConfig);
     await setupPagesDomainServices();
+    await setupContactDomainServices();
   }
 
   ApiService get apiService => getIt<ApiService>();
   PostsRepository get postsRepository => getIt<PostsRepository>();
   PagesController get pagesController => getIt<PagesController>();
+  ContactRepository get contactRepository => getIt<ContactRepository>();
+  ContactController get contactController => getIt<ContactController>();
 }

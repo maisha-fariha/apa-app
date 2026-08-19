@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:gems_core/gems_core.dart';
+import 'package:get/get.dart';
 
 import '../../../../core/constants/apa_assets.dart';
 import '../../../../core/constants/apa_shell_insets.dart';
@@ -8,9 +10,11 @@ import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../core/widgets/apa_shared_widgets.dart';
+import '../controllers/contact_controller.dart';
+import '../widgets/contact_dynamic_form.dart';
 
 /// Contact Us Page — Figma frame `17:1286`.
-class ContactPage extends StatefulWidget {
+class ContactPage extends StatelessWidget {
   const ContactPage({
     super.key,
     this.scrollController,
@@ -22,48 +26,28 @@ class ContactPage extends StatefulWidget {
   final VoidCallback? onSendPressed;
   final String? imageUrl;
 
-  @override
-  State<ContactPage> createState() => _ContactPageState();
-}
-
-class _ContactPageState extends State<ContactPage> {
-  static const List<String> _subjects = [
-    'Partnering on a project',
-    'Making a donation',
-    'Volunteering',
-    'Press or media',
-    'Something else',
-  ];
-
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _messageController = TextEditingController();
-  String _subject = _subjects.first;
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _messageController.dispose();
-    super.dispose();
+  ContactController? get _controller {
+    if (!Get.isRegistered<ContactController>()) return null;
+    return Get.find<ContactController>();
   }
 
   @override
   Widget build(BuildContext context) {
     final navBottomPad = ApaShellInsets.contentBottom(context);
+    final controller = _controller;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: ColoredBox(
         color: ApaColors.white,
         child: CustomScrollView(
-          controller: widget.scrollController,
+          controller: scrollController,
           physics: const BouncingScrollPhysics(),
           slivers: [
             SliverToBoxAdapter(
               child: ApaHeroHeader(
                 imageAsset: ApaAssets.contactHero,
-                imageUrl: widget.imageUrl,
+                imageUrl: imageUrl,
                 height: 500,
                 badge: 'JOIN OUR MISSION',
                 headline: [
@@ -106,7 +90,9 @@ class _ContactPageState extends State<ContactPage> {
                       ? Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(child: _buildForm(context)),
+                            Expanded(
+                              child: _buildFormColumn(context, controller),
+                            ),
                             SizedBox(width: 48.w),
                             Expanded(child: _buildReachUs(context)),
                           ],
@@ -114,7 +100,7 @@ class _ContactPageState extends State<ContactPage> {
                       : Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            _buildForm(context),
+                            _buildFormColumn(context, controller),
                             SizedBox(height: 24.h),
                             _buildReachUs(context),
                           ],
@@ -128,44 +114,80 @@ class _ContactPageState extends State<ContactPage> {
     );
   }
 
-  Widget _buildForm(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _FieldLabel('Name', required: true),
-        _ApaTextField(controller: _nameController),
-        SizedBox(height: 20.h),
-        const _FieldLabel('Email Address'),
-        _ApaTextField(
-          controller: _emailController,
-          keyboardType: TextInputType.emailAddress,
+  Widget _buildFormColumn(
+    BuildContext context,
+    ContactController? controller,
+  ) {
+    if (controller == null) {
+      return const ContactFormMessage(
+        text: 'The contact form is currently unavailable.',
+      );
+    }
+
+    return Obx(() {
+      controller.formEpoch.value;
+      controller.items.length;
+      final loading = controller.isLoading.value;
+      final submitting = controller.isSubmitting.value;
+      final error = controller.errorMessage.value;
+
+      if (loading && controller.items.isEmpty) {
+        return const ContactFormLoading();
+      }
+
+      if (error.isNotEmpty && controller.items.isEmpty) {
+        return ContactFormError(
+          message: error,
+          onRetry: () => controller.loadForm(force: true),
+        );
+      }
+
+      return ContactDynamicForm(
+        controller: controller,
+        isSubmitting: submitting,
+        onSubmit: () => _submit(context, controller),
+      );
+    });
+  }
+
+  Future<void> _submit(
+    BuildContext context,
+    ContactController controller,
+  ) async {
+    final result = await controller.submit();
+    if (!context.mounted) return;
+
+    result.when(
+      success: (message) {
+        onSendPressed?.call();
+        _showSnackBar(context, message: message, isError: false);
+      },
+      failure: (error) {
+        if (error is ValidationError) return;
+        _showSnackBar(context, message: error.message, isError: true);
+      },
+    );
+  }
+
+  void _showSnackBar(
+    BuildContext context, {
+    required String message,
+    required bool isError,
+  }) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: isError ? ApaColors.primaryRed : ApaColors.black,
+        content: Text(
+          message,
+          style: ApaFonts.inter(
+            color: ApaColors.white,
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w600,
+          ),
         ),
-        SizedBox(height: 20.h),
-        const _FieldLabel("I'm reaching out about"),
-        _SubjectDropdown(
-          value: _subject,
-          options: _subjects,
-          onChanged: (v) {
-            if (v != null) setState(() => _subject = v);
-          },
-        ),
-        SizedBox(height: 20.h),
-        const _FieldLabel('Message'),
-        _ApaTextField(
-          controller: _messageController,
-          maxLines: 6,
-          minHeight: 180,
-        ),
-        SizedBox(height: 24.h),
-        ApaBlackPillButton(
-          label: 'SEND MESSAGE',
-          expanded: true,
-          fontSize: 15,
-          verticalPadding: 14,
-          horizontalPadding: 24,
-          onPressed: widget.onSendPressed,
-        ),
-      ],
+      ),
     );
   }
 
@@ -227,190 +249,6 @@ class _ContactPageState extends State<ContactPage> {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _FieldLabel extends StatelessWidget {
-  const _FieldLabel(this.text, {this.required = false});
-
-  final String text;
-  final bool required;
-
-  @override
-  Widget build(BuildContext context) {
-    final labelStyle = ApaFonts.inter(
-      color: ApaColors.gray700,
-      fontSize: 13.sp,
-      fontWeight: FontWeight.w700,
-      height: 20 / 13,
-    );
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: 6.h),
-      child: Text.rich(
-        TextSpan(
-          style: labelStyle,
-          children: [
-            TextSpan(text: text),
-            if (required)
-              TextSpan(
-                text: ' *',
-                style: labelStyle.copyWith(color: ApaColors.primaryRed),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ApaTextField extends StatelessWidget {
-  const _ApaTextField({
-    required this.controller,
-    this.keyboardType,
-    this.maxLines = 1,
-    this.minHeight = 48,
-  });
-
-  final TextEditingController controller;
-  final TextInputType? keyboardType;
-  final int maxLines;
-  final double minHeight;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      constraints: BoxConstraints(minHeight: minHeight.h),
-      decoration: BoxDecoration(
-        color: ApaColors.white,
-        borderRadius: BorderRadius.circular(10.r),
-        border: Border.all(color: ApaColors.black),
-      ),
-      child: TextField(
-        controller: controller,
-        keyboardType: keyboardType,
-        maxLines: maxLines,
-        style: ApaFonts.inter(
-          color: ApaColors.nearBlack,
-          fontSize: 15.sp,
-        ),
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          contentPadding: EdgeInsets.symmetric(
-            horizontal: 16.w,
-            vertical: 14.h,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SubjectDropdown extends StatelessWidget {
-  const _SubjectDropdown({
-    required this.value,
-    required this.options,
-    required this.onChanged,
-  });
-
-  final String value;
-  final List<String> options;
-  final ValueChanged<String?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 48.h,
-      padding: EdgeInsets.symmetric(horizontal: 16.w),
-      decoration: BoxDecoration(
-        color: ApaColors.white,
-        borderRadius: BorderRadius.circular(10.r),
-        border: Border.all(color: ApaColors.black),
-      ),
-      child: Theme(
-        data: Theme.of(context).copyWith(
-          highlightColor: ApaColors.primaryRed,
-          focusColor: ApaColors.primaryRed,
-          hoverColor: ApaColors.primaryRed,
-          splashColor: ApaColors.primaryRed.withValues(alpha: 0.24),
-        ),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<String>(
-            value: value,
-            isExpanded: true,
-            // Intrinsic item height — avoids clipping when .sp/.h scale up.
-            itemHeight: null,
-            dropdownColor: ApaColors.black,
-            icon: Icon(
-              Icons.keyboard_arrow_down,
-              size: 20.sp,
-              color: ApaColors.nearBlack,
-            ),
-            style: ApaFonts.inter(
-              color: ApaColors.nearBlack,
-              fontSize: 15.sp,
-              fontWeight: FontWeight.w500,
-              height: 1.3,
-            ),
-            selectedItemBuilder: (context) => options
-                .map(
-                  (o) => Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(
-                      o,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: ApaFonts.inter(
-                        color: ApaColors.nearBlack,
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w500,
-                        height: 1.3,
-                      ),
-                    ),
-                  ),
-                )
-                .toList(),
-            items: options
-                .map(
-                  (o) {
-                    final selected = o == value;
-                    return DropdownMenuItem<String>(
-                      value: o,
-                      child: Container(
-                        width: double.infinity,
-                        alignment: Alignment.centerLeft,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 12.w,
-                          vertical: 14.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: selected
-                              ? ApaColors.primaryRed
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(4.r),
-                        ),
-                        child: Text(
-                          o,
-                          maxLines: 1,
-                          softWrap: false,
-                          overflow: TextOverflow.ellipsis,
-                          style: ApaFonts.inter(
-                            color: ApaColors.white,
-                            fontSize: 15.sp,
-                            fontWeight: FontWeight.w500,
-                            height: 1.3,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                )
-                .toList(),
-            onChanged: onChanged,
-          ),
-        ),
-      ),
     );
   }
 }
