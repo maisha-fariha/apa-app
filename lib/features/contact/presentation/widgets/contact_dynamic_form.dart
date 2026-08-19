@@ -31,6 +31,10 @@ class ContactDynamicForm extends StatelessWidget {
         for (var i = 0; i < fields.length; i++) ...[
           if (i > 0) SizedBox(height: 20.h),
           _ContactFormField(
+            key: ValueKey(
+              '${fields[i].id}-${fields[i].type}-${fields[i].label}-'
+              '${fields[i].options.length}',
+            ),
             field: fields[i],
             controller: controller,
             enabled: !isSubmitting,
@@ -127,6 +131,7 @@ class ContactFormMessage extends StatelessWidget {
 
 class _ContactFormField extends StatelessWidget {
   const _ContactFormField({
+    super.key,
     required this.field,
     required this.controller,
     required this.enabled,

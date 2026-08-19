@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/utils/responsive.dart';
+import '../../../contact/presentation/controllers/contact_controller.dart';
 import '../../../contact/presentation/pages/contact_page.dart';
 import '../../../donation/presentation/pages/donation_page.dart';
 import '../../../home/presentation/pages/home_page.dart';
@@ -120,6 +121,14 @@ class _ApaShellState extends State<ApaShell> {
   void _go(ApaShellPage page) {
     setState(() => _page = page);
     _scrollToTop(page);
+    if (page == ApaShellPage.contact) {
+      _reloadContactForm();
+    }
+  }
+
+  void _reloadContactForm() {
+    if (!Get.isRegistered<ContactController>()) return;
+    Get.find<ContactController>().loadForm(force: true);
   }
 
   void _openByTemplate(String template, ApaShellPage fallback) {

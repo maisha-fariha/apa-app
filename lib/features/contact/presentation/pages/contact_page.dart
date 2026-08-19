@@ -40,10 +40,18 @@ class ContactPage extends StatelessWidget {
       value: SystemUiOverlayStyle.light,
       child: ColoredBox(
         color: ApaColors.white,
-        child: CustomScrollView(
-          controller: scrollController,
-          physics: const BouncingScrollPhysics(),
-          slivers: [
+        child: RefreshIndicator(
+          color: ApaColors.primaryRed,
+          onRefresh: () async {
+            if (controller == null) return;
+            await controller.loadForm(force: true);
+          },
+          child: CustomScrollView(
+            controller: scrollController,
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            slivers: [
             SliverToBoxAdapter(
               child: ApaHeroHeader(
                 imageAsset: ApaAssets.contactHero,
@@ -109,6 +117,7 @@ class ContactPage extends StatelessWidget {
               ),
             ),
           ],
+          ),
         ),
       ),
     );
@@ -126,7 +135,7 @@ class ContactPage extends StatelessWidget {
 
     return Obx(() {
       controller.formEpoch.value;
-      controller.items.length;
+      controller.schemaSignature;
       final loading = controller.isLoading.value;
       final submitting = controller.isSubmitting.value;
       final error = controller.errorMessage.value;
@@ -144,7 +153,7 @@ class ContactPage extends StatelessWidget {
 
       return ContactDynamicForm(
         controller: controller,
-        isSubmitting: submitting,
+        isSubmitting: submitting || loading,
         onSubmit: () => _submit(context, controller),
       );
     });

@@ -13,6 +13,9 @@ class ContactRepository {
     try {
       final response = await apiService.get<GetContactFormResponse>(
         ApiEndpoints.getForm,
+        queryParameters: {
+          '_': DateTime.now().millisecondsSinceEpoch,
+        },
         fromJson: (data) {
           if (data is! Map) {
             throw const FormatException('Malformed get-form response');

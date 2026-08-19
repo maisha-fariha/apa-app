@@ -16,8 +16,16 @@ class ContactController extends BaseListController<ContactFormField> {
   final RxInt formEpoch = 0.obs;
   final RxMap<String, String> fieldErrors = <String, String>{}.obs;
   final RxMap<String, dynamic> values = <String, dynamic>{}.obs;
-
   final Map<String, TextEditingController> _textControllers = {};
+
+  String get schemaSignature => items
+      .map(
+        (field) =>
+            '${field.id}|${field.type}|${field.label}|${field.required}|'
+            '${field.placeholder}|${field.description}|'
+            '${field.options.map((option) => '${option.label}:${option.submitValue}:${option.isDefault}').join(',')}',
+      )
+      .join('~');
 
   @override
   void onInit() {
@@ -38,12 +46,16 @@ class ContactController extends BaseListController<ContactFormField> {
       final result = await repository.getForm();
       result.when(
         success: (fields) {
-          items
-            ..clear()
-            ..addAll(fields);
-          _resetValues(fields);
+          final previousSignature = schemaSignature;
+          items.assignAll(fields);
+          if (previousSignature != schemaSignature || values.isEmpty) {
+            _resetValues(fields);
+          } else {
+            _touch();
+          }
         },
         failure: (error) {
+          if (items.isNotEmpty) return;
           items.clear();
           _disposeTextControllers();
           values.clear();
@@ -138,19 +150,13 @@ class ContactController extends BaseListController<ContactFormField> {
   }
 
   void _resetValues(List<ContactFormField> fields) {
+    _disposeTextControllers();
     fieldErrors.clear();
     values.clear();
-    _syncTextControllers(fields);
     for (final field in fields) {
       values[field.id] = _defaultValue(field);
-      if (field.kind.usesTextInput) {
-        final controller = _textControllers[field.id];
-        final text = _asString(values[field.id]);
-        if (controller != null && controller.text != text) {
-          controller.text = text;
-        }
-      }
     }
+    _syncTextControllers(fields);
     _touch();
   }
 
