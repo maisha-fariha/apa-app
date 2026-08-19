@@ -217,6 +217,7 @@ class _ApaShellState extends State<ApaShell> {
           ),
           ProjectsPage(
             scrollController: _projectsScroll,
+            page: pagesController?.resolvedPageForShell(ApaShellPage.projects),
             onFundPressed: () => _openByTemplate(
               ApaPageTemplates.donation,
               ApaShellPage.donation,
