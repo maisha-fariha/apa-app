@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
 
 import '../../../../data/models/post/post_model.dart';
 import '../../../../data/models/post/post_item_extensions.dart';
@@ -11,6 +12,9 @@ import '../../../../core/theme/apa_fonts.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../core/utils/html_utils.dart';
 import '../../../../core/widgets/apa_shared_widgets.dart';
+import '../../../shell/presentation/controllers/pages_controller.dart';
+import '../../../shell/presentation/mapping/apa_page_templates.dart';
+import '../../../shell/presentation/models/apa_nav_item.dart';
 
 /// Projects Page — Figma frame `6:203`.
 class ProjectsPage extends StatelessWidget {
@@ -27,15 +31,58 @@ class ProjectsPage extends StatelessWidget {
   final VoidCallback? onFundPressed;
   final String? imageUrl;
 
+  PagesController? get _pagesController {
+    if (!Get.isRegistered<PagesController>()) return null;
+    return Get.find<PagesController>();
+  }
+
   @override
   Widget build(BuildContext context) {
     final navBottomPad = ApaShellInsets.contentBottom(context);
-    final commonHeader = page?.commonHeader ?? const <String, dynamic>{};
-    final relatedProjects = page?.relatedProjects ?? const <PostItem>[];
+    final pagesController = _pagesController;
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: ColoredBox(
+        color: ApaColors.white,
+        child: RefreshIndicator(
+          color: ApaColors.primaryRed,
+          onRefresh: () async {
+            await pagesController?.loadDetailsForTemplate(
+              ApaPageTemplates.projects,
+              force: true,
+            );
+          },
+          child: Obx(() {
+            pagesController?.items.length;
+            pagesController?.pageDetailsById.length;
+            final current =
+                pagesController?.resolvedPageForShell(ApaShellPage.projects) ??
+                    page;
+            return _buildScrollView(
+              context,
+              current,
+              navBottomPad,
+            );
+          }),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScrollView(
+    BuildContext context,
+    PostItem? current,
+    double navBottomPad,
+  ) {
+    final commonHeader = current?.commonHeader ?? const <String, dynamic>{};
+    final relatedProjects = current?.relatedProjects ?? const <PostItem>[];
 
     final badge = commonHeader['top_tag_line']?.toString() ?? '';
-    final headingOne = (commonHeader['heading_text_one']?.toString() ?? '').trim();
-    final headingTwo = (commonHeader['heading_text_two']?.toString() ?? '').trim();
+    final headingOne =
+        (commonHeader['heading_text_one']?.toString() ?? '').trim();
+    final headingTwo =
+        (commonHeader['heading_text_two']?.toString() ?? '').trim();
     final subtitle = commonHeader['last_content']?.toString();
 
     final headline = <InlineSpan>[];
@@ -69,105 +116,102 @@ class ProjectsPage extends StatelessWidget {
     }
 
     final sections = relatedProjects.take(3).toList(growable: false);
+    final heroImage = current?.featuredImageUrl ?? imageUrl;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
-      child: ColoredBox(
-        color: ApaColors.white,
-        child: CustomScrollView(
-          controller: scrollController,
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: ApaHeroHeader(
-                imageAsset: ApaAssets.projectsHero,
-                imageUrl: imageUrl,
-                height: 520,
-                overlayOpacity: 0.7,
-                logoWidth: 180,
-                logoHeight: 67.5,
-                badge: badge,
-                headline: headline,
-                subtitle: subtitle,
+    return CustomScrollView(
+      controller: scrollController,
+      physics: const AlwaysScrollableScrollPhysics(
+        parent: BouncingScrollPhysics(),
+      ),
+      slivers: [
+        SliverToBoxAdapter(
+          child: ApaHeroHeader(
+            imageAsset: ApaAssets.projectsHero,
+            imageUrl: heroImage,
+            useAssetFallback: false,
+            height: 520,
+            overlayOpacity: 0.7,
+            logoWidth: 180,
+            logoHeight: 67.5,
+            badge: badge,
+            headline: headline,
+            subtitle: subtitle,
+          ),
+        ),
+        SliverToBoxAdapter(
+          child: ApaPageWidth(
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                R.isTabletLandscape(context) ? 48 : 24.w,
+                48.h,
+                R.isTabletLandscape(context) ? 48 : 24.w,
+                navBottomPad,
               ),
-            ),
-            SliverToBoxAdapter(
-              child: ApaPageWidth(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    R.isTabletLandscape(context) ? 48 : 24.w,
-                    48.h,
-                    R.isTabletLandscape(context) ? 48 : 24.w,
-                    navBottomPad,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (R.isTabletLandscape(context) && sections.length >= 3)
-                        Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (R.isTabletLandscape(context) && sections.length >= 3)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: _ProjectSection(
+                            label: sections[0].projectTypeLabel ?? '',
+                            title: sections[0].title,
+                            body: sections[0].tagLine ?? '',
+                            bullets: sections[0].contentBullets,
+                          ),
+                        ),
+                        SizedBox(width: 28),
+                        Expanded(
+                          child: _ProjectSection(
+                            label: sections[1].projectTypeLabel ?? '',
+                            title: sections[1].title,
+                            body: sections[1].tagLine ?? '',
+                            bullets: sections[1].contentBullets,
+                          ),
+                        ),
+                        SizedBox(width: 28),
+                        Expanded(
+                          child: _ProjectSection(
+                            label: sections[2].projectTypeLabel ?? '',
+                            title: sections[2].title,
+                            body: sections[2].tagLine ?? '',
+                            bullets: sections[2].contentBullets,
+                          ),
+                        ),
+                      ],
+                    )
+                  else ...sections.asMap().entries.map(
+                        (e) => Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Expanded(
-                              child: _ProjectSection(
-                                label: sections[0].projectTypeLabel ?? '',
-                                title: sections[0].title,
-                                body: sections[0].tagLine ?? '',
-                                bullets: sections[0].contentBullets,
-                              ),
+                            _ProjectSection(
+                              label: e.value.projectTypeLabel ?? '',
+                              title: e.value.title,
+                              body: e.value.tagLine ?? '',
+                              bullets: e.value.contentBullets,
                             ),
-                            SizedBox(width: 28),
-                            Expanded(
-                              child: _ProjectSection(
-                                label: sections[1].projectTypeLabel ?? '',
-                                title: sections[1].title,
-                                body: sections[1].tagLine ?? '',
-                                bullets: sections[1].contentBullets,
-                              ),
-                            ),
-                            SizedBox(width: 28),
-                            Expanded(
-                              child: _ProjectSection(
-                                label: sections[2].projectTypeLabel ?? '',
-                                title: sections[2].title,
-                                body: sections[2].tagLine ?? '',
-                                bullets: sections[2].contentBullets,
-                              ),
-                            ),
+                            if (e.key != sections.length - 1)
+                              const _BlackSeparator(),
                           ],
-                        )
-                      else ...sections
-                          .asMap()
-                          .entries
-                          .map((e) => Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  _ProjectSection(
-                                    label: e.value.projectTypeLabel ?? '',
-                                    title: e.value.title,
-                                    body: e.value.tagLine ?? '',
-                                    bullets: e.value.contentBullets,
-                                  ),
-                                  if (e.key != sections.length - 1)
-                                    const _BlackSeparator(),
-                                ],
-                              )),
-                      const _BlackSeparator(),
-                      _ProjectsFooterHtml(html: page?.footerHtml),
-                    SizedBox(height: 28.h),
-                    Center(
-                      child: ApaBlackPillButton(
-                        label: 'FUND A PROJECT',
-                        onPressed: onFundPressed,
+                        ),
                       ),
+                  const _BlackSeparator(),
+                  _ProjectsFooterHtml(html: current?.footerHtml),
+                  SizedBox(height: 28.h),
+                  Center(
+                    child: ApaBlackPillButton(
+                      label: 'FUND A PROJECT',
+                      onPressed: onFundPressed,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-            ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }

@@ -131,6 +131,16 @@ class _ApaShellState extends State<ApaShell> {
     if (page == ApaShellPage.transparency) {
       _reloadTransparency();
     }
+    if (page == ApaShellPage.projects) {
+      _reloadProjects();
+    }
+  }
+
+  void _reloadProjects() {
+    _pagesController?.loadDetailsForTemplate(
+      ApaPageTemplates.projects,
+      force: true,
+    );
   }
 
   void _reloadTransparency() {
