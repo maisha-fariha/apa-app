@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 
 import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/utils/responsive.dart';
+import '../../../../data/models/post/post_model.dart';
+import '../../../../data/models/post/post_item_extensions.dart';
 import '../../../contact/presentation/controllers/contact_controller.dart';
 import '../../../contact/presentation/pages/contact_page.dart';
 import '../../../donation/presentation/controllers/donation_controller.dart';
@@ -213,10 +215,19 @@ class _ApaShellState extends State<ApaShell> {
     );
   }
 
-  void _openArticle() {
+  void _openArticle(PostItem article) {
+    final newsPage = _pagesController?.resolvedPageForShell(ApaShellPage.news);
+    final otherPosts = newsPage?.nonFeaturedPosts
+            .where((p) => p.id != article.id)
+            .take(3)
+            .toList() ??
+        const [];
+
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (context) => ArticlePage(
+          article: article,
+          moreStories: otherPosts,
           onBackToNews: () {
             Navigator.of(context).pop();
             _scrollToTop(ApaShellPage.news);
@@ -274,6 +285,7 @@ class _ApaShellState extends State<ApaShell> {
           ),
           NewsPage(
             scrollController: _newsScroll,
+            page: pagesController?.resolvedPageForShell(ApaShellPage.news),
             onReadMore: _openArticle,
             imageUrl: _imageUrl(ApaShellPage.news),
           ),

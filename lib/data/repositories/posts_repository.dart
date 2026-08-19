@@ -193,6 +193,17 @@ class PostsRepository extends BaseRepository<PostItem> {
         if (map['success'] != true) {
           throw const FormatException('get-post-details was unsuccessful');
         }
+        // Preserve top-level `posts` inside `acf_fields` so extensions
+        // can access news articles without changing the Freezed model.
+        if (map.containsKey('posts') && map['posts'] is List) {
+          final acf = Map<String, dynamic>.from(
+            (map['acf_fields'] is Map)
+                ? map['acf_fields'] as Map
+                : <String, dynamic>{},
+          );
+          acf['posts'] = map['posts'];
+          map['acf_fields'] = acf;
+        }
         return PostItem.fromJson(map);
       },
     );
