@@ -17,6 +17,8 @@ class PostsRepository extends BaseRepository<PostItem> {
 
   static const _listCacheKey = 'get-all-posts_page';
 
+  static String _detailsCacheKey(int postId) => 'get-post-details_$postId';
+
   @override
   PostItem fromJson(Map<String, dynamic> json) => PostItem.fromJson(json);
 
@@ -123,6 +125,109 @@ class PostsRepository extends BaseRepository<PostItem> {
     await databaseService.save(
       _listCacheKey,
       jsonEncode(items.map((item) => item.toJson()).toList()),
+    );
+  }
+
+  /// Fetches a single page by WordPress post id (`get-post-details`).
+  Future<Result<PostItem>> getPostDetails(
+    int postId, {
+    bool useCache = true,
+  }) async {
+    if (postId <= 0) {
+      return Result.failure(
+        const ApiError(message: 'Invalid page id'),
+      );
+    }
+
+    try {
+      if (useCache) {
+        final cached = _readDetailsCache(postId);
+        if (cached != null) {
+          _refreshDetailsInBackground(postId);
+          return Result.success(cached);
+        }
+      }
+
+      final fetched = await _fetchPostDetails(postId);
+      if (fetched.isSuccess) {
+        final item = fetched.value!;
+        if (useCache) {
+          await _writeDetailsCache(postId, item);
+        }
+        return Result.success(item);
+      }
+
+      if (useCache) {
+        final cached = _readDetailsCache(postId);
+        if (cached != null) {
+          return Result.success(cached);
+        }
+      }
+
+      return fetched;
+    } catch (e, stackTrace) {
+      if (useCache) {
+        final cached = _readDetailsCache(postId);
+        if (cached != null) {
+          return Result.success(cached);
+        }
+      }
+      return Result.failure(NetworkError.fromException(e, stackTrace));
+    }
+  }
+
+  Future<Result<PostItem>> _fetchPostDetails(int postId) async {
+    final response = await apiService.get<PostItem>(
+      ApiEndpoints.getPostDetails,
+      queryParameters: {'post_id': postId},
+      fromJson: (data) {
+        if (data is! Map) {
+          throw const FormatException('Malformed get-post-details response');
+        }
+        final map = Map<String, dynamic>.from(data);
+        if (map['success'] != true) {
+          throw const FormatException('get-post-details was unsuccessful');
+        }
+        return PostItem.fromJson(map);
+      },
+    );
+
+    if (!response.success || response.data == null) {
+      return Result.failure(
+        ApiError(message: response.message ?? 'Failed to fetch page details'),
+      );
+    }
+
+    return Result.success(response.data!);
+  }
+
+  Future<void> _refreshDetailsInBackground(int postId) async {
+    try {
+      final fetched = await _fetchPostDetails(postId);
+      if (fetched.isSuccess && fetched.value != null) {
+        await _writeDetailsCache(postId, fetched.value!);
+      }
+    } catch (_) {
+      // Keep cached data if a background refresh fails.
+    }
+  }
+
+  PostItem? _readDetailsCache(int postId) {
+    final cachedJson = databaseService.get<String>(_detailsCacheKey(postId));
+    if (cachedJson == null) return null;
+    try {
+      return fromJson(
+        Map<String, dynamic>.from(jsonDecode(cachedJson) as Map),
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _writeDetailsCache(int postId, PostItem item) async {
+    await databaseService.save(
+      _detailsCacheKey(postId),
+      jsonEncode(item.toJson()),
     );
   }
 }

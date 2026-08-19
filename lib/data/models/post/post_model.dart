@@ -39,6 +39,8 @@ class PostItem with _$PostItem implements BaseModel {
     @JsonKey(name: 'acf_fields', fromJson: _acfFieldsFromJson)
     @Default({})
     Map<String, dynamic> acfFields,
+    @Default('') String content,
+    @Default('') String excerpt,
   }) = _PostItem;
 
   factory PostItem.fromJson(Map<String, dynamic> json) =>
