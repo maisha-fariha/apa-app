@@ -122,13 +122,18 @@ class _ApaShellState extends State<ApaShell> {
     setState(() => _page = page);
     _scrollToTop(page);
     if (page == ApaShellPage.contact) {
-      _reloadContactForm();
+      _reloadContact();
     }
   }
 
-  void _reloadContactForm() {
-    if (!Get.isRegistered<ContactController>()) return;
-    Get.find<ContactController>().loadForm(force: true);
+  void _reloadContact() {
+    if (Get.isRegistered<ContactController>()) {
+      Get.find<ContactController>().loadForm(force: true);
+    }
+    _pagesController?.loadDetailsForTemplate(
+      ApaPageTemplates.contact,
+      force: true,
+    );
   }
 
   void _openByTemplate(String template, ApaShellPage fallback) {
@@ -246,7 +251,6 @@ class _ApaShellState extends State<ApaShell> {
           ),
           ContactPage(
             scrollController: _contactScroll,
-            imageUrl: _imageUrl(ApaShellPage.contact),
           ),
         ],
       );

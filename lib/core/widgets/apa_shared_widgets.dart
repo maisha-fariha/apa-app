@@ -22,6 +22,7 @@ class ApaHeroHeader extends StatelessWidget {
     this.logoHeight = 67.5,
     this.alignLogoCenter = true,
     this.imageUrl,
+    this.useAssetFallback = true,
   });
 
   final String imageAsset;
@@ -35,6 +36,7 @@ class ApaHeroHeader extends StatelessWidget {
   final double logoWidth;
   final double logoHeight;
   final bool alignLogoCenter;
+  final bool useAssetFallback;
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +54,11 @@ class ApaHeroHeader extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          _HeroImage(asset: imageAsset, url: imageUrl),
+          _HeroImage(
+            asset: imageAsset,
+            url: imageUrl,
+            useAssetFallback: useAssetFallback,
+          ),
           ColoredBox(color: Colors.black.withValues(alpha: overlayOpacity)),
           SafeArea(
             bottom: false,
@@ -82,32 +88,34 @@ class ApaHeroHeader extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 13.w,
-                                vertical: 7.h,
-                              ),
-                              decoration: BoxDecoration(
-                                color: ApaColors.locationYellowFill,
-                                borderRadius: BorderRadius.circular(9999),
-                                border: Border.all(color: ApaColors.white20),
-                              ),
-                              child: Text(
-                                badge.toUpperCase(),
-                                style: ApaFonts.inter(
-                                  color: ApaColors.locationYellow,
-                                  fontSize: 12.sp,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.6.sp,
-                                  height: 16 / 12,
+                            if (badge.trim().isNotEmpty)
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 13.w,
+                                  vertical: 7.h,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: ApaColors.locationYellowFill,
+                                  borderRadius: BorderRadius.circular(9999),
+                                  border: Border.all(color: ApaColors.white20),
+                                ),
+                                child: Text(
+                                  badge.toUpperCase(),
+                                  style: ApaFonts.inter(
+                                    color: ApaColors.locationYellow,
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 0.6.sp,
+                                    height: 16 / 12,
+                                  ),
                                 ),
                               ),
-                            ),
-                            SizedBox(height: 16.h),
-                            Text.rich(
-                              TextSpan(children: headline),
-                            ),
-                            if (subtitle != null) ...[
+                            if (badge.trim().isNotEmpty) SizedBox(height: 16.h),
+                            if (headline.isNotEmpty)
+                              Text.rich(
+                                TextSpan(children: headline),
+                              ),
+                            if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
                               SizedBox(height: 16.h),
                               Text(
                                 subtitle!,
@@ -135,10 +143,15 @@ class ApaHeroHeader extends StatelessWidget {
 }
 
 class _HeroImage extends StatelessWidget {
-  const _HeroImage({required this.asset, this.url});
+  const _HeroImage({
+    required this.asset,
+    this.url,
+    this.useAssetFallback = true,
+  });
 
   final String asset;
   final String? url;
+  final bool useAssetFallback;
 
   @override
   Widget build(BuildContext context) {
@@ -148,19 +161,22 @@ class _HeroImage extends StatelessWidget {
         networkUrl,
         fit: BoxFit.cover,
         alignment: Alignment.center,
-        errorBuilder: (context, error, stackTrace) => Image.asset(
-          asset,
-          fit: BoxFit.cover,
-          alignment: Alignment.center,
-        ),
+        errorBuilder: (context, error, stackTrace) => _fallback(),
       );
     }
 
-    return Image.asset(
-      asset,
-      fit: BoxFit.cover,
-      alignment: Alignment.center,
-    );
+    return _fallback();
+  }
+
+  Widget _fallback() {
+    if (useAssetFallback) {
+      return Image.asset(
+        asset,
+        fit: BoxFit.cover,
+        alignment: Alignment.center,
+      );
+    }
+    return const ColoredBox(color: ApaColors.black);
   }
 }
 

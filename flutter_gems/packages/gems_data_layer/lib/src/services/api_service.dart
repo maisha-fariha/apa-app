@@ -68,6 +68,7 @@ class ApiService {
   Future<ApiResponse<T>> get<T>(
     String endpoint, {
     Map<String, dynamic>? queryParameters,
+    dynamic data,
     T Function(dynamic)? fromJson,
     Options? options,
   }) async {
@@ -75,6 +76,7 @@ class ApiService {
       final response = await _dio.get(
         endpoint,
         queryParameters: queryParameters,
+        data: data,
         options: options,
       );
 

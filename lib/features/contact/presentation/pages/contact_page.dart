@@ -10,6 +10,10 @@ import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../core/widgets/apa_shared_widgets.dart';
+import '../../../shell/presentation/controllers/pages_controller.dart';
+import '../../../shell/presentation/mapping/apa_page_templates.dart';
+import '../../../shell/presentation/models/apa_nav_item.dart';
+import '../../domain/contact_page_content.dart';
 import '../controllers/contact_controller.dart';
 import '../widgets/contact_dynamic_form.dart';
 
@@ -26,15 +30,21 @@ class ContactPage extends StatelessWidget {
   final VoidCallback? onSendPressed;
   final String? imageUrl;
 
-  ContactController? get _controller {
+  ContactController? get _formController {
     if (!Get.isRegistered<ContactController>()) return null;
     return Get.find<ContactController>();
+  }
+
+  PagesController? get _pagesController {
+    if (!Get.isRegistered<PagesController>()) return null;
+    return Get.find<PagesController>();
   }
 
   @override
   Widget build(BuildContext context) {
     final navBottomPad = ApaShellInsets.contentBottom(context);
-    final controller = _controller;
+    final formController = _formController;
+    final pagesController = _pagesController;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -43,8 +53,14 @@ class ContactPage extends StatelessWidget {
         child: RefreshIndicator(
           color: ApaColors.primaryRed,
           onRefresh: () async {
-            if (controller == null) return;
-            await controller.loadForm(force: true);
+            await Future.wait([
+              if (formController != null) formController.loadForm(force: true),
+              if (pagesController != null)
+                pagesController.loadDetailsForTemplate(
+                  ApaPageTemplates.contact,
+                  force: true,
+                ),
+            ]);
           },
           child: CustomScrollView(
             controller: scrollController,
@@ -52,75 +68,99 @@ class ContactPage extends StatelessWidget {
               parent: BouncingScrollPhysics(),
             ),
             slivers: [
-            SliverToBoxAdapter(
-              child: ApaHeroHeader(
-                imageAsset: ApaAssets.contactHero,
-                imageUrl: imageUrl,
-                height: 500,
-                badge: 'JOIN OUR MISSION',
-                headline: [
-                  TextSpan(
-                    text: 'PARTNER\n',
-                    style: ApaFonts.inter(
-                      color: ApaColors.white,
-                      fontSize: 40.sp,
-                      fontWeight: FontWeight.w800,
-                      height: 42 / 40,
-                      letterSpacing: -0.5,
+              SliverToBoxAdapter(child: _buildHero(pagesController)),
+              SliverToBoxAdapter(
+                child: ApaPageWidth(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      R.isTabletLandscape(context) ? 48 : 20.w,
+                      32.h,
+                      R.isTabletLandscape(context) ? 48 : 20.w,
+                      navBottomPad,
                     ),
+                    child: R.isTabletLandscape(context)
+                        ? Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: _buildFormColumn(context, formController),
+                              ),
+                              SizedBox(width: 48.w),
+                              Expanded(
+                                child: _buildReachUs(pagesController),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildFormColumn(context, formController),
+                              SizedBox(height: 24.h),
+                              _buildReachUs(pagesController),
+                            ],
+                          ),
                   ),
-                  TextSpan(
-                    text: 'WITH US.',
-                    style: ApaFonts.inter(
-                      color: ApaColors.primaryRed,
-                      fontSize: 40.sp,
-                      fontWeight: FontWeight.w800,
-                      height: 42 / 40,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                ],
-                subtitle:
-                    'Tell us how you want to help — projects, funding, '
-                    'diaspora partnerships, or simply staying in the loop.',
-              ),
-            ),
-            SliverToBoxAdapter(
-              child: ApaPageWidth(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    R.isTabletLandscape(context) ? 48 : 20.w,
-                    32.h,
-                    R.isTabletLandscape(context) ? 48 : 20.w,
-                    navBottomPad,
-                  ),
-                  child: R.isTabletLandscape(context)
-                      ? Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: _buildFormColumn(context, controller),
-                            ),
-                            SizedBox(width: 48.w),
-                            Expanded(child: _buildReachUs(context)),
-                          ],
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildFormColumn(context, controller),
-                            SizedBox(height: 24.h),
-                            _buildReachUs(context),
-                          ],
-                        ),
                 ),
               ),
-            ),
-          ],
+            ],
           ),
         ),
       ),
     );
+  }
+
+  Widget _buildHero(PagesController? pagesController) {
+    if (pagesController == null) return const SizedBox.shrink();
+
+    return Obx(() {
+      final content = _contactContent(pagesController);
+      if (content == null || !content.showHeader) {
+        return const SizedBox.shrink();
+      }
+
+      return ApaHeroHeader(
+        imageAsset: ApaAssets.contactHero,
+        imageUrl: content.imageUrl ?? imageUrl,
+        useAssetFallback: false,
+        height: 500,
+        badge: content.topTagLine,
+        headline: _headlineSpans(content),
+        subtitle:
+            content.lastContent.isEmpty ? null : content.lastContent,
+      );
+    });
+  }
+
+  List<InlineSpan> _headlineSpans(ContactPageContent content) {
+    final oneStyle = ApaFonts.inter(
+      color: ApaColors.white,
+      fontSize: 40.sp,
+      fontWeight: FontWeight.w800,
+      height: 42 / 40,
+      letterSpacing: -0.5,
+    );
+    final twoStyle = ApaFonts.inter(
+      color: ApaColors.primaryRed,
+      fontSize: 40.sp,
+      fontWeight: FontWeight.w800,
+      height: 42 / 40,
+      letterSpacing: -0.5,
+    );
+
+    final one = content.headingTextOne;
+    final two = content.headingTextTwo;
+    return [
+      if (one.isNotEmpty)
+        TextSpan(
+          text: two.isNotEmpty ? '${one.toUpperCase()}\n' : one.toUpperCase(),
+          style: oneStyle,
+        ),
+      if (two.isNotEmpty)
+        TextSpan(
+          text: two.toUpperCase(),
+          style: twoStyle,
+        ),
+    ];
   }
 
   Widget _buildFormColumn(
@@ -200,65 +240,78 @@ class ContactPage extends StatelessWidget {
     );
   }
 
-  Widget _buildReachUs(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'REACH US',
-          style: ApaFonts.inter(
-            color: ApaColors.black,
-            fontSize: 32.sp,
-            fontWeight: FontWeight.w800,
-            height: 40 / 32,
-          ),
-        ),
-        SizedBox(height: 24.h),
-        const _ContactRow(
-          label: 'Email',
-          value: 'bonjou@ansanmpouhaiti.org',
-        ),
-        const _ContactRow(
-          label: 'Phone',
-          value: '+509 00 00 0000',
-        ),
-        const _ContactRow(
-          label: 'Field office',
-          value: 'Les Cayes, Sud, Haiti',
-        ),
-        const _ContactRow(
-          label: 'Diaspora relations',
-          value: 'diaspora@ansanmpouhaiti.org',
-        ),
-        SizedBox(height: 32.h),
-        Text.rich(
-          TextSpan(
-            style: ApaFonts.inter(
-              color: ApaColors.nearBlack,
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w700,
-              height: 24 / 16,
-              letterSpacing: 0.4,
+  Widget _buildReachUs(PagesController? pagesController) {
+    if (pagesController == null) return const SizedBox.shrink();
+
+    return Obx(() {
+      final content = _contactContent(pagesController);
+      if (content == null || !content.hasReachUs) {
+        return const SizedBox.shrink();
+      }
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (content.infoRows.isNotEmpty) ...[
+            Text(
+              'REACH US',
+              style: ApaFonts.inter(
+                color: ApaColors.black,
+                fontSize: 32.sp,
+                fontWeight: FontWeight.w800,
+                height: 40 / 32,
+              ),
             ),
-            children: [
-              const TextSpan(
-                text:
-                    'TOGETHER, WE CAN BUILD SAFER ROADS, BRIGHTER '
-                    'COMMUNITIES, AND BETTER OPPORTUNITIES FOR ',
-              ),
+            SizedBox(height: 24.h),
+            for (final row in content.infoRows)
+              _ContactRow(label: row.label, value: row.value),
+          ],
+          if (content.hasClosingText) ...[
+            SizedBox(height: content.infoRows.isEmpty ? 0 : 32.h),
+            Text.rich(
               TextSpan(
-                text: 'FUTURE GENERATIONS',
                 style: ApaFonts.inter(
-                  color: ApaColors.primaryRed,
+                  color: ApaColors.nearBlack,
                   fontSize: 16.sp,
+                  fontWeight: FontWeight.w700,
+                  height: 24 / 16,
+                  letterSpacing: 0.4,
                 ),
+                children: [
+                  if (content.finalTextStart.isNotEmpty)
+                    TextSpan(
+                      text: content.finalTextEnd.isEmpty
+                          ? content.finalTextStart
+                          : '${content.finalTextStart} ',
+                    ),
+                  if (content.finalTextEnd.isNotEmpty)
+                    TextSpan(
+                      text: content.finalTextEnd,
+                      style: ApaFonts.inter(
+                        color: ApaColors.primaryRed,
+                        fontSize: 16.sp,
+                      ),
+                    ),
+                ],
               ),
-              const TextSpan(text: '.'),
-            ],
-          ),
-        ),
-      ],
-    );
+            ),
+          ],
+        ],
+      );
+    });
+  }
+
+  ContactPageContent? _contactContent(PagesController pagesController) {
+    pagesController.items.length;
+    pagesController.pageDetailsById.length;
+
+    final listPage = pagesController.pageForShell(ApaShellPage.contact);
+    if (listPage == null) return null;
+
+    pagesController.loadPageDetails(listPage.id);
+    final details = pagesController.detailsForPageId(listPage.id);
+    if (details == null) return null;
+    return ContactPageContent.fromPost(details);
   }
 }
 

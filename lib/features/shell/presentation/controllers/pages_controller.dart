@@ -123,14 +123,17 @@ class PagesController extends BaseListController<PostItem>
     }
   }
 
-  Future<void> loadPageDetails(int pageId) async {
+  Future<void> loadPageDetails(int pageId, {bool force = false}) async {
     if (pageId <= 0) return;
-    if (pageDetailsById.containsKey(pageId)) return;
+    if (!force && pageDetailsById.containsKey(pageId)) return;
     if (_loadingDetails.contains(pageId)) return;
 
     _loadingDetails.add(pageId);
     try {
-      final result = await repository.getPostDetails(pageId);
+      final result = await repository.getPostDetails(
+        pageId,
+        useCache: !force,
+      );
       result.when(
         success: (details) => pageDetailsById[pageId] = details,
         failure: (_) {},
@@ -138,6 +141,16 @@ class PagesController extends BaseListController<PostItem>
     } finally {
       _loadingDetails.remove(pageId);
     }
+  }
+
+  Future<void> loadDetailsForTemplate(
+    String template, {
+    bool force = false,
+  }) async {
+    final page = pageByTemplate(template);
+    if (page == null) return;
+    selectPage(page, fetchDetails: false);
+    await loadPageDetails(page.id, force: force);
   }
 
   String navLabel(ApaNavItem item) {

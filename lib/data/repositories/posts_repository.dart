@@ -148,12 +148,10 @@ class PostsRepository extends BaseRepository<PostItem> {
         }
       }
 
-      final fetched = await _fetchPostDetails(postId);
+      final fetched = await _fetchPostDetails(postId, cacheBust: !useCache);
       if (fetched.isSuccess) {
         final item = fetched.value!;
-        if (useCache) {
-          await _writeDetailsCache(postId, item);
-        }
+        await _writeDetailsCache(postId, item);
         return Result.success(item);
       }
 
@@ -176,10 +174,17 @@ class PostsRepository extends BaseRepository<PostItem> {
     }
   }
 
-  Future<Result<PostItem>> _fetchPostDetails(int postId) async {
+  Future<Result<PostItem>> _fetchPostDetails(
+    int postId, {
+    bool cacheBust = false,
+  }) async {
     final response = await apiService.get<PostItem>(
       ApiEndpoints.getPostDetails,
-      queryParameters: {'post_id': postId},
+      queryParameters: {
+        'post_id': postId,
+        if (cacheBust) '_': DateTime.now().millisecondsSinceEpoch,
+      },
+      data: {'post_id': postId},
       fromJson: (data) {
         if (data is! Map) {
           throw const FormatException('Malformed get-post-details response');
@@ -203,7 +208,7 @@ class PostsRepository extends BaseRepository<PostItem> {
 
   Future<void> _refreshDetailsInBackground(int postId) async {
     try {
-      final fetched = await _fetchPostDetails(postId);
+      final fetched = await _fetchPostDetails(postId, cacheBust: true);
       if (fetched.isSuccess && fetched.value != null) {
         await _writeDetailsCache(postId, fetched.value!);
       }

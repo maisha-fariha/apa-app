@@ -52,6 +52,14 @@ void main() {
       expect(controller.selectedPageId.value, 14);
     });
 
+    test('loadDetailsForTemplate fetches get-post-details by contact page id',
+        () async {
+      await controller.loadDetailsForTemplate(ApaPageTemplates.contact);
+
+      expect(controller.selectedPageId.value, 10);
+      expect(controller.detailsForPageId(10)?.id, 10);
+    });
+
     test('resolveMoreDestination uses more template mapping', () {
       final target = controller.resolveMoreDestination(
         ApaMoreDestination.contact,
