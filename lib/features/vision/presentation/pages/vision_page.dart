@@ -16,10 +16,12 @@ class VisionPage extends StatelessWidget {
     super.key,
     this.scrollController,
     this.onLearnMore,
+    this.imageUrl,
   });
 
   final ScrollController? scrollController;
   final VoidCallback? onLearnMore;
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -36,6 +38,7 @@ class VisionPage extends StatelessWidget {
             SliverToBoxAdapter(
               child: ApaHeroHeader(
                 imageAsset: ApaAssets.visionHero,
+                imageUrl: imageUrl,
                 height: 505,
                 badge: 'OUR VISION',
                 headline: [

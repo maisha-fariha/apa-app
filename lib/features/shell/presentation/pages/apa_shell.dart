@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
+import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../contact/presentation/pages/contact_page.dart';
 import '../../../donation/presentation/pages/donation_page.dart';
@@ -9,6 +11,8 @@ import '../../../news/presentation/pages/news_page.dart';
 import '../../../projects/presentation/pages/projects_page.dart';
 import '../../../transparency/presentation/pages/transparency_page.dart';
 import '../../../vision/presentation/pages/vision_page.dart';
+import '../controllers/pages_controller.dart';
+import '../mapping/apa_page_templates.dart';
 import '../models/apa_nav_item.dart';
 import '../widgets/apa_bottom_nav.dart';
 import '../widgets/apa_desktop_nav.dart';
@@ -38,6 +42,11 @@ class _ApaShellState extends State<ApaShell> {
   final _visionScroll = ScrollController();
   final _contactScroll = ScrollController();
 
+  PagesController? get _pagesController {
+    if (!Get.isRegistered<PagesController>()) return null;
+    return Get.find<PagesController>();
+  }
+
   ApaNavItem get _navSelected {
     switch (_page) {
       case ApaShellPage.home:
@@ -53,6 +62,14 @@ class _ApaShellState extends State<ApaShell> {
       case ApaShellPage.contact:
         return ApaNavItem.more;
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _pagesController?.loadItems();
+    });
   }
 
   @override
@@ -105,34 +122,44 @@ class _ApaShellState extends State<ApaShell> {
     _scrollToTop(page);
   }
 
+  void _openByTemplate(String template, ApaShellPage fallback) {
+    final mapped = ApaPageTemplates.toShellPage(template);
+    _go(mapped ?? fallback);
+  }
+
   void _handleNav(ApaNavItem item) {
     widget.onNavItemSelected?.call(item);
 
     switch (item) {
       case ApaNavItem.home:
-        _go(ApaShellPage.home);
+        _openByTemplate(ApaPageTemplates.home, ApaShellPage.home);
       case ApaNavItem.projects:
-        _go(ApaShellPage.projects);
+        _openByTemplate(ApaPageTemplates.projects, ApaShellPage.projects);
       case ApaNavItem.donation:
-        _go(ApaShellPage.donation);
+        _openByTemplate(ApaPageTemplates.donation, ApaShellPage.donation);
       case ApaNavItem.transparency:
-        _go(ApaShellPage.transparency);
+        _openByTemplate(
+          ApaPageTemplates.transparency,
+          ApaShellPage.transparency,
+        );
       case ApaNavItem.more:
         _openMoreSheet();
     }
   }
 
   void _openMoreSheet() {
+    final pages = _pagesController;
     ApaMoreSheet.show(
       context,
+      labelFor: pages?.moreLabel,
       onSelected: (destination) {
         switch (destination) {
           case ApaMoreDestination.news:
-            _go(ApaShellPage.news);
+            _openByTemplate(ApaPageTemplates.news, ApaShellPage.news);
           case ApaMoreDestination.vision:
-            _go(ApaShellPage.vision);
+            _openByTemplate(ApaPageTemplates.vision, ApaShellPage.vision);
           case ApaMoreDestination.contact:
-            _go(ApaShellPage.contact);
+            _openByTemplate(ApaPageTemplates.contact, ApaShellPage.contact);
         }
       },
     );
@@ -148,54 +175,128 @@ class _ApaShellState extends State<ApaShell> {
           },
           onDonatePressed: () {
             Navigator.of(context).pop();
-            _go(ApaShellPage.donation);
+            _openByTemplate(ApaPageTemplates.donation, ApaShellPage.donation);
           },
         ),
       ),
     );
   }
 
+  String? _imageUrl(ApaShellPage page) {
+    return _pagesController?.pageForShell(page)?.featuredImageUrl;
+  }
+
   @override
   Widget build(BuildContext context) {
     final desktop = R.isTabletLandscape(context);
-    final pages = IndexedStack(
-      index: _page.index,
-      children: [
-        HomePage(
-          scrollController: _homeScroll,
-          onDonatePressed: () => _go(ApaShellPage.donation),
-        ),
-        ProjectsPage(
-          scrollController: _projectsScroll,
-          onFundPressed: () => _go(ApaShellPage.donation),
-        ),
-        DonationPage(scrollController: _donationScroll),
-        TransparencyPage(scrollController: _transparencyScroll),
-        NewsPage(
-          scrollController: _newsScroll,
-          onReadMore: _openArticle,
-        ),
-        VisionPage(
-          scrollController: _visionScroll,
-          onLearnMore: () => _go(ApaShellPage.contact),
-        ),
-        ContactPage(scrollController: _contactScroll),
-      ],
-    );
+    final pagesController = _pagesController;
+
+    Widget buildPages() {
+      return IndexedStack(
+        index: _page.index,
+        children: [
+          HomePage(
+            scrollController: _homeScroll,
+            onDonatePressed: () => _openByTemplate(
+              ApaPageTemplates.donation,
+              ApaShellPage.donation,
+            ),
+            imageUrl: _imageUrl(ApaShellPage.home),
+          ),
+          ProjectsPage(
+            scrollController: _projectsScroll,
+            onFundPressed: () => _openByTemplate(
+              ApaPageTemplates.donation,
+              ApaShellPage.donation,
+            ),
+            imageUrl: _imageUrl(ApaShellPage.projects),
+          ),
+          DonationPage(
+            scrollController: _donationScroll,
+            imageUrl: _imageUrl(ApaShellPage.donation),
+          ),
+          TransparencyPage(
+            scrollController: _transparencyScroll,
+            imageUrl: _imageUrl(ApaShellPage.transparency),
+          ),
+          NewsPage(
+            scrollController: _newsScroll,
+            onReadMore: _openArticle,
+            imageUrl: _imageUrl(ApaShellPage.news),
+          ),
+          VisionPage(
+            scrollController: _visionScroll,
+            onLearnMore: () => _openByTemplate(
+              ApaPageTemplates.contact,
+              ApaShellPage.contact,
+            ),
+            imageUrl: _imageUrl(ApaShellPage.vision),
+          ),
+          ContactPage(
+            scrollController: _contactScroll,
+            imageUrl: _imageUrl(ApaShellPage.contact),
+          ),
+        ],
+      );
+    }
+
+    Widget buildBody() {
+      if (pagesController == null) return buildPages();
+
+      return Obx(() {
+        pagesController.items.length;
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            buildPages(),
+            if (pagesController.isLoading.value &&
+                pagesController.items.isEmpty)
+              const ColoredBox(
+                color: Color(0x59000000),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    color: ApaColors.primaryRed,
+                  ),
+                ),
+              ),
+          ],
+        );
+      });
+    }
+
+    final nav = desktop
+        ? ApaDesktopNav(
+            selected: _navSelected,
+            onItemSelected: _handleNav,
+            labelFor: pagesController?.navLabel,
+          )
+        : ApaBottomNav(
+            selected: _navSelected,
+            onItemSelected: _handleNav,
+            labelFor: pagesController?.navLabel,
+          );
 
     return Scaffold(
       backgroundColor: Colors.black,
       extendBody: true,
-      body: pages,
-      bottomNavigationBar: desktop
-          ? ApaDesktopNav(
-              selected: _navSelected,
-              onItemSelected: _handleNav,
-            )
-          : ApaBottomNav(
-              selected: _navSelected,
-              onItemSelected: _handleNav,
-            ),
+      body: buildBody(),
+      bottomNavigationBar: pagesController == null
+          ? nav
+          : Obx(() {
+              pagesController.items.length;
+              pagesController.isLoading.value;
+              return desktop
+                  ? ApaDesktopNav(
+                      selected: _navSelected,
+                      onItemSelected: _handleNav,
+                      labelFor: pagesController.navLabel,
+                    )
+                  : ApaBottomNav(
+                      selected: _navSelected,
+                      onItemSelected: _handleNav,
+                      labelFor: pagesController.navLabel,
+                    );
+            }),
     );
   }
 }

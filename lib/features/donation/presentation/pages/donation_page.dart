@@ -15,10 +15,12 @@ class DonationPage extends StatefulWidget {
     super.key,
     this.scrollController,
     this.onContinuePressed,
+    this.imageUrl,
   });
 
   final ScrollController? scrollController;
   final VoidCallback? onContinuePressed;
+  final String? imageUrl;
 
   @override
   State<DonationPage> createState() => _DonationPageState();
@@ -67,6 +69,7 @@ class _DonationPageState extends State<DonationPage> {
             SliverToBoxAdapter(
               child: ApaHeroHeader(
                 imageAsset: ApaAssets.donationHero,
+                imageUrl: widget.imageUrl,
                 height: 500,
                 badge: 'EVERY GIFT FUNDS WORK IN HAITI',
                 headline: [

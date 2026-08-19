@@ -14,9 +14,11 @@ class TransparencyPage extends StatelessWidget {
   const TransparencyPage({
     super.key,
     this.scrollController,
+    this.imageUrl,
   });
 
   final ScrollController? scrollController;
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -33,6 +35,7 @@ class TransparencyPage extends StatelessWidget {
             SliverToBoxAdapter(
               child: ApaHeroHeader(
                 imageAsset: ApaAssets.transparencyHero,
+                imageUrl: imageUrl,
                 height: 540,
                 badge: 'OPEN BOOKS',
                 headline: [

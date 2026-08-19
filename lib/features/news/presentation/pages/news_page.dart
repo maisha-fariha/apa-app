@@ -15,10 +15,12 @@ class NewsPage extends StatelessWidget {
     super.key,
     this.scrollController,
     this.onReadMore,
+    this.imageUrl,
   });
 
   final ScrollController? scrollController;
   final VoidCallback? onReadMore;
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +37,7 @@ class NewsPage extends StatelessWidget {
             SliverToBoxAdapter(
               child: ApaHeroHeader(
                 imageAsset: ApaAssets.newsHero,
+                imageUrl: imageUrl,
                 height: 480,
                 badge: 'NEWS & UPDATES',
                 headline: [

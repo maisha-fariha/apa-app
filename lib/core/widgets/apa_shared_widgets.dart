@@ -21,9 +21,11 @@ class ApaHeroHeader extends StatelessWidget {
     this.logoWidth = 180,
     this.logoHeight = 67.5,
     this.alignLogoCenter = true,
+    this.imageUrl,
   });
 
   final String imageAsset;
+  final String? imageUrl;
   final String badge;
   final List<InlineSpan> headline;
   final Widget? headlineAccent;
@@ -50,11 +52,7 @@ class ApaHeroHeader extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset(
-            imageAsset,
-            fit: BoxFit.cover,
-            alignment: Alignment.center,
-          ),
+          _HeroImage(asset: imageAsset, url: imageUrl),
           ColoredBox(color: Colors.black.withValues(alpha: overlayOpacity)),
           SafeArea(
             bottom: false,
@@ -132,6 +130,36 @@ class ApaHeroHeader extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _HeroImage extends StatelessWidget {
+  const _HeroImage({required this.asset, this.url});
+
+  final String asset;
+  final String? url;
+
+  @override
+  Widget build(BuildContext context) {
+    final networkUrl = url?.trim();
+    if (networkUrl != null && networkUrl.isNotEmpty) {
+      return Image.network(
+        networkUrl,
+        fit: BoxFit.cover,
+        alignment: Alignment.center,
+        errorBuilder: (context, error, stackTrace) => Image.asset(
+          asset,
+          fit: BoxFit.cover,
+          alignment: Alignment.center,
+        ),
+      );
+    }
+
+    return Image.asset(
+      asset,
+      fit: BoxFit.cover,
+      alignment: Alignment.center,
     );
   }
 }

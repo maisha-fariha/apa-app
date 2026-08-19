@@ -15,10 +15,12 @@ class ProjectsPage extends StatelessWidget {
     super.key,
     this.scrollController,
     this.onFundPressed,
+    this.imageUrl,
   });
 
   final ScrollController? scrollController;
   final VoidCallback? onFundPressed;
+  final String? imageUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +37,7 @@ class ProjectsPage extends StatelessWidget {
             SliverToBoxAdapter(
               child: ApaHeroHeader(
                 imageAsset: ApaAssets.projectsHero,
+                imageUrl: imageUrl,
                 height: 520,
                 overlayOpacity: 0.7,
                 logoWidth: 180,
