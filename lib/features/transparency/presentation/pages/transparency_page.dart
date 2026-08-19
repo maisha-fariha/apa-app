@@ -258,41 +258,49 @@ class _RaisedBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 200.w,
-      padding: EdgeInsets.symmetric(
-        horizontal: 12.w,
-        vertical: 12.h,
-      ),
-      decoration: BoxDecoration(
-        color: ApaColors.white,
-        borderRadius: BorderRadius.circular(8.r),
-        border: Border.all(color: ApaColors.black, width: 2),
-      ),
-      child: Column(
-        children: [
-          Text(
-            amount,
-            style: ApaFonts.inter(
-              color: ApaColors.nearBlack,
-              fontSize: 32.sp,
-              fontWeight: FontWeight.w800,
-              height: 32 / 28,
-            ),
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: IntrinsicWidth(
+        child: Container(
+          constraints: BoxConstraints(minWidth: 280.w),
+          padding: EdgeInsets.symmetric(
+            horizontal: 16.w,
+            vertical: 12.h,
           ),
-          SizedBox(height: 4.h),
-          Text(
-            'RAISED TO DATE',
-            textAlign: TextAlign.center,
-            style: ApaFonts.inter(
-              color: ApaColors.primaryRed,
-              fontSize: 20.sp,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
-              height: 20 / 12,
-            ),
+          decoration: BoxDecoration(
+            color: ApaColors.white,
+            borderRadius: BorderRadius.circular(8.r),
+            border: Border.all(color: ApaColors.black, width: 2),
           ),
-        ],
+          child: Column(
+            children: [
+              Text(
+                amount,
+                maxLines: 1,
+                style: ApaFonts.inter(
+                  color: ApaColors.nearBlack,
+                  fontSize: 32.sp,
+                  fontWeight: FontWeight.w800,
+                  height: 32 / 28,
+                ),
+              ),
+              SizedBox(height: 4.h),
+              Text(
+                'RAISED TO DATE',
+                maxLines: 1,
+                softWrap: false,
+                textAlign: TextAlign.center,
+                style: ApaFonts.inter(
+                  color: ApaColors.primaryRed,
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.6,
+                  height: 1.1,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
