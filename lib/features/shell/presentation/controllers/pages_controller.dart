@@ -1,3 +1,4 @@
+import 'package:get/get.dart';
 import 'package:gems_core/gems_core.dart';
 import 'package:gems_data_layer/gems_data_layer.dart';
 
@@ -15,6 +16,14 @@ class PagesController extends BaseListController<PostItem>
 
   bool _fetched = false;
 
+  /// WordPress post id for the page currently shown in the shell.
+  final RxnInt selectedPageId = RxnInt();
+
+  /// Full page payloads loaded via `get-post-details`, keyed by post id.
+  final RxMap<int, PostItem> pageDetailsById = <int, PostItem>{}.obs;
+
+  final Set<int> _loadingDetails = <int>{};
+
   @override
   Future<void> loadItems() async {
     if (isLoading.value) return;
@@ -29,9 +38,19 @@ class PagesController extends BaseListController<PostItem>
           ..addAll(pages);
         if (pages.isEmpty) {
           setError('No pages found');
+          return;
         }
+        _ensureInitialSelection();
       },
     );
+  }
+
+  void _ensureInitialSelection() {
+    if (selectedPageId.value != null) return;
+    final home = pageByTemplate(ApaPageTemplates.home);
+    if (home != null) {
+      selectPage(home, fetchDetails: false);
+    }
   }
 
   PostItem? pageByTemplate(String template) {
@@ -42,6 +61,8 @@ class PagesController extends BaseListController<PostItem>
     }
     return null;
   }
+
+  int? pageIdForTemplate(String template) => pageByTemplate(template)?.id;
 
   PostItem? pageForShell(ApaShellPage page) {
     return pageByTemplate(ApaPageTemplates.forShellPage(page));
@@ -55,6 +76,68 @@ class PagesController extends BaseListController<PostItem>
 
   PostItem? pageForMore(ApaMoreDestination destination) {
     return pageByTemplate(ApaPageTemplates.forMoreDestination(destination));
+  }
+
+  PostItem? detailsForPageId(int? pageId) {
+    if (pageId == null || pageId <= 0) return null;
+    return pageDetailsById[pageId];
+  }
+
+  PostItem? resolvedPageForShell(ApaShellPage page) {
+    final listPage = pageForShell(page);
+    if (listPage == null) return null;
+    return detailsForPageId(listPage.id) ?? listPage;
+  }
+
+  /// Resolves [template] against loaded pages, stores the post id, and returns
+  /// the shell destination to open.
+  ApaShellPage resolveNavigation(String template, ApaShellPage fallback) {
+    final page = pageByTemplate(template);
+    if (page != null) {
+      selectPage(page);
+      return ApaPageTemplates.toShellPage(page.template) ?? fallback;
+    }
+    return ApaPageTemplates.toShellPage(template) ?? fallback;
+  }
+
+  ApaShellPage resolveNavItem(ApaNavItem item, ApaShellPage fallback) {
+    final template = ApaPageTemplates.forNavItem(item);
+    if (template == null) return fallback;
+    return resolveNavigation(template, fallback);
+  }
+
+  ApaShellPage resolveMoreDestination(
+    ApaMoreDestination destination,
+    ApaShellPage fallback,
+  ) {
+    return resolveNavigation(
+      ApaPageTemplates.forMoreDestination(destination),
+      fallback,
+    );
+  }
+
+  void selectPage(PostItem page, {bool fetchDetails = true}) {
+    selectedPageId.value = page.id;
+    if (fetchDetails) {
+      loadPageDetails(page.id);
+    }
+  }
+
+  Future<void> loadPageDetails(int pageId) async {
+    if (pageId <= 0) return;
+    if (pageDetailsById.containsKey(pageId)) return;
+    if (_loadingDetails.contains(pageId)) return;
+
+    _loadingDetails.add(pageId);
+    try {
+      final result = await repository.getPostDetails(pageId);
+      result.when(
+        success: (details) => pageDetailsById[pageId] = details,
+        failure: (_) {},
+      );
+    } finally {
+      _loadingDetails.remove(pageId);
+    }
   }
 
   String navLabel(ApaNavItem item) {

@@ -229,6 +229,8 @@ mixin _$PostItem {
   List<dynamic> get taxonomies => throw _privateConstructorUsedError;
   @JsonKey(name: 'acf_fields', fromJson: _acfFieldsFromJson)
   Map<String, dynamic> get acfFields => throw _privateConstructorUsedError;
+  String get content => throw _privateConstructorUsedError;
+  String get excerpt => throw _privateConstructorUsedError;
 
   /// Serializes this PostItem to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -260,6 +262,8 @@ abstract class $PostItemCopyWith<$Res> {
     @JsonKey(fromJson: _dynamicListFromJson) List<dynamic> taxonomies,
     @JsonKey(name: 'acf_fields', fromJson: _acfFieldsFromJson)
     Map<String, dynamic> acfFields,
+    String content,
+    String excerpt,
   });
 
   $FeaturedImageCopyWith<$Res> get featuredImage;
@@ -292,6 +296,8 @@ class _$PostItemCopyWithImpl<$Res, $Val extends PostItem>
     Object? featuredImage = null,
     Object? taxonomies = null,
     Object? acfFields = null,
+    Object? content = null,
+    Object? excerpt = null,
   }) {
     return _then(
       _value.copyWith(
@@ -343,6 +349,14 @@ class _$PostItemCopyWithImpl<$Res, $Val extends PostItem>
                 ? _value.acfFields
                 : acfFields // ignore: cast_nullable_to_non_nullable
                       as Map<String, dynamic>,
+            content: null == content
+                ? _value.content
+                : content // ignore: cast_nullable_to_non_nullable
+                      as String,
+            excerpt: null == excerpt
+                ? _value.excerpt
+                : excerpt // ignore: cast_nullable_to_non_nullable
+                      as String,
           )
           as $Val,
     );
@@ -383,6 +397,8 @@ abstract class _$$PostItemImplCopyWith<$Res>
     @JsonKey(fromJson: _dynamicListFromJson) List<dynamic> taxonomies,
     @JsonKey(name: 'acf_fields', fromJson: _acfFieldsFromJson)
     Map<String, dynamic> acfFields,
+    String content,
+    String excerpt,
   });
 
   @override
@@ -415,6 +431,8 @@ class __$$PostItemImplCopyWithImpl<$Res>
     Object? featuredImage = null,
     Object? taxonomies = null,
     Object? acfFields = null,
+    Object? content = null,
+    Object? excerpt = null,
   }) {
     return _then(
       _$PostItemImpl(
@@ -466,6 +484,14 @@ class __$$PostItemImplCopyWithImpl<$Res>
             ? _value._acfFields
             : acfFields // ignore: cast_nullable_to_non_nullable
                   as Map<String, dynamic>,
+        content: null == content
+            ? _value.content
+            : content // ignore: cast_nullable_to_non_nullable
+                  as String,
+        excerpt: null == excerpt
+            ? _value.excerpt
+            : excerpt // ignore: cast_nullable_to_non_nullable
+                  as String,
       ),
     );
   }
@@ -490,6 +516,8 @@ class _$PostItemImpl extends _PostItem {
     final List<dynamic> taxonomies = const [],
     @JsonKey(name: 'acf_fields', fromJson: _acfFieldsFromJson)
     final Map<String, dynamic> acfFields = const {},
+    this.content = '',
+    this.excerpt = '',
   }) : _taxonomies = taxonomies,
        _acfFields = acfFields,
        super._();
@@ -546,8 +574,15 @@ class _$PostItemImpl extends _PostItem {
   }
 
   @override
+  @JsonKey()
+  final String content;
+  @override
+  @JsonKey()
+  final String excerpt;
+
+  @override
   String toString() {
-    return 'PostItem(id: $id, title: $title, slug: $slug, type: $type, status: $status, date: $date, modified: $modified, template: $template, permalink: $permalink, featuredImage: $featuredImage, taxonomies: $taxonomies, acfFields: $acfFields)';
+    return 'PostItem(id: $id, title: $title, slug: $slug, type: $type, status: $status, date: $date, modified: $modified, template: $template, permalink: $permalink, featuredImage: $featuredImage, taxonomies: $taxonomies, acfFields: $acfFields, content: $content, excerpt: $excerpt)';
   }
 
   @override
@@ -576,7 +611,9 @@ class _$PostItemImpl extends _PostItem {
             const DeepCollectionEquality().equals(
               other._acfFields,
               _acfFields,
-            ));
+            ) &&
+            (identical(other.content, content) || other.content == content) &&
+            (identical(other.excerpt, excerpt) || other.excerpt == excerpt));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
@@ -595,6 +632,8 @@ class _$PostItemImpl extends _PostItem {
     featuredImage,
     const DeepCollectionEquality().hash(_taxonomies),
     const DeepCollectionEquality().hash(_acfFields),
+    content,
+    excerpt,
   );
 
   /// Create a copy of PostItem
@@ -627,6 +666,8 @@ abstract class _PostItem extends PostItem {
     @JsonKey(fromJson: _dynamicListFromJson) final List<dynamic> taxonomies,
     @JsonKey(name: 'acf_fields', fromJson: _acfFieldsFromJson)
     final Map<String, dynamic> acfFields,
+    final String content,
+    final String excerpt,
   }) = _$PostItemImpl;
   const _PostItem._() : super._();
 
@@ -661,6 +702,10 @@ abstract class _PostItem extends PostItem {
   @override
   @JsonKey(name: 'acf_fields', fromJson: _acfFieldsFromJson)
   Map<String, dynamic> get acfFields;
+  @override
+  String get content;
+  @override
+  String get excerpt;
 
   /// Create a copy of PostItem
   /// with the given fields replaced by the non-null parameter values.

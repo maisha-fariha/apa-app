@@ -123,8 +123,11 @@ class _ApaShellState extends State<ApaShell> {
   }
 
   void _openByTemplate(String template, ApaShellPage fallback) {
-    final mapped = ApaPageTemplates.toShellPage(template);
-    _go(mapped ?? fallback);
+    final controller = _pagesController;
+    final target = controller?.resolveNavigation(template, fallback) ??
+        ApaPageTemplates.toShellPage(template) ??
+        fallback;
+    _go(target);
   }
 
   void _handleNav(ApaNavItem item) {
@@ -183,7 +186,7 @@ class _ApaShellState extends State<ApaShell> {
   }
 
   String? _imageUrl(ApaShellPage page) {
-    return _pagesController?.pageForShell(page)?.featuredImageUrl;
+    return _pagesController?.resolvedPageForShell(page)?.featuredImageUrl;
   }
 
   @override
@@ -245,6 +248,8 @@ class _ApaShellState extends State<ApaShell> {
 
       return Obx(() {
         pagesController.items.length;
+        pagesController.selectedPageId.value;
+        pagesController.pageDetailsById.length;
         return Stack(
           fit: StackFit.expand,
           children: [
@@ -285,6 +290,7 @@ class _ApaShellState extends State<ApaShell> {
           : Obx(() {
               pagesController.items.length;
               pagesController.isLoading.value;
+              pagesController.selectedPageId.value;
               return desktop
                   ? ApaDesktopNav(
                       selected: _navSelected,
