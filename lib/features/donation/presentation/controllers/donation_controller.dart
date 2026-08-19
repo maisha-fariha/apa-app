@@ -297,19 +297,14 @@ class DonationController extends GetxController {
         return const DonationCheckoutResult.canceled();
       }
 
-      final token = session.statusAccessToken;
-      if (token != null && token.isNotEmpty) {
-        if (session.paymentReference != null) {
-          await repository.getPaymentStatus(
-            paymentReference: session.paymentReference!,
-            accessToken: token,
-          );
-        } else if (session.subscriptionReference != null) {
-          await repository.getSubscriptionStatus(
-            subscriptionReference: session.subscriptionReference!,
-            accessToken: token,
-          );
-        }
+      final statusResult = await repository.confirmCheckoutStatus(session);
+      String? failure;
+      statusResult.when(
+        success: (_) {},
+        failure: (error) => failure = error.message,
+      );
+      if (failure != null) {
+        return DonationCheckoutResult.failure(failure!);
       }
 
       return const DonationCheckoutResult.success();

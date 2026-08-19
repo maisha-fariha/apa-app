@@ -128,4 +128,17 @@ void main() {
     expect(session.clientSecret, 'pi_secret');
     expect(session.amountCents, 2000);
   });
+
+  test('treats succeeded payment status as paid', () {
+    final status = StripePaymentStatus.fromJson({
+      'payment_reference': 'pay_1',
+      'status': 'succeeded',
+      'amount': 2000,
+      'currency': 'usd',
+      'paid_at': '2026-08-19T00:00:00Z',
+      'receipt_url': 'https://example.com/receipt',
+    });
+    expect(status.isPaid, isTrue);
+    expect(status.receiptUrl, 'https://example.com/receipt');
+  });
 }

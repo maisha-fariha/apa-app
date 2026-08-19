@@ -126,6 +126,7 @@ class StripeCheckoutSession {
     this.customerId,
     this.amountCents,
     this.currency,
+    this.stripeSubscriptionId,
   });
 
   final String clientSecret;
@@ -136,6 +137,7 @@ class StripeCheckoutSession {
   final String? customerId;
   final int? amountCents;
   final String? currency;
+  final String? stripeSubscriptionId;
 
   factory StripeCheckoutSession.fromJson(Map<String, dynamic> json) {
     return StripeCheckoutSession(
@@ -147,6 +149,61 @@ class StripeCheckoutSession {
       customerId: json['customer_id']?.toString(),
       amountCents: _asInt(json['amount']),
       currency: json['currency']?.toString(),
+      stripeSubscriptionId: json['stripe_subscription_id']?.toString(),
+    );
+  }
+
+  String? get stripeIntentId {
+    final secret = clientSecret;
+    final secretIndex = secret.indexOf('_secret_');
+    if (secretIndex <= 0) return null;
+    return secret.substring(0, secretIndex);
+  }
+}
+
+class StripePaymentStatus {
+  const StripePaymentStatus({
+    required this.status,
+    this.reference,
+    this.receiptUrl,
+    this.failureMessage,
+    this.paidAt,
+    this.raw = const {},
+  });
+
+  final String status;
+  final String? reference;
+  final String? receiptUrl;
+  final String? failureMessage;
+  final String? paidAt;
+  final Map<String, dynamic> raw;
+
+  bool get isPaid {
+    switch (status.toLowerCase()) {
+      case 'succeeded':
+      case 'paid':
+      case 'processing':
+      case 'complete':
+      case 'completed':
+      case 'active':
+      case 'trialing':
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  factory StripePaymentStatus.fromJson(Map<String, dynamic> json) {
+    return StripePaymentStatus(
+      status: (json['status'] ?? json['payment_status'] ?? '').toString(),
+      reference: (json['payment_reference'] ??
+              json['subscription_reference'] ??
+              json['reference'])
+          ?.toString(),
+      receiptUrl: json['receipt_url']?.toString(),
+      failureMessage: json['failure_message']?.toString(),
+      paidAt: json['paid_at']?.toString(),
+      raw: json,
     );
   }
 }
