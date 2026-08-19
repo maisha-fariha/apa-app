@@ -40,6 +40,9 @@ _$PostItemImpl _$$PostItemImplFromJson(Map<String, dynamic> json) =>
       acfFields: json['acf_fields'] == null
           ? const {}
           : _acfFieldsFromJson(json['acf_fields']),
+      fundingProgress: json['funding_progress'] == null
+          ? const {}
+          : _acfFieldsFromJson(json['funding_progress']),
       content: json['content'] as String? ?? '',
       excerpt: json['excerpt'] as String? ?? '',
     );
@@ -58,6 +61,7 @@ Map<String, dynamic> _$$PostItemImplToJson(_$PostItemImpl instance) =>
       'featured_image': instance.featuredImage.toJson(),
       'taxonomies': instance.taxonomies,
       'acf_fields': instance.acfFields,
+      'funding_progress': instance.fundingProgress,
       'content': instance.content,
       'excerpt': instance.excerpt,
     };

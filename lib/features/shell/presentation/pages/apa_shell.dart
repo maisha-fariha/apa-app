@@ -127,6 +127,16 @@ class _ApaShellState extends State<ApaShell> {
     if (page == ApaShellPage.vision) {
       _reloadVision();
     }
+    if (page == ApaShellPage.transparency) {
+      _reloadTransparency();
+    }
+  }
+
+  void _reloadTransparency() {
+    _pagesController?.loadDetailsForTemplate(
+      ApaPageTemplates.transparency,
+      force: true,
+    );
   }
 
   void _reloadVision() {
@@ -244,7 +254,6 @@ class _ApaShellState extends State<ApaShell> {
           ),
           TransparencyPage(
             scrollController: _transparencyScroll,
-            imageUrl: _imageUrl(ApaShellPage.transparency),
           ),
           NewsPage(
             scrollController: _newsScroll,

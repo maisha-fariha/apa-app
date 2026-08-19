@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
 
 import '../../../../core/constants/apa_assets.dart';
 import '../../../../core/constants/apa_shell_insets.dart';
@@ -8,6 +9,10 @@ import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../core/widgets/apa_shared_widgets.dart';
+import '../../../shell/presentation/controllers/pages_controller.dart';
+import '../../../shell/presentation/mapping/apa_page_templates.dart';
+import '../../../shell/presentation/models/apa_nav_item.dart';
+import '../../domain/transparency_page_content.dart';
 
 /// Transparency Page — Figma frame `9:508`.
 class TransparencyPage extends StatelessWidget {
@@ -20,198 +25,236 @@ class TransparencyPage extends StatelessWidget {
   final ScrollController? scrollController;
   final String? imageUrl;
 
+  PagesController? get _pagesController {
+    if (!Get.isRegistered<PagesController>()) return null;
+    return Get.find<PagesController>();
+  }
+
   @override
   Widget build(BuildContext context) {
     final navBottomPad = ApaShellInsets.contentBottom(context);
+    final pagesController = _pagesController;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: ColoredBox(
         color: ApaColors.white,
-        child: CustomScrollView(
-          controller: scrollController,
-          physics: const BouncingScrollPhysics(),
-          slivers: [
-            SliverToBoxAdapter(
-              child: ApaHeroHeader(
-                imageAsset: ApaAssets.transparencyHero,
-                imageUrl: imageUrl,
-                height: 540,
-                badge: 'OPEN BOOKS',
-                headline: [
-                  TextSpan(
-                    text: 'EVERY DOLLAR,\n',
-                    style: ApaFonts.inter(
-                      color: ApaColors.white,
-                      fontSize: 36.sp,
-                      fontWeight: FontWeight.w800,
-                      height: 40 / 36,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                  TextSpan(
-                    text: 'ON THE RECORD.',
-                    style: ApaFonts.inter(
-                      color: ApaColors.primaryRedDeep,
-                      fontSize: 36.sp,
-                      fontWeight: FontWeight.w800,
-                      height: 40 / 36,
-                      letterSpacing: -0.5,
-                    ),
-                  ),
-                ],
-                subtitle:
-                    'A running ledger of phase-one work in Sud — updated as '
-                    'each project moves forward.',
-              ),
+        child: RefreshIndicator(
+          color: ApaColors.primaryRed,
+          onRefresh: () async {
+            await pagesController?.loadDetailsForTemplate(
+              ApaPageTemplates.transparency,
+              force: true,
+            );
+          },
+          child: CustomScrollView(
+            controller: scrollController,
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
             ),
-            SliverToBoxAdapter(
-              child: ApaPageWidth(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    R.isTabletLandscape(context) ? 48 : 24.w,
-                    40.h,
-                    R.isTabletLandscape(context) ? 48 : 24.w,
-                    navBottomPad,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (R.isTabletLandscape(context))
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            const _RaisedBox(),
-                            SizedBox(width: 40.w),
-                            const Expanded(child: _ProgressBlock()),
-                          ],
-                        )
-                      else ...[
-                        const _RaisedBox(),
-                        SizedBox(height: 24.h),
-                        const _ProgressBlock(),
-                      ],
-                      SizedBox(height: 24.h),
-                      const ColoredBox(
-                        color: ApaColors.black,
-                        child: SizedBox(height: 1, width: double.infinity),
-                      ),
-                      SizedBox(height: 32.h),
-                      Text(
-                        'PROJECT LEDGER',
-                        style: ApaFonts.inter(
-                          color: ApaColors.black,
-                          fontSize: 28.sp,
-                          fontWeight: FontWeight.w800,
-                          height: 34 / 28,
-                        ),
-                      ),
-                      SizedBox(height: 20.h),
-                      const _LedgerHeader(),
-                      const _LedgerRow(
-                        project: 'Solar street lighting, phase 1',
-                        community: 'Haiti',
-                        status: 'IN PROGRESS',
-                        committed: '\$9,400',
-                        statusHighlighted: true,
-                      ),
-                      const _LedgerRow(
-                        project: 'Road repair — market route',
-                        community: 'Torbeck',
-                        status: 'SURVEYING',
-                        committed: '\$7,200',
-                      ),
-                      const _LedgerRow(
-                        project: 'Community park & playground',
-                        community: 'Haiti',
-                        status: 'DESIGN',
-                        committed: '\$5,100',
-                      ),
-                      const _LedgerRow(
-                        project: 'Operations & reporting',
-                        community: '—',
-                        status: 'ONGOING',
-                        committed: '\$3,300',
-                      ),
-                      SizedBox(height: 48.h),
-                      Text(
-                        'OUR COMMITMENT',
-                        style: ApaFonts.inter(
-                          color: ApaColors.black,
-                          fontSize: 28.sp,
-                          fontWeight: FontWeight.w800,
-                          height: 34 / 28,
-                        ),
-                      ),
-                      SizedBox(height: 28.h),
-                      if (R.isTabletLandscape(context))
-                        const Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: _CommitmentBlock(
-                                title: 'Accountability',
-                                body:
-                                    'Financial transparency and independent review of '
-                                    'the books.',
-                              ),
-                            ),
-                            SizedBox(width: 28),
-                            Expanded(
-                              child: _CommitmentBlock(
-                                title: 'Community first',
-                                body:
-                                    'Neighbors involved at every stage, from choosing a '
-                                    'site to maintaining it.',
-                              ),
-                            ),
-                            SizedBox(width: 28),
-                            Expanded(
-                              child: _CommitmentBlock(
-                                title: 'Built to last',
-                                body:
-                                    'Sustainable, environmentally responsible solutions '
-                                    'and regular reporting to donors.',
-                              ),
-                            ),
-                          ],
-                        )
-                      else ...[
-                        const _CommitmentBlock(
-                          title: 'Accountability',
-                          body:
-                              'Financial transparency and independent review of '
-                              'the books.',
-                        ),
-                        const _ThickSeparator(),
-                        const _CommitmentBlock(
-                          title: 'Community first',
-                          body:
-                              'Neighbors involved at every stage, from choosing a '
-                              'site to maintaining it.',
-                        ),
-                        const _ThickSeparator(),
-                        const _CommitmentBlock(
-                          title: 'Built to last',
-                          body:
-                              'Sustainable, environmentally responsible solutions '
-                              'and regular reporting to donors.',
-                        ),
-                      ],
-                    ],
+            slivers: [
+              SliverToBoxAdapter(child: _buildHero(pagesController)),
+              SliverToBoxAdapter(
+                child: ApaPageWidth(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      R.isTabletLandscape(context) ? 48 : 24.w,
+                      40.h,
+                      R.isTabletLandscape(context) ? 48 : 24.w,
+                      navBottomPad,
+                    ),
+                    child: _buildBody(context, pagesController),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
+
+  Widget _buildHero(PagesController? pagesController) {
+    if (pagesController == null) return const SizedBox.shrink();
+
+    return Obx(() {
+      final content = _content(pagesController);
+      if (content == null || !content.showHeader) {
+        return const SizedBox.shrink();
+      }
+
+      return ApaHeroHeader(
+        imageAsset: ApaAssets.transparencyHero,
+        imageUrl: content.imageUrl ?? imageUrl,
+        useAssetFallback: false,
+        height: 540,
+        badge: content.topTagLine,
+        headline: _headlineSpans(content),
+        subtitle: content.lastContent.isEmpty ? null : content.lastContent,
+      );
+    });
+  }
+
+  List<InlineSpan> _headlineSpans(TransparencyPageContent content) {
+    final oneStyle = ApaFonts.inter(
+      color: ApaColors.white,
+      fontSize: 36.sp,
+      fontWeight: FontWeight.w800,
+      height: 40 / 36,
+      letterSpacing: -0.5,
+    );
+    final twoStyle = ApaFonts.inter(
+      color: ApaColors.primaryRedDeep,
+      fontSize: 36.sp,
+      fontWeight: FontWeight.w800,
+      height: 40 / 36,
+      letterSpacing: -0.5,
+    );
+
+    final one = content.headingTextOne;
+    final two = content.headingTextTwo;
+    return [
+      if (one.isNotEmpty)
+        TextSpan(
+          text: two.isNotEmpty ? '${one.toUpperCase()}\n' : one.toUpperCase(),
+          style: oneStyle,
+        ),
+      if (two.isNotEmpty)
+        TextSpan(
+          text: two.toUpperCase(),
+          style: twoStyle,
+        ),
+    ];
+  }
+
+  Widget _buildBody(
+    BuildContext context,
+    PagesController? pagesController,
+  ) {
+    if (pagesController == null) return const SizedBox.shrink();
+
+    return Obx(() {
+      final content = _content(pagesController);
+      if (content == null) {
+        if (pagesController.isLoading.value && pagesController.items.isEmpty) {
+          return Padding(
+            padding: EdgeInsets.symmetric(vertical: 48.h),
+            child: const Center(
+              child: CircularProgressIndicator(color: ApaColors.primaryRed),
+            ),
+          );
+        }
+        return const SizedBox.shrink();
+      }
+
+      final desktop = R.isTabletLandscape(context);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (content.hasFunding) ...[
+            if (desktop)
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  if (content.funding.hasRaised)
+                    _RaisedBox(amount: content.funding.raisedLabel),
+                  if (content.funding.hasRaised && content.funding.hasProgress)
+                    SizedBox(width: 40.w),
+                  if (content.funding.hasProgress)
+                    Expanded(
+                      child: _ProgressBlock(funding: content.funding),
+                    ),
+                ],
+              )
+            else ...[
+              if (content.funding.hasRaised)
+                _RaisedBox(amount: content.funding.raisedLabel),
+              if (content.funding.hasRaised && content.funding.hasProgress)
+                SizedBox(height: 24.h),
+              if (content.funding.hasProgress)
+                _ProgressBlock(funding: content.funding),
+            ],
+            SizedBox(height: 24.h),
+            const ColoredBox(
+              color: ApaColors.black,
+              child: SizedBox(height: 1, width: double.infinity),
+            ),
+            SizedBox(height: 32.h),
+          ],
+          if (content.hasLedger) ...[
+            const _LedgerHeader(),
+            for (final item in content.ledgerItems)
+              _LedgerRow(
+                project: item.project,
+                community: item.community,
+                status: item.status,
+                committed: item.committed,
+                statusHighlighted: item.highlightStatus,
+              ),
+            SizedBox(height: 48.h),
+          ],
+          if (content.hasCommitments) ...[
+            if (content.commitmentTitle.isNotEmpty)
+              Text(
+                content.commitmentTitle.toUpperCase(),
+                style: ApaFonts.inter(
+                  color: ApaColors.black,
+                  fontSize: 28.sp,
+                  fontWeight: FontWeight.w800,
+                  height: 34 / 28,
+                ),
+              ),
+            if (content.commitments.isNotEmpty) ...[
+              SizedBox(height: 28.h),
+              if (desktop)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (var i = 0; i < content.commitments.length; i++) ...[
+                      if (i > 0) const SizedBox(width: 28),
+                      Expanded(
+                        child: _CommitmentBlock(
+                          title: content.commitments[i].title,
+                          body: content.commitments[i].body,
+                        ),
+                      ),
+                    ],
+                  ],
+                )
+              else ...[
+                for (var i = 0; i < content.commitments.length; i++) ...[
+                  if (i > 0) const _ThickSeparator(),
+                  _CommitmentBlock(
+                    title: content.commitments[i].title,
+                    body: content.commitments[i].body,
+                  ),
+                ],
+              ],
+            ],
+          ],
+        ],
+      );
+    });
+  }
+
+  TransparencyPageContent? _content(PagesController pagesController) {
+    pagesController.items.length;
+    pagesController.pageDetailsById.length;
+
+    final listPage = pagesController.pageForShell(ApaShellPage.transparency);
+    if (listPage == null) return null;
+
+    pagesController.loadPageDetails(listPage.id);
+    final details = pagesController.detailsForPageId(listPage.id);
+    if (details == null) return null;
+    return TransparencyPageContent.fromPost(details);
+  }
 }
 
 class _RaisedBox extends StatelessWidget {
-  const _RaisedBox();
+  const _RaisedBox({required this.amount});
+
+  final String amount;
 
   @override
   Widget build(BuildContext context) {
@@ -229,7 +272,7 @@ class _RaisedBox extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            '\$25,000',
+            amount,
             style: ApaFonts.inter(
               color: ApaColors.nearBlack,
               fontSize: 32.sp,
@@ -256,7 +299,9 @@ class _RaisedBox extends StatelessWidget {
 }
 
 class _ProgressBlock extends StatelessWidget {
-  const _ProgressBlock();
+  const _ProgressBlock({required this.funding});
+
+  final TransparencyFunding funding;
 
   @override
   Widget build(BuildContext context) {
@@ -267,23 +312,25 @@ class _ProgressBlock extends StatelessWidget {
           borderRadius: BorderRadius.circular(9999),
           child: SizedBox(
             height: 14.h,
-            child: const LinearProgressIndicator(
-              value: 0.21,
+            child: LinearProgressIndicator(
+              value: funding.progressValue,
               backgroundColor: ApaColors.gray100,
               color: ApaColors.navy,
             ),
           ),
         ),
-        SizedBox(height: 12.h),
-        Text(
-          '21% of phase-one goal — \$120,000 for Sud',
-          style: ApaFonts.inter(
-            color: ApaColors.gray700,
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w600,
-            height: 20 / 14,
+        if (funding.progressCaption.isNotEmpty) ...[
+          SizedBox(height: 12.h),
+          Text(
+            funding.progressCaption,
+            style: ApaFonts.inter(
+              color: ApaColors.gray700,
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w600,
+              height: 20 / 14,
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -315,24 +362,27 @@ class _CommitmentBlock extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: ApaFonts.inter(
-            color: ApaColors.black,
-            fontSize: 22.sp,
-            fontWeight: FontWeight.w800,
-            height: 28 / 22,
+        if (title.isNotEmpty)
+          Text(
+            title,
+            style: ApaFonts.inter(
+              color: ApaColors.black,
+              fontSize: 22.sp,
+              fontWeight: FontWeight.w800,
+              height: 28 / 22,
+            ),
           ),
-        ),
-        SizedBox(height: 8.h),
-        Text(
-          body,
-          style: ApaFonts.inter(
-            color: ApaColors.gray700,
-            fontSize: 15.sp,
-            height: 22 / 15,
+        if (body.isNotEmpty) ...[
+          SizedBox(height: 8.h),
+          Text(
+            body,
+            style: ApaFonts.inter(
+              color: ApaColors.gray700,
+              fontSize: 15.sp,
+              height: 22 / 15,
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
@@ -434,22 +484,27 @@ class _LedgerRow extends StatelessWidget {
             flex: 2,
             child: Align(
               alignment: Alignment.centerLeft,
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                decoration: BoxDecoration(
-                  color: statusBackground,
-                  borderRadius: BorderRadius.circular(9999),
-                ),
-                child: Text(
-                  status,
-                  style: ApaFonts.inter(
-                    color: statusTextColor,
-                    fontSize: 10.sp,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.4,
-                  ),
-                ),
-              ),
+              child: status.isEmpty
+                  ? const SizedBox.shrink()
+                  : Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 8.w,
+                        vertical: 4.h,
+                      ),
+                      decoration: BoxDecoration(
+                        color: statusBackground,
+                        borderRadius: BorderRadius.circular(9999),
+                      ),
+                      child: Text(
+                        status,
+                        style: ApaFonts.inter(
+                          color: statusTextColor,
+                          fontSize: 10.sp,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.4,
+                        ),
+                      ),
+                    ),
             ),
           ),
           Expanded(

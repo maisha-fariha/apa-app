@@ -67,6 +67,7 @@ void main() {
     expect(page.content, '<p>Body content</p>');
     expect(page.excerpt, 'Short excerpt');
     expect(page.featuredImageUrl, 'https://example.com/projects.webp');
+    expect(page.fundingProgress, isEmpty);
   });
 
   test('maps templates to shell pages and ignores unknown templates', () {

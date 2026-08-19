@@ -229,6 +229,9 @@ mixin _$PostItem {
   List<dynamic> get taxonomies => throw _privateConstructorUsedError;
   @JsonKey(name: 'acf_fields', fromJson: _acfFieldsFromJson)
   Map<String, dynamic> get acfFields => throw _privateConstructorUsedError;
+  @JsonKey(name: 'funding_progress', fromJson: _acfFieldsFromJson)
+  Map<String, dynamic> get fundingProgress =>
+      throw _privateConstructorUsedError;
   String get content => throw _privateConstructorUsedError;
   String get excerpt => throw _privateConstructorUsedError;
 
@@ -262,6 +265,8 @@ abstract class $PostItemCopyWith<$Res> {
     @JsonKey(fromJson: _dynamicListFromJson) List<dynamic> taxonomies,
     @JsonKey(name: 'acf_fields', fromJson: _acfFieldsFromJson)
     Map<String, dynamic> acfFields,
+    @JsonKey(name: 'funding_progress', fromJson: _acfFieldsFromJson)
+    Map<String, dynamic> fundingProgress,
     String content,
     String excerpt,
   });
@@ -296,6 +301,7 @@ class _$PostItemCopyWithImpl<$Res, $Val extends PostItem>
     Object? featuredImage = null,
     Object? taxonomies = null,
     Object? acfFields = null,
+    Object? fundingProgress = null,
     Object? content = null,
     Object? excerpt = null,
   }) {
@@ -349,6 +355,10 @@ class _$PostItemCopyWithImpl<$Res, $Val extends PostItem>
                 ? _value.acfFields
                 : acfFields // ignore: cast_nullable_to_non_nullable
                       as Map<String, dynamic>,
+            fundingProgress: null == fundingProgress
+                ? _value.fundingProgress
+                : fundingProgress // ignore: cast_nullable_to_non_nullable
+                      as Map<String, dynamic>,
             content: null == content
                 ? _value.content
                 : content // ignore: cast_nullable_to_non_nullable
@@ -397,6 +407,8 @@ abstract class _$$PostItemImplCopyWith<$Res>
     @JsonKey(fromJson: _dynamicListFromJson) List<dynamic> taxonomies,
     @JsonKey(name: 'acf_fields', fromJson: _acfFieldsFromJson)
     Map<String, dynamic> acfFields,
+    @JsonKey(name: 'funding_progress', fromJson: _acfFieldsFromJson)
+    Map<String, dynamic> fundingProgress,
     String content,
     String excerpt,
   });
@@ -431,6 +443,7 @@ class __$$PostItemImplCopyWithImpl<$Res>
     Object? featuredImage = null,
     Object? taxonomies = null,
     Object? acfFields = null,
+    Object? fundingProgress = null,
     Object? content = null,
     Object? excerpt = null,
   }) {
@@ -484,6 +497,10 @@ class __$$PostItemImplCopyWithImpl<$Res>
             ? _value._acfFields
             : acfFields // ignore: cast_nullable_to_non_nullable
                   as Map<String, dynamic>,
+        fundingProgress: null == fundingProgress
+            ? _value._fundingProgress
+            : fundingProgress // ignore: cast_nullable_to_non_nullable
+                  as Map<String, dynamic>,
         content: null == content
             ? _value.content
             : content // ignore: cast_nullable_to_non_nullable
@@ -516,10 +533,13 @@ class _$PostItemImpl extends _PostItem {
     final List<dynamic> taxonomies = const [],
     @JsonKey(name: 'acf_fields', fromJson: _acfFieldsFromJson)
     final Map<String, dynamic> acfFields = const {},
+    @JsonKey(name: 'funding_progress', fromJson: _acfFieldsFromJson)
+    final Map<String, dynamic> fundingProgress = const {},
     this.content = '',
     this.excerpt = '',
   }) : _taxonomies = taxonomies,
        _acfFields = acfFields,
+       _fundingProgress = fundingProgress,
        super._();
 
   factory _$PostItemImpl.fromJson(Map<String, dynamic> json) =>
@@ -573,6 +593,15 @@ class _$PostItemImpl extends _PostItem {
     return EqualUnmodifiableMapView(_acfFields);
   }
 
+  final Map<String, dynamic> _fundingProgress;
+  @override
+  @JsonKey(name: 'funding_progress', fromJson: _acfFieldsFromJson)
+  Map<String, dynamic> get fundingProgress {
+    if (_fundingProgress is EqualUnmodifiableMapView) return _fundingProgress;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_fundingProgress);
+  }
+
   @override
   @JsonKey()
   final String content;
@@ -582,7 +611,7 @@ class _$PostItemImpl extends _PostItem {
 
   @override
   String toString() {
-    return 'PostItem(id: $id, title: $title, slug: $slug, type: $type, status: $status, date: $date, modified: $modified, template: $template, permalink: $permalink, featuredImage: $featuredImage, taxonomies: $taxonomies, acfFields: $acfFields, content: $content, excerpt: $excerpt)';
+    return 'PostItem(id: $id, title: $title, slug: $slug, type: $type, status: $status, date: $date, modified: $modified, template: $template, permalink: $permalink, featuredImage: $featuredImage, taxonomies: $taxonomies, acfFields: $acfFields, fundingProgress: $fundingProgress, content: $content, excerpt: $excerpt)';
   }
 
   @override
@@ -612,6 +641,10 @@ class _$PostItemImpl extends _PostItem {
               other._acfFields,
               _acfFields,
             ) &&
+            const DeepCollectionEquality().equals(
+              other._fundingProgress,
+              _fundingProgress,
+            ) &&
             (identical(other.content, content) || other.content == content) &&
             (identical(other.excerpt, excerpt) || other.excerpt == excerpt));
   }
@@ -632,6 +665,7 @@ class _$PostItemImpl extends _PostItem {
     featuredImage,
     const DeepCollectionEquality().hash(_taxonomies),
     const DeepCollectionEquality().hash(_acfFields),
+    const DeepCollectionEquality().hash(_fundingProgress),
     content,
     excerpt,
   );
@@ -666,6 +700,8 @@ abstract class _PostItem extends PostItem {
     @JsonKey(fromJson: _dynamicListFromJson) final List<dynamic> taxonomies,
     @JsonKey(name: 'acf_fields', fromJson: _acfFieldsFromJson)
     final Map<String, dynamic> acfFields,
+    @JsonKey(name: 'funding_progress', fromJson: _acfFieldsFromJson)
+    final Map<String, dynamic> fundingProgress,
     final String content,
     final String excerpt,
   }) = _$PostItemImpl;
@@ -702,6 +738,9 @@ abstract class _PostItem extends PostItem {
   @override
   @JsonKey(name: 'acf_fields', fromJson: _acfFieldsFromJson)
   Map<String, dynamic> get acfFields;
+  @override
+  @JsonKey(name: 'funding_progress', fromJson: _acfFieldsFromJson)
+  Map<String, dynamic> get fundingProgress;
   @override
   String get content;
   @override
