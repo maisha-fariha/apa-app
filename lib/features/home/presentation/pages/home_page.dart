@@ -154,11 +154,11 @@ class _HomeBody extends StatefulWidget {
 }
 
 class _HomeBodyState extends State<_HomeBody> {
-  static const int _step = 25;
-  static const int _minAmount = 1;
+  static const int _step = 1;
+  static const int _minAmount = 0;
   static const int _maxAmount = 5000;
 
-  int _amount = 100;
+  int _amount = 0;
 
   void _increment() {
     setState(() {

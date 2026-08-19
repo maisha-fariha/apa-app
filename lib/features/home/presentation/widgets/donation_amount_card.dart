@@ -100,11 +100,6 @@ class DonationAmountCard extends StatelessWidget {
                     '$amount',
                     style: ApaTypography.donationAmount,
                   ),
-                  SizedBox(width: 8.w),
-                  _AmountStepper(
-                    onIncrement: canIncrement ? onIncrement : null,
-                    onDecrement: canDecrement ? onDecrement : null,
-                  ),
                   SizedBox(width: 10.w),
                   Padding(
                     padding: EdgeInsets.only(bottom: 2.h),
@@ -112,6 +107,11 @@ class DonationAmountCard extends StatelessWidget {
                       currencyCode.toUpperCase(),
                       style: ApaTypography.currencyCode,
                     ),
+                  ),
+                  SizedBox(width: 8.w),
+                  _AmountStepper(
+                    onIncrement: canIncrement ? onIncrement : null,
+                    onDecrement: canDecrement ? onDecrement : null,
                   ),
                 ],
               ),
