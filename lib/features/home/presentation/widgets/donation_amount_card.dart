@@ -9,18 +9,42 @@ import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_typography.dart';
 import '../../../../core/widgets/apa_svg_icon.dart';
 
-/// Glassmorphism donation amount card from Figma.
+/// Glassmorphism donation amount card with increment / decrement controls.
 class DonationAmountCard extends StatelessWidget {
   const DonationAmountCard({
     super.key,
-    this.dateLabel = 'AUGUST 10 , 2026',
-    this.amountLabel = '0.00',
+    required this.amount,
+    required this.onIncrement,
+    required this.onDecrement,
     this.currencyCode = 'USD',
+    this.canIncrement = true,
+    this.canDecrement = true,
   });
 
-  final String dateLabel;
-  final String amountLabel;
+  final int amount;
+  final VoidCallback onIncrement;
+  final VoidCallback onDecrement;
   final String currencyCode;
+  final bool canIncrement;
+  final bool canDecrement;
+
+  static String formatDate(DateTime date) {
+    const months = [
+      'JANUARY',
+      'FEBRUARY',
+      'MARCH',
+      'APRIL',
+      'MAY',
+      'JUNE',
+      'JULY',
+      'AUGUST',
+      'SEPTEMBER',
+      'OCTOBER',
+      'NOVEMBER',
+      'DECEMBER',
+    ];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +72,7 @@ class DonationAmountCard extends StatelessWidget {
                   ),
                   SizedBox(width: ApaDimens.donationDateGap),
                   Text(
-                    dateLabel.toUpperCase(),
+                    formatDate(DateTime.now()),
                     style: ApaTypography.donationDate,
                   ),
                 ],
@@ -62,23 +86,28 @@ class DonationAmountCard extends StatelessWidget {
               SizedBox(height: ApaDimens.donationDividerSpacingBottom),
               Row(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Padding(
-                    padding: EdgeInsets.only(bottom: 3.h),
+                    padding: EdgeInsets.only(bottom: 4.h),
                     child: Text(
                       '\$',
                       style: ApaTypography.currencySymbol,
                     ),
                   ),
-                  SizedBox(width: 8.w),
+                  SizedBox(width: 6.w),
                   Text(
-                    amountLabel,
+                    '$amount',
                     style: ApaTypography.donationAmount,
                   ),
                   SizedBox(width: 8.w),
+                  _AmountStepper(
+                    onIncrement: canIncrement ? onIncrement : null,
+                    onDecrement: canDecrement ? onDecrement : null,
+                  ),
+                  SizedBox(width: 10.w),
                   Padding(
-                    padding: EdgeInsets.only(bottom: 7.h),
+                    padding: EdgeInsets.only(bottom: 2.h),
                     child: Text(
                       currencyCode.toUpperCase(),
                       style: ApaTypography.currencyCode,
@@ -87,6 +116,69 @@ class DonationAmountCard extends StatelessWidget {
                 ],
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AmountStepper extends StatelessWidget {
+  const _AmountStepper({
+    required this.onIncrement,
+    required this.onDecrement,
+  });
+
+  final VoidCallback? onIncrement;
+  final VoidCallback? onDecrement;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 28.w,
+      decoration: BoxDecoration(
+        color: ApaColors.white.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(6.r),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _StepperButton(
+            icon: Icons.keyboard_arrow_up_rounded,
+            onPressed: onIncrement,
+          ),
+          Container(height: 1, color: ApaColors.gray200),
+          _StepperButton(
+            icon: Icons.keyboard_arrow_down_rounded,
+            onPressed: onDecrement,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StepperButton extends StatelessWidget {
+  const _StepperButton({
+    required this.icon,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onPressed,
+      child: SizedBox(
+        height: 22.h,
+        width: double.infinity,
+        child: Center(
+          child: Icon(
+            icon,
+            size: 18.sp,
+            color: onPressed == null ? ApaColors.gray400 : ApaColors.nearBlack,
           ),
         ),
       ),

@@ -319,6 +319,18 @@ class DonationController extends GetxController {
     }
   }
 
+  void applyHomeAmount(int dollars) {
+    monthly.value = false;
+    if (dollars <= 0) return;
+    final match =
+        catalog.value?.priceForDollars(dollars: dollars, monthly: false);
+    if (match != null) {
+      selectPrice(match);
+      return;
+    }
+    setCustomAmount('$dollars');
+  }
+
   void _selectDefaultChip() {
     final options = chips;
     if (options.isEmpty) {

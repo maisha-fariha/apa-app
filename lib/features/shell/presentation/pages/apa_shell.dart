@@ -5,6 +5,7 @@ import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../contact/presentation/controllers/contact_controller.dart';
 import '../../../contact/presentation/pages/contact_page.dart';
+import '../../../donation/presentation/controllers/donation_controller.dart';
 import '../../../donation/presentation/pages/donation_page.dart';
 import '../../../home/presentation/pages/home_page.dart';
 import '../../../news/presentation/pages/article_page.dart';
@@ -234,10 +235,15 @@ class _ApaShellState extends State<ApaShell> {
         children: [
           HomePage(
             scrollController: _homeScroll,
-            onDonatePressed: () => _openByTemplate(
-              ApaPageTemplates.donation,
-              ApaShellPage.donation,
-            ),
+            onDonatePressed: (amount) {
+              if (Get.isRegistered<DonationController>()) {
+                Get.find<DonationController>().applyHomeAmount(amount);
+              }
+              _openByTemplate(
+                ApaPageTemplates.donation,
+                ApaShellPage.donation,
+              );
+            },
             imageUrl: _imageUrl(ApaShellPage.home),
           ),
           ProjectsPage(

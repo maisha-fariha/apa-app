@@ -22,7 +22,7 @@ class HomePage extends StatelessWidget {
   });
 
   final ScrollController? scrollController;
-  final VoidCallback? onDonatePressed;
+  final ValueChanged<int>? onDonatePressed;
   final String? imageUrl;
 
   @override
@@ -65,7 +65,7 @@ class HomePage extends StatelessWidget {
 class _PhoneHome extends StatelessWidget {
   const _PhoneHome({this.onDonatePressed});
 
-  final VoidCallback? onDonatePressed;
+  final ValueChanged<int>? onDonatePressed;
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +95,7 @@ class _LandscapeHome extends StatelessWidget {
   });
 
   final ScrollController? scrollController;
-  final VoidCallback? onDonatePressed;
+  final ValueChanged<int>? onDonatePressed;
 
   @override
   Widget build(BuildContext context) {
@@ -144,10 +144,33 @@ class _HomeLogo extends StatelessWidget {
   }
 }
 
-class _HomeBody extends StatelessWidget {
+class _HomeBody extends StatefulWidget {
   const _HomeBody({this.onDonatePressed});
 
-  final VoidCallback? onDonatePressed;
+  final ValueChanged<int>? onDonatePressed;
+
+  @override
+  State<_HomeBody> createState() => _HomeBodyState();
+}
+
+class _HomeBodyState extends State<_HomeBody> {
+  static const int _step = 25;
+  static const int _minAmount = 1;
+  static const int _maxAmount = 5000;
+
+  int _amount = 100;
+
+  void _increment() {
+    setState(() {
+      _amount = (_amount + _step).clamp(_minAmount, _maxAmount);
+    });
+  }
+
+  void _decrement() {
+    setState(() {
+      _amount = (_amount - _step).clamp(_minAmount, _maxAmount);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -156,9 +179,19 @@ class _HomeBody extends StatelessWidget {
       children: [
         const LocationBadge(),
         SizedBox(height: ApaDimens.locationBadgeBottomSpacing),
-        const DonationAmountCard(),
+        DonationAmountCard(
+          amount: _amount,
+          onIncrement: _increment,
+          onDecrement: _decrement,
+          canIncrement: _amount < _maxAmount,
+          canDecrement: _amount > _minAmount,
+        ),
         SizedBox(height: ApaDimens.donationCardBottomSpacing),
-        DonateButton(onPressed: onDonatePressed),
+        DonateButton(
+          onPressed: widget.onDonatePressed == null
+              ? null
+              : () => widget.onDonatePressed!(_amount),
+        ),
         SizedBox(height: ApaDimens.donateButtonBottomSpacing),
         const HomeFooterNote(),
       ],
