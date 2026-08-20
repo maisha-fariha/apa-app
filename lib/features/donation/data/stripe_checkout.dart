@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:apa/core/network/api_endpoints.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
@@ -19,6 +21,12 @@ class StripeCheckout {
   static const urlScheme = 'apa';
   static const returnURL = ApiEndpoints.stripeReturnUrl;
 
+  static bool _gotStripeReturnUrl = false;
+
+  static void noteStripeReturnUrl() {
+    _gotStripeReturnUrl = true;
+  }
+
   Future<void> configure({required String publishableKey}) async {
     Stripe.publishableKey = publishableKey;
     Stripe.urlScheme = urlScheme;
@@ -34,14 +42,18 @@ class StripeCheckout {
     VoidCallback? onAuthorized,
   }) async {
     await configure(publishableKey: publishableKey);
+    _gotStripeReturnUrl = false;
 
     final isSetupIntent = clientSecret.startsWith('seti_');
+    final lifecycle = _RedirectLifecycle(
+      onReturnedWithoutRedirect: _resetProcessingAfterAbandonedAuth,
+    )..attach();
+
     try {
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           merchantDisplayName: merchantDisplayName,
-          paymentIntentClientSecret:
-              isSetupIntent ? null : clientSecret,
+          paymentIntentClientSecret: isSetupIntent ? null : clientSecret,
           setupIntentClientSecret: isSetupIntent ? clientSecret : null,
           returnURL: returnURL,
           style: ThemeMode.light,
@@ -70,6 +82,46 @@ class StripeCheckout {
             error.error.message ??
             'Payment could not be completed.',
       );
+    } finally {
+      lifecycle.detach();
+    }
+  }
+
+  /// User backed out of Cash App / 3DS without paying. Tell Stripe the
+  /// redirect failed so Pay Now is not left on "Processing…".
+  Future<void> _resetProcessingAfterAbandonedAuth() async {
+    await Future<void>.delayed(const Duration(milliseconds: 700));
+    if (_gotStripeReturnUrl) return;
+    try {
+      await Stripe.instance.handleURLCallback(
+        '$returnURL?redirect_status=failed',
+      );
+    } catch (_) {}
+  }
+}
+
+class _RedirectLifecycle with WidgetsBindingObserver {
+  _RedirectLifecycle({required this.onReturnedWithoutRedirect});
+
+  final Future<void> Function() onReturnedWithoutRedirect;
+  var _leftApp = false;
+
+  void attach() {
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  void detach() {
+    WidgetsBinding.instance.removeObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      _leftApp = true;
+    }
+    if (state == AppLifecycleState.resumed && _leftApp) {
+      _leftApp = false;
+      unawaited(onReturnedWithoutRedirect());
     }
   }
 }
