@@ -57,9 +57,13 @@ class _ApaAppState extends State<ApaApp> {
 
   void _listenForStripeReturnUrls() {
     final appLinks = AppLinks();
-    _linkSubscription = appLinks.uriLinkStream.listen((uri) {
-      if (uri.scheme != 'apa') return;
+    appLinks.getInitialLink().then((uri) {
+      if (uri == null || uri.scheme != 'apa') return;
       Stripe.instance.handleURLCallback(uri.toString());
+    }).catchError((_) {});
+    _linkSubscription = appLinks.uriLinkStream.listen((uri) async {
+      if (uri.scheme != 'apa') return;
+      await Stripe.instance.handleURLCallback(uri.toString());
     }, onError: (_) {});
   }
 
