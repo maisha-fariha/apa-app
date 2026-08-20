@@ -19,6 +19,7 @@ import 'services/app_services.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  StripeCheckout.bindPlatformSettings();
 
   final appServices = AppServices();
   await appServices.initialize(

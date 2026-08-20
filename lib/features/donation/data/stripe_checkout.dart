@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:apa/core/network/api_endpoints.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 
@@ -20,6 +22,8 @@ class StripeCheckout {
   static const merchantDisplayName = 'Ansanm Pou Ayiti';
   static const urlScheme = 'apa';
   static const returnURL = ApiEndpoints.stripeReturnUrl;
+  static const _presentationDelay = Duration(milliseconds: 350);
+  static const _androidPresentationDelay = Duration(milliseconds: 700);
 
   static bool _gotStripeReturnUrl = false;
 
@@ -27,11 +31,38 @@ class StripeCheckout {
     _gotStripeReturnUrl = true;
   }
 
-  Future<void> configure({required String publishableKey}) async {
-    Stripe.publishableKey = publishableKey;
+  /// URL scheme only — does not call [Stripe.instance.applySettings] because
+  /// flutter_stripe requires a publishable key first.
+  static void bindPlatformSettings() {
     Stripe.urlScheme = urlScheme;
     Stripe.setReturnUrlSchemeOnAndroid = true;
+  }
+
+  static Future<void> _applySettings() async {
+    bindPlatformSettings();
     await Stripe.instance.applySettings();
+  }
+
+  /// Lets dialogs/keyboard dismiss before opening Stripe's native UI.
+  static Future<void> waitForNativePresentation() async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    await WidgetsBinding.instance.endOfFrame;
+    await Future<void>.delayed(
+      !kIsWeb && Platform.isAndroid
+          ? _androidPresentationDelay
+          : _presentationDelay,
+    );
+    await WidgetsBinding.instance.endOfFrame;
+    await Future<void>.delayed(
+      !kIsWeb && Platform.isAndroid
+          ? const Duration(milliseconds: 150)
+          : Duration.zero,
+    );
+  }
+
+  Future<void> configure({required String publishableKey}) async {
+    Stripe.publishableKey = publishableKey;
+    await _applySettings();
   }
 
   Future<StripeCheckoutOutcome> presentPaymentSheet({
@@ -58,7 +89,9 @@ class StripeCheckout {
           returnURL: returnURL,
           style: ThemeMode.light,
           primaryButtonLabel: 'PAY NOW',
-          allowsDelayedPaymentMethods: true,
+          // Delayed methods (Cash App, etc.) stress low-end Android GPUs.
+          allowsDelayedPaymentMethods:
+              !kIsWeb && Platform.isAndroid ? false : true,
           billingDetails: BillingDetails(
             name: name?.trim().isEmpty == true ? null : name?.trim(),
             email: email?.trim().isEmpty == true ? null : email?.trim(),
@@ -70,6 +103,7 @@ class StripeCheckout {
           ),
         ),
       );
+      await waitForNativePresentation();
       await Stripe.instance.presentPaymentSheet();
       onAuthorized?.call();
       return StripeCheckoutOutcome.completed;

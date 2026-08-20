@@ -214,6 +214,7 @@ class _DonationAmountCardState extends State<DonationAmountCard> {
                                   controller: _controller,
                                   focusNode: _focusNode,
                                   keyboardType: TextInputType.number,
+                                  scrollPadding: EdgeInsets.only(bottom: 160.h),
                                   inputFormatters: [
                                     FilteringTextInputFormatter.digitsOnly,
                                   ],
