@@ -9,6 +9,7 @@ import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../core/widgets/apa_shared_widgets.dart';
+import '../../data/stripe_checkout.dart';
 import '../controllers/donation_controller.dart';
 
 /// Donation Page — Figma frame `8:322`.
@@ -607,6 +608,7 @@ class _CompleteDonationDialogState extends State<_CompleteDonationDialog> {
     final thanks =
         'Thank you. Your ${widget.frequencyLabel.toLowerCase()} gift of \$${widget.amount} was submitted.';
     Navigator.of(context).pop();
+    await StripeCheckout.waitForNativePresentation();
 
     var wentHome = false;
     final result = await widget.controller.presentCheckout(

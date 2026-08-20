@@ -45,7 +45,7 @@ class ApaHeroHeader extends StatelessWidget {
     final screenH = MediaQuery.sizeOf(context).height;
     final heroHeight = desktop
         ? (screenH * 0.52).clamp(340.0, 460.0)
-        : height.h + top;
+        : height.h + top + top;
     final hPad = desktop ? R.pagePadding(context) : ApaDimens.horizontalPadding;
 
     return SizedBox(

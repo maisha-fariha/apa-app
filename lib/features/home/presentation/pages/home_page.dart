@@ -69,21 +69,31 @@ class _PhoneHome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        SizedBox(height: ApaDimens.headerTopSpacing),
-        const _HomeLogo(),
-        Expanded(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: ApaDimens.maxContentWidth,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: ApaDimens.maxContentWidth,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(height: ApaDimens.headerTopSpacing),
+                    const _HomeLogo(),
+                    _HomeBody(onDonatePressed: onDonatePressed),
+                  ],
+                ),
               ),
-              child: _HomeBody(onDonatePressed: onDonatePressed),
             ),
           ),
-        ),
-      ],
+        );
+      },
     );
   }
 }

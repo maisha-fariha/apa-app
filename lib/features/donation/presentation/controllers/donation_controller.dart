@@ -289,7 +289,6 @@ class DonationController extends GetxController {
         publishableKey: session.publishableKey.isNotEmpty
             ? session.publishableKey
             : loaded.config.publishableKey,
-        testMode: loaded.config.isTestMode,
         email: email?.trim(),
         name: name?.trim(),
         onAuthorized: onAuthorized,
