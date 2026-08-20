@@ -85,6 +85,7 @@ class _StripePaymentElementPageState extends State<StripePaymentElementPage> {
   late final WebViewController _controller;
   StreamSubscription<Uri>? _linkSubscription;
   bool _completing = false;
+  bool _leftPaymentMethods = false;
   String? _loadError;
 
   @override
@@ -119,24 +120,17 @@ class _StripePaymentElementPageState extends State<StripePaymentElementPage> {
               _finish(StripeCheckoutOutcome.completed);
               return NavigationDecision.prevent;
             }
+            if (_isLeavingPaymentMethods(request.url)) {
+              _leftPaymentMethods = true;
+            }
             return NavigationDecision.navigate;
           },
           onWebResourceError: (error) {
             setState(() => _loadError = error.description);
           },
         ),
-      )
-      ..loadHtmlString(
-        _paymentElementHtml(
-          publishableKey: widget.publishableKey,
-          clientSecret: widget.clientSecret,
-          returnUrl: widget.returnUrl,
-          email: widget.email,
-          name: widget.name,
-          testMode: widget.testMode,
-        ),
-        baseUrl: 'https://js.stripe.com',
       );
+    _loadPaymentHtml();
 
     _linkSubscription = AppLinks().uriLinkStream.listen((uri) {
       if (_isReturnUrl(uri.toString())) {
@@ -145,8 +139,45 @@ class _StripePaymentElementPageState extends State<StripePaymentElementPage> {
     });
   }
 
+  void _loadPaymentHtml() {
+    _leftPaymentMethods = false;
+    _controller.loadHtmlString(
+      _paymentElementHtml(
+        publishableKey: widget.publishableKey,
+        clientSecret: widget.clientSecret,
+        returnUrl: widget.returnUrl,
+        email: widget.email,
+        name: widget.name,
+        testMode: widget.testMode,
+      ),
+      baseUrl: 'https://js.stripe.com',
+    );
+  }
+
+  bool _isLeavingPaymentMethods(String url) {
+    if (url.startsWith('data:') ||
+        url == 'about:blank' ||
+        url.startsWith('https://js.stripe.com')) {
+      return false;
+    }
+    return true;
+  }
+
   bool _isReturnUrl(String url) {
     return url.startsWith(widget.returnUrl) || url.startsWith('apa://');
+  }
+
+  Future<void> _handleBack() async {
+    if (_completing || !mounted) return;
+    if (await _controller.canGoBack()) {
+      await _controller.goBack();
+      return;
+    }
+    if (_leftPaymentMethods) {
+      _loadPaymentHtml();
+      return;
+    }
+    _finish(StripeCheckoutOutcome.canceled);
   }
 
   void _finish(StripeCheckoutOutcome outcome) {
@@ -163,7 +194,12 @@ class _StripePaymentElementPageState extends State<StripePaymentElementPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) _handleBack();
+      },
+      child: Scaffold(
       backgroundColor: ApaColors.white,
       appBar: AppBar(
         backgroundColor: ApaColors.white,
@@ -179,8 +215,8 @@ class _StripePaymentElementPageState extends State<StripePaymentElementPage> {
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.close),
-          onPressed: () => _finish(StripeCheckoutOutcome.canceled),
+          icon: const Icon(Icons.arrow_back),
+          onPressed: _handleBack,
         ),
       ),
       body: _loadError == null
@@ -195,6 +231,7 @@ class _StripePaymentElementPageState extends State<StripePaymentElementPage> {
                 ),
               ),
             ),
+      ),
     );
   }
 }
