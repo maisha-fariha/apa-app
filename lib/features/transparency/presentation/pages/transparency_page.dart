@@ -182,6 +182,16 @@ class TransparencyPage extends StatelessWidget {
             SizedBox(height: 32.h),
           ],
           if (content.hasLedger) ...[
+            Text(
+              'PROJECT LEDGER',
+              style: ApaFonts.inter(
+                color: ApaColors.black,
+                fontSize: 28.sp,
+                fontWeight: FontWeight.w800,
+                height: 34 / 28,
+              ),
+            ),
+            SizedBox(height: 24.h),
             _LedgerTable(items: content.ledgerItems),
             SizedBox(height: 48.h),
           ],
