@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../core/theme/apa_colors.dart';
+import '../../../../core/theme/apa_fonts.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../data/models/post/post_model.dart';
 import '../../../../data/models/post/post_item_extensions.dart';
@@ -289,6 +290,27 @@ class _ApaShellState extends State<ApaShell> {
           DonationPage(
             scrollController: _donationScroll,
             imageUrl: _imageUrl(ApaShellPage.donation),
+            onPaymentSucceeded: (message) {
+              _openByTemplate(ApaPageTemplates.home, ApaShellPage.home);
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    behavior: SnackBarBehavior.floating,
+                    backgroundColor: ApaColors.black,
+                    content: Text(
+                      message,
+                      style: ApaFonts.inter(
+                        color: ApaColors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                );
+              });
+            },
           ),
           TransparencyPage(
             scrollController: _transparencyScroll,

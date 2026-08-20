@@ -17,11 +17,13 @@ class DonationPage extends StatelessWidget {
     super.key,
     this.scrollController,
     this.onContinuePressed,
+    this.onPaymentSucceeded,
     this.imageUrl,
   });
 
   final ScrollController? scrollController;
   final VoidCallback? onContinuePressed;
+  final ValueChanged<String>? onPaymentSucceeded;
   final String? imageUrl;
 
   DonationController? get _controller {
@@ -500,7 +502,16 @@ class DonationPage extends StatelessWidget {
           controller: controller,
           onFinished: (message, {required isError}) {
             if (!context.mounted) return;
-            _showSnackBar(context, message: message, isError: isError);
+            if (isError) {
+              _showSnackBar(context, message: message, isError: true);
+              return;
+            }
+            final goHome = onPaymentSucceeded;
+            if (goHome != null) {
+              goHome(message);
+              return;
+            }
+            _showSnackBar(context, message: message, isError: false);
           },
         );
       },
@@ -593,13 +604,30 @@ class _CompleteDonationDialogState extends State<_CompleteDonationDialog> {
 
     final name = _nameController.text;
     final email = _emailController.text;
+    final thanks =
+        'Thank you. Your ${widget.frequencyLabel.toLowerCase()} gift of \$${widget.amount} was submitted.';
     Navigator.of(context).pop();
 
+    var wentHome = false;
     final result = await widget.controller.presentCheckout(
       created.session!,
       name: name,
       email: email,
+      onAuthorized: () {
+        wentHome = true;
+        widget.onFinished(thanks, isError: false);
+      },
     );
+
+    if (wentHome) {
+      if (!result.success && !result.canceled) {
+        widget.onFinished(
+          result.message ?? 'Payment could not be completed.',
+          isError: true,
+        );
+      }
+      return;
+    }
 
     if (result.canceled) return;
     if (!result.success) {
@@ -610,10 +638,7 @@ class _CompleteDonationDialogState extends State<_CompleteDonationDialog> {
       return;
     }
 
-    widget.onFinished(
-      'Thank you. Your ${widget.frequencyLabel.toLowerCase()} gift of \$${widget.amount} was submitted.',
-      isError: false,
-    );
+    widget.onFinished(thanks, isError: false);
   }
 
   @override

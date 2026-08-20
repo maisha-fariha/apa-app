@@ -42,6 +42,7 @@ class StripeCheckout {
     required bool testMode,
     String? email,
     String? name,
+    VoidCallback? onAuthorized,
   }) async {
     final outcome = await Get.to<StripeCheckoutOutcome>(
       () => StripePaymentElementPage(
@@ -51,6 +52,7 @@ class StripeCheckout {
         email: email,
         name: name,
         testMode: testMode,
+        onAuthorized: onAuthorized,
       ),
       fullscreenDialog: true,
     );
@@ -67,6 +69,7 @@ class StripePaymentElementPage extends StatefulWidget {
     this.email,
     this.name,
     this.testMode = false,
+    this.onAuthorized,
   });
 
   final String publishableKey;
@@ -75,6 +78,7 @@ class StripePaymentElementPage extends StatefulWidget {
   final String? email;
   final String? name;
   final bool testMode;
+  final VoidCallback? onAuthorized;
 
   @override
   State<StripePaymentElementPage> createState() =>
@@ -183,6 +187,9 @@ class _StripePaymentElementPageState extends State<StripePaymentElementPage> {
   void _finish(StripeCheckoutOutcome outcome) {
     if (_completing || !mounted) return;
     _completing = true;
+    if (outcome == StripeCheckoutOutcome.completed) {
+      widget.onAuthorized?.call();
+    }
     Get.back(result: outcome);
   }
 

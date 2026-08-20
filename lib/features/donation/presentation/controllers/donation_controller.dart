@@ -273,6 +273,7 @@ class DonationController extends GetxController {
     StripeCheckoutSession session, {
     String? name,
     String? email,
+    VoidCallback? onAuthorized,
   }) async {
     final loaded = catalog.value;
     if (loaded == null) {
@@ -291,6 +292,7 @@ class DonationController extends GetxController {
         testMode: loaded.config.isTestMode,
         email: email?.trim(),
         name: name?.trim(),
+        onAuthorized: onAuthorized,
       );
 
       if (outcome == StripeCheckoutOutcome.canceled) {
