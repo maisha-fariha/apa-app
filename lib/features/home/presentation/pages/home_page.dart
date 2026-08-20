@@ -154,23 +154,9 @@ class _HomeBody extends StatefulWidget {
 }
 
 class _HomeBodyState extends State<_HomeBody> {
-  static const int _step = 1;
-  static const int _minAmount = 0;
-  static const int _maxAmount = 5000;
+  static const int _minAmount = 1;
 
-  int _amount = 0;
-
-  void _increment() {
-    setState(() {
-      _amount = (_amount + _step).clamp(_minAmount, _maxAmount);
-    });
-  }
-
-  void _decrement() {
-    setState(() {
-      _amount = (_amount - _step).clamp(_minAmount, _maxAmount);
-    });
-  }
+  int _amount = 100;
 
   @override
   Widget build(BuildContext context) {
@@ -181,10 +167,8 @@ class _HomeBodyState extends State<_HomeBody> {
         SizedBox(height: ApaDimens.locationBadgeBottomSpacing),
         DonationAmountCard(
           amount: _amount,
-          onIncrement: _increment,
-          onDecrement: _decrement,
-          canIncrement: _amount < _maxAmount,
-          canDecrement: _amount > _minAmount,
+          minAmount: _minAmount,
+          onAmountChanged: (value) => setState(() => _amount = value),
         ),
         SizedBox(height: ApaDimens.donationCardBottomSpacing),
         DonateButton(

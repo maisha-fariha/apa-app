@@ -278,46 +278,46 @@ class DonationPage extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: 26.w,
-                vertical: 18.h,
-              ),
-              decoration: BoxDecoration(
-                color: ApaColors.white,
-                borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(color: ApaColors.black, width: 2),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '\$$amount',
-                    style: ApaFonts.inter(
-                      color: ApaColors.nearBlack,
-                      fontSize: 28.sp,
-                      fontWeight: FontWeight.w800,
-                      height: 30 / 28,
-                    ),
-                  ),
-                  SizedBox(height: 4.h),
-                  Text(
-                    cadence,
-                    style: ApaFonts.inter(
-                      color: ApaColors.primaryRed,
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1.2,
-                      height: 20 / 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          // Align(
+          //   alignment: Alignment.centerLeft,
+          //   child: Container(
+          //     padding: EdgeInsets.symmetric(
+          //       horizontal: 26.w,
+          //       vertical: 18.h,
+          //     ),
+          //     decoration: BoxDecoration(
+          //       color: ApaColors.white,
+          //       borderRadius: BorderRadius.circular(12.r),
+          //       border: Border.all(color: ApaColors.black, width: 2),
+          //     ),
+          //     child: Column(
+          //       crossAxisAlignment: CrossAxisAlignment.center,
+          //       mainAxisSize: MainAxisSize.min,
+          //       children: [
+          //         Text(
+          //           '\$$amount',
+          //           style: ApaFonts.inter(
+          //             color: ApaColors.nearBlack,
+          //             fontSize: 28.sp,
+          //             fontWeight: FontWeight.w800,
+          //             height: 30 / 28,
+          //           ),
+          //         ),
+          //         SizedBox(height: 4.h),
+          //         Text(
+          //           cadence,
+          //           style: ApaFonts.inter(
+          //             color: ApaColors.primaryRed,
+          //             fontSize: 20.sp,
+          //             fontWeight: FontWeight.w700,
+          //             letterSpacing: 1.2,
+          //             height: 20 / 14,
+          //           ),
+          //         ),
+          //       ],
+          //     ),
+          //   ),
+          // ),
           SizedBox(height: 16.h),
           _FrequencyToggle(
             monthly: controller.monthly.value,
