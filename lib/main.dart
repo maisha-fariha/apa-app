@@ -23,10 +23,12 @@ Future<void> main() async {
 
   final appServices = AppServices();
   await appServices.initialize(
-    environmentMode: EnvironmentMode.staging,
+    environmentMode: ApaApiConfig.isProduction
+        ? EnvironmentMode.production
+        : EnvironmentMode.development,
     appConfig: AppConfig(
       apiBaseUrl: ApaApiConfig.baseUrl,
-      enableLogging: true,
+      enableLogging: ApaApiConfig.enableLogging,
       apiTimeout: const Duration(seconds: 30),
       additionalConfig: {
         ApaApiConfig.apiKeyHeader: ApaApiConfig.apiKey,

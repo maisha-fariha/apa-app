@@ -184,7 +184,6 @@ class PostsRepository extends BaseRepository<PostItem> {
         'post_id': postId,
         if (cacheBust) '_': DateTime.now().millisecondsSinceEpoch,
       },
-      data: {'post_id': postId},
       fromJson: (data) {
         if (data is! Map) {
           throw const FormatException('Malformed get-post-details response');

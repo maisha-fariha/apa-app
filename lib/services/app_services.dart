@@ -18,7 +18,7 @@ class AppServices {
   static final getIt = GetIt.instance;
 
   Future<void> initialize({
-    EnvironmentMode environmentMode = EnvironmentMode.staging,
+    EnvironmentMode environmentMode = EnvironmentMode.development,
     AppConfig? appConfig,
   }) async {
     await setupCoreServices(
