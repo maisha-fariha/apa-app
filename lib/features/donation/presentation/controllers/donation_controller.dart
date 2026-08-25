@@ -41,9 +41,12 @@ class DonationController extends GetxController {
   final RxString errorMessage = ''.obs;
   final RxBool monthly = false.obs;
   final Rxn<StripePriceOption> selectedPrice = Rxn<StripePriceOption>();
+  final RxInt selectedPredefinedDollars = 20.obs;
   final RxString customAmountText = ''.obs;
   final Rxn<StripeCatalog> catalog = Rxn<StripeCatalog>();
   final TextEditingController customAmountController = TextEditingController();
+
+  static const int defaultPredefinedDollars = 20;
 
   StripePublicConfig? get config => catalog.value?.config;
 
@@ -56,7 +59,8 @@ class DonationController extends GetxController {
   int get displayAmountDollars {
     final custom = int.tryParse(customAmountText.value.trim());
     if (custom != null && custom > 0) return custom;
-    return selectedPrice.value?.amountDollars ?? 0;
+    return selectedPrice.value?.amountDollars ??
+        selectedPredefinedDollars.value;
   }
 
   bool get usingCustomAmount {
@@ -66,14 +70,17 @@ class DonationController extends GetxController {
 
   DonationSelection get selection {
     final dollars = displayAmountDollars;
+    final resolvedPrice = selectedPrice.value ??
+        catalog.value?.priceForDollars(
+          dollars: dollars,
+          monthly: monthly.value,
+        );
+
     if (monthly.value) {
-      final price = usingCustomAmount
-          ? catalog.value?.priceForDollars(dollars: dollars, monthly: true)
-          : selectedPrice.value;
       return DonationSelection(
         monthly: true,
         amountDollars: dollars,
-        price: price,
+        price: resolvedPrice,
         custom: usingCustomAmount,
       );
     }
@@ -81,7 +88,7 @@ class DonationController extends GetxController {
     return DonationSelection(
       monthly: false,
       amountDollars: dollars,
-      price: selectedPrice.value,
+      price: resolvedPrice,
       custom: usingCustomAmount,
     );
   }
@@ -155,10 +162,29 @@ class DonationController extends GetxController {
 
   void selectPrice(StripePriceOption price) {
     selectedPrice.value = price;
+    selectedPredefinedDollars.value = price.amountDollars;
     if (customAmountController.text.isNotEmpty) {
       customAmountController.clear();
     }
     customAmountText.value = '';
+  }
+
+  /// Selects a hardcoded predefined amount ($20 / $50 / $100).
+  void selectPredefinedAmount(int dollars) {
+    selectedPredefinedDollars.value = dollars;
+    customAmountController.clear();
+    customAmountText.value = '';
+
+    final price = catalog.value?.priceForDollars(
+      dollars: dollars,
+      monthly: monthly.value,
+    );
+    selectedPrice.value = price;
+  }
+
+  bool isPredefinedSelected(int dollars) {
+    if (usingCustomAmount) return false;
+    return selectedPredefinedDollars.value == dollars;
   }
 
   void setCustomAmount(String value) {
@@ -333,13 +359,6 @@ class DonationController extends GetxController {
   }
 
   void _selectDefaultChip() {
-    final options = chips;
-    if (options.isEmpty) {
-      selectedPrice.value = null;
-      return;
-    }
-    final preferred = options.where((price) => price.amountDollars == 100);
-    selectedPrice.value =
-        preferred.isNotEmpty ? preferred.first : options.first;
+    selectPredefinedAmount(defaultPredefinedDollars);
   }
 }
