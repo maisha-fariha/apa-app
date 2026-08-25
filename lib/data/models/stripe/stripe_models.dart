@@ -77,6 +77,9 @@ class StripeCatalog {
     required this.prices,
   });
 
+  /// Predefined donation amounts shown on One-time and Monthly tabs.
+  static const predefinedDollarAmounts = {20, 50, 100};
+
   final StripePublicConfig config;
   final List<StripePriceOption> prices;
 
@@ -87,7 +90,8 @@ class StripeCatalog {
           (price) =>
               price.priceType.toLowerCase() == type &&
               price.stripePriceId.isNotEmpty &&
-              price.unitAmountCents > 0,
+              price.unitAmountCents > 0 &&
+              predefinedDollarAmounts.contains(price.amountDollars),
         )
         .toList()
       ..sort((a, b) => a.unitAmountCents.compareTo(b.unitAmountCents));

@@ -51,6 +51,31 @@ void main() {
       'currency': 'usd',
       'recurring_interval': 'month',
     },
+    {
+      'id': '6',
+      'product_id': '5',
+      'stripe_price_id': 'price_one_time_100',
+      'price_type': 'one_time',
+      'unit_amount': '10000',
+      'currency': 'usd',
+    },
+    {
+      'id': '7',
+      'product_id': '5',
+      'stripe_price_id': 'price_month_100',
+      'price_type': 'recurring',
+      'unit_amount': '10000',
+      'currency': 'usd',
+      'recurring_interval': 'month',
+    },
+    {
+      'id': '8',
+      'product_id': '6',
+      'stripe_price_id': 'price_one_time_500',
+      'price_type': 'one_time',
+      'unit_amount': '50000',
+      'currency': 'usd',
+    },
   ];
 
   test('parses Stripe config amounts in cents', () {
@@ -70,11 +95,11 @@ void main() {
 
     expect(
       catalog.chips(monthly: false).map((price) => price.amountDollars),
-      [20, 50],
+      [20, 50, 100],
     );
     expect(
       catalog.chips(monthly: true).map((price) => price.stripePriceId),
-      ['price_month_20', 'price_month_50'],
+      ['price_month_20', 'price_month_50', 'price_month_100'],
     );
   });
 

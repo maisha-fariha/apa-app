@@ -22,6 +22,9 @@ class DonationPage extends StatelessWidget {
     this.imageUrl,
   });
 
+  /// Hardcoded predefined amounts shown below the frequency tabs.
+  static const List<int> predefinedAmounts = [20, 50, 100];
+
   final ScrollController? scrollController;
   final VoidCallback? onContinuePressed;
   final ValueChanged<String>? onPaymentSucceeded;
@@ -273,108 +276,38 @@ class DonationPage extends StatelessWidget {
         );
       }
 
-      final amount = controller.displayAmountDollars;
-      final cadence = controller.monthly.value ? 'MONTHLY' : 'ONE TIME';
-      final chips = controller.chips;
       final customEnabled = controller.customEnabled;
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Align(
-          //   alignment: Alignment.centerLeft,
-          //   child: Container(
-          //     padding: EdgeInsets.symmetric(
-          //       horizontal: 26.w,
-          //       vertical: 18.h,
-          //     ),
-          //     decoration: BoxDecoration(
-          //       color: ApaColors.white,
-          //       borderRadius: BorderRadius.circular(12.r),
-          //       border: Border.all(color: ApaColors.black, width: 2),
-          //     ),
-          //     child: Column(
-          //       crossAxisAlignment: CrossAxisAlignment.center,
-          //       mainAxisSize: MainAxisSize.min,
-          //       children: [
-          //         Text(
-          //           '\$$amount',
-          //           style: ApaFonts.inter(
-          //             color: ApaColors.nearBlack,
-          //             fontSize: 28.sp,
-          //             fontWeight: FontWeight.w800,
-          //             height: 30 / 28,
-          //           ),
-          //         ),
-          //         SizedBox(height: 4.h),
-          //         Text(
-          //           cadence,
-          //           style: ApaFonts.inter(
-          //             color: ApaColors.primaryRed,
-          //             fontSize: 20.sp,
-          //             fontWeight: FontWeight.w700,
-          //             letterSpacing: 1.2,
-          //             height: 20 / 14,
-          //           ),
-          //         ),
-          //       ],
-          //     ),
-          //   ),
-          // ),
           SizedBox(height: 16.h),
           _FrequencyToggle(
             monthly: controller.monthly.value,
             onChanged: controller.setMonthly,
           ),
           SizedBox(height: 24.h),
-          if (chips.isEmpty)
-            Text(
-              controller.monthly.value
-                  ? 'No monthly donation amounts are available yet.'
-                  : 'No one-time donation amounts are available yet.',
-              style: ApaFonts.inter(
-                color: ApaColors.gray600,
-                fontSize: 15.sp,
-              ),
-            )
-          else
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final crossAxisCount = R.isTabletLandscape(context) ? 3 : 2;
-                final rowCount = (chips.length / crossAxisCount).ceil();
-                final mainSpacing = 12.h;
-                final cellHeight = 69.h;
-                final gridHeight =
-                    cellHeight * rowCount + mainSpacing * (rowCount - 1);
-
-                return SizedBox(
-                  height: gridHeight,
-                  child: GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    padding: EdgeInsets.zero,
-                    itemCount: chips.length,
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: crossAxisCount,
-                      mainAxisExtent: cellHeight,
-                      mainAxisSpacing: mainSpacing,
-                      crossAxisSpacing: 12.w,
+          Row(
+            children: [
+              for (var i = 0; i < DonationPage.predefinedAmounts.length; i++) ...[
+                if (i > 0) SizedBox(width: 12.w),
+                Expanded(
+                  child: SizedBox(
+                    height: 69.h,
+                    child: _AmountChip(
+                      amount: DonationPage.predefinedAmounts[i],
+                      selected: controller.isPredefinedSelected(
+                        DonationPage.predefinedAmounts[i],
+                      ),
+                      onTap: () => controller.selectPredefinedAmount(
+                        DonationPage.predefinedAmounts[i],
+                      ),
                     ),
-                    itemBuilder: (context, index) {
-                      final price = chips[index];
-                      final selected = controller.selectedPrice.value?.id ==
-                              price.id &&
-                          controller.customAmountText.value.isEmpty;
-                      return _AmountChip(
-                        amount: price.amountDollars,
-                        selected: selected,
-                        onTap: () => controller.selectPrice(price),
-                      );
-                    },
                   ),
-                );
-              },
-            ),
+                ),
+              ],
+            ],
+          ),
           if (customEnabled) ...[
             SizedBox(height: 24.h),
             Text(
