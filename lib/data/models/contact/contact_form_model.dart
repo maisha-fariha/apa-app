@@ -130,6 +130,17 @@ class ContactFormField with _$ContactFormField {
 
   ContactFieldKind get kind => ContactFieldKind.fromType(type);
 
+  /// True for CF7/API name fields (type `name` or common name labels).
+  bool get isNameField {
+    final normalizedType = type.trim().toLowerCase();
+    if (normalizedType == 'name') return true;
+    final normalizedLabel = displayLabel.trim().toLowerCase();
+    return normalizedLabel == 'name' ||
+        normalizedLabel == 'your name' ||
+        normalizedLabel == 'full name' ||
+        normalizedLabel == 'your full name';
+  }
+
   String get displayLabel {
     final value = label.trim();
     return value.isEmpty ? id : value;

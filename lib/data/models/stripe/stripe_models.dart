@@ -61,13 +61,46 @@ class StripePriceOption {
   factory StripePriceOption.fromJson(Map<String, dynamic> json) {
     return StripePriceOption(
       id: json['id']?.toString() ?? '',
-      productId: json['product_id']?.toString() ?? '',
+      productId: json['product_id']?.toString() ??
+          json['stripe_product_id']?.toString() ??
+          json['id']?.toString() ??
+          '',
       stripePriceId: json['stripe_price_id']?.toString() ?? '',
       priceType: json['price_type']?.toString() ?? '',
       unitAmountCents: _asInt(json['unit_amount']) ?? 0,
       currency: (json['currency'] ?? 'usd').toString().toLowerCase(),
       recurringInterval: json['recurring_interval']?.toString(),
     );
+  }
+
+  /// Supports both legacy `{ prices: [...] }` and current `{ products: [...] }`
+  /// payloads where each product already includes price fields.
+  static List<StripePriceOption> listFromProductsResponse(dynamic data) {
+    if (data is! Map) return const [];
+    final map = Map<String, dynamic>.from(data);
+
+    final prices = map['prices'];
+    if (prices is List) {
+      return _parsePriceMaps(prices);
+    }
+
+    final products = map['products'];
+    if (products is List) {
+      return _parsePriceMaps(products);
+    }
+
+    return const [];
+  }
+
+  static List<StripePriceOption> _parsePriceMaps(List<dynamic> items) {
+    return items
+        .whereType<Map>()
+        .map((item) => StripePriceOption.fromJson(Map<String, dynamic>.from(item)))
+        .where(
+          (price) =>
+              price.stripePriceId.isNotEmpty && price.unitAmountCents > 0,
+        )
+        .toList();
   }
 }
 

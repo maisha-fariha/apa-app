@@ -59,14 +59,7 @@ class StripeRepository {
           if (data is! Map) {
             throw const FormatException('Malformed Stripe products response');
           }
-          final prices = data['prices'];
-          if (prices is! List) return const <StripePriceOption>[];
-          return prices
-              .whereType<Map>()
-              .map((item) => StripePriceOption.fromJson(
-                    Map<String, dynamic>.from(item),
-                  ))
-              .toList();
+          return StripePriceOption.listFromProductsResponse(data);
         },
       );
 

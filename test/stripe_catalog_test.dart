@@ -103,6 +103,68 @@ void main() {
     );
   });
 
+  test('parses price options from products-embedded API payload', () {
+    const productsPayload = {
+      'products': [
+        {
+          'id': '33',
+          'stripe_product_id': 'prod_20_one',
+          'name': 'Product \$20 OneTime',
+          'stripe_price_id': 'price_one_time_20',
+          'price_type': 'one_time',
+          'unit_amount': '2000',
+          'currency': 'usd',
+        },
+        {
+          'id': '34',
+          'stripe_product_id': 'prod_20_rec',
+          'name': 'Product \$20 Recurring',
+          'stripe_price_id': 'price_month_20',
+          'price_type': 'recurring',
+          'unit_amount': '2000',
+          'currency': 'usd',
+          'recurring_interval': 'month',
+        },
+        {
+          'id': '35',
+          'stripe_product_id': 'prod_50_one',
+          'name': 'Product \$50 OneTime',
+          'stripe_price_id': 'price_one_time_50',
+          'price_type': 'one_time',
+          'unit_amount': '5000',
+          'currency': 'usd',
+        },
+      ],
+    };
+
+    final prices = StripePriceOption.listFromProductsResponse(productsPayload);
+    expect(prices.length, 3);
+
+    final catalog = StripeCatalog(
+      config: StripePublicConfig.fromJson(configJson),
+      prices: prices,
+    );
+    expect(
+      catalog.priceForDollars(dollars: 20, monthly: true)?.stripePriceId,
+      'price_month_20',
+    );
+    expect(
+      catalog.priceForDollars(dollars: 20, monthly: false)?.stripePriceId,
+      'price_one_time_20',
+    );
+  });
+
+  test('parses price options from legacy prices array payload', () {
+    final prices = StripePriceOption.listFromProductsResponse({
+      'prices': pricesJson,
+      'products': [
+        {'id': 'ignored', 'name': 'no price fields'},
+      ],
+    });
+    expect(prices.length, pricesJson.length);
+    expect(prices.first.stripePriceId, 'price_one_time_20');
+  });
+
   test('validates custom one-time amounts against min and max', () {
     final config = StripePublicConfig.fromJson(configJson);
 
