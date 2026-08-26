@@ -5,6 +5,7 @@ import 'package:gems_data_layer/gems_data_layer.dart';
 
 import '../../core/network/apa_api_config.dart';
 import '../../core/network/api_endpoints.dart';
+import '../../core/network/connectivity_controller.dart';
 import '../models/post/post_model.dart';
 
 /// Pages repository — uses [ApiService] GET query params (`post_type=page`).
@@ -19,18 +20,31 @@ class PostsRepository extends BaseRepository<PostItem> {
 
   static String _detailsCacheKey(int postId) => 'get-post-details_$postId';
 
+  bool get _isOnline => ConnectivityController.currentlyOnline;
+
   @override
   PostItem fromJson(Map<String, dynamic> json) => PostItem.fromJson(json);
 
   @override
   Future<Result<List<PostItem>>> getAll({bool useCache = true}) async {
     try {
-      if (useCache) {
+      final online = _isOnline;
+      final preferCache = useCache || !online;
+
+      if (preferCache) {
         final cached = _readCache();
         if (cached != null && cached.isNotEmpty) {
-          _refreshInBackground();
+          if (online && useCache) {
+            _refreshInBackground();
+          }
           return Result.success(cached);
         }
+      }
+
+      if (!online) {
+        return Result.failure(
+          const NetworkError(message: ConnectivityController.offlineMessage),
+        );
       }
 
       final fetched = await _fetchPages();
@@ -42,7 +56,7 @@ class PostsRepository extends BaseRepository<PostItem> {
         return Result.success(items);
       }
 
-      if (useCache) {
+      if (preferCache) {
         final cached = _readCache();
         if (cached != null && cached.isNotEmpty) {
           return Result.success(cached);
@@ -51,11 +65,9 @@ class PostsRepository extends BaseRepository<PostItem> {
 
       return fetched;
     } catch (e, stackTrace) {
-      if (useCache) {
-        final cached = _readCache();
-        if (cached != null && cached.isNotEmpty) {
-          return Result.success(cached);
-        }
+      final cached = _readCache();
+      if (cached != null && cached.isNotEmpty) {
+        return Result.success(cached);
       }
       return Result.failure(NetworkError.fromException(e, stackTrace));
     }
@@ -95,6 +107,7 @@ class PostsRepository extends BaseRepository<PostItem> {
   }
 
   Future<void> _refreshInBackground() async {
+    if (!_isOnline) return;
     try {
       final fetched = await _fetchPages();
       if (fetched.isSuccess && (fetched.value?.isNotEmpty ?? false)) {
@@ -140,12 +153,23 @@ class PostsRepository extends BaseRepository<PostItem> {
     }
 
     try {
-      if (useCache) {
+      final online = _isOnline;
+      final preferCache = useCache || !online;
+
+      if (preferCache) {
         final cached = _readDetailsCache(postId);
         if (cached != null) {
-          _refreshDetailsInBackground(postId);
+          if (online && useCache) {
+            _refreshDetailsInBackground(postId);
+          }
           return Result.success(cached);
         }
+      }
+
+      if (!online) {
+        return Result.failure(
+          const NetworkError(message: ConnectivityController.offlineMessage),
+        );
       }
 
       final fetched = await _fetchPostDetails(postId, cacheBust: !useCache);
@@ -155,7 +179,7 @@ class PostsRepository extends BaseRepository<PostItem> {
         return Result.success(item);
       }
 
-      if (useCache) {
+      if (preferCache) {
         final cached = _readDetailsCache(postId);
         if (cached != null) {
           return Result.success(cached);
@@ -164,11 +188,9 @@ class PostsRepository extends BaseRepository<PostItem> {
 
       return fetched;
     } catch (e, stackTrace) {
-      if (useCache) {
-        final cached = _readDetailsCache(postId);
-        if (cached != null) {
-          return Result.success(cached);
-        }
+      final cached = _readDetailsCache(postId);
+      if (cached != null) {
+        return Result.success(cached);
       }
       return Result.failure(NetworkError.fromException(e, stackTrace));
     }
@@ -217,6 +239,7 @@ class PostsRepository extends BaseRepository<PostItem> {
   }
 
   Future<void> _refreshDetailsInBackground(int postId) async {
+    if (!_isOnline) return;
     try {
       final fetched = await _fetchPostDetails(postId, cacheBust: true);
       if (fetched.isSuccess && fetched.value != null) {
@@ -254,6 +277,8 @@ class PostsRepository extends BaseRepository<PostItem> {
 
     final cached = databaseService.get<String>(_mediaCacheKey(mediaId));
     if (cached != null && cached.trim().isNotEmpty) return cached.trim();
+
+    if (!_isOnline) return null;
 
     try {
       final response = await apiService.get<Map<String, dynamic>>(

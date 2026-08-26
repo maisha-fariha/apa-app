@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:gems_core/gems_core.dart';
 import 'package:gems_data_layer/gems_data_layer.dart';
 
+import '../../../../core/network/connectivity_controller.dart';
 import '../../../../data/models/post/post_model.dart';
 import '../../../../data/repositories/posts_repository.dart';
 import '../mapping/apa_page_templates.dart';
@@ -29,20 +30,33 @@ class PagesController extends BaseListController<PostItem>
     if (isLoading.value) return;
     if (_fetched && items.isNotEmpty) return;
 
-    await handleResult(
-      () => repository.getAll(),
-      onSuccess: (pages) {
-        _fetched = true;
-        items
-          ..clear()
-          ..addAll(pages);
-        if (pages.isEmpty) {
-          setError('No pages found');
-          return;
-        }
-        _ensureInitialSelection();
-      },
-    );
+    setLoading(true);
+    try {
+      final result = await repository.getAll();
+      result.when(
+        success: (pages) {
+          _fetched = true;
+          items
+            ..clear()
+            ..addAll(pages);
+          if (pages.isEmpty) {
+            if (!ConnectivityController.currentlyOnline) return;
+            setError('No pages found');
+            return;
+          }
+          errorMessage.value = '';
+          _ensureInitialSelection();
+        },
+        failure: (error) {
+          // Offline: keep any cached/in-memory data and stay silent.
+          if (!ConnectivityController.currentlyOnline) return;
+          setError(error.message);
+          Get.snackbar('Error', error.message);
+        },
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   void _ensureInitialSelection() {
@@ -128,11 +142,16 @@ class PagesController extends BaseListController<PostItem>
     if (!force && pageDetailsById.containsKey(pageId)) return;
     if (!force && _loadingDetails.contains(pageId)) return;
 
+    // Offline: never force a network round-trip; serve cache/memory only.
+    final online = ConnectivityController.currentlyOnline;
+    final useCache = !force || !online;
+    if (!online && pageDetailsById.containsKey(pageId)) return;
+
     _loadingDetails.add(pageId);
     try {
       final result = await repository.getPostDetails(
         pageId,
-        useCache: !force,
+        useCache: useCache,
       );
       result.when(
         success: (details) => pageDetailsById[pageId] = details,

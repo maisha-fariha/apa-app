@@ -101,6 +101,20 @@ void main() {
     expect(errors.containsKey('select-1'), isFalse);
   });
 
+  test('rejects numeric-only name values', () {
+    final response = GetContactFormResponse.fromJson(payload);
+    final errors = ContactFormValidator.validate(
+      fields: response.fields,
+      values: const {
+        'name-1': '12345',
+        'email-1': 'valid@example.com',
+      },
+    );
+
+    expect(errors['name-1'], 'Enter a valid name');
+    expect(errors.containsKey('email-1'), isFalse);
+  });
+
   test('builds a dynamic submit body from current form values', () {
     final response = GetContactFormResponse.fromJson(payload);
     final body = ContactFormValidator.submitFields(

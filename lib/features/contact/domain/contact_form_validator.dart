@@ -1,5 +1,6 @@
 import 'package:gems_core/gems_core.dart';
 
+import '../../../core/utils/input_validators.dart';
 import '../../../data/models/contact/contact_form_model.dart';
 
 class ContactFormValidator {
@@ -55,6 +56,11 @@ class ContactFormValidator {
       case ContactFieldKind.number:
         if (num.tryParse(text.trim()) == null) {
           return 'Enter a valid number';
+        }
+        return null;
+      case ContactFieldKind.text:
+        if (field.isNameField && isNumericOnlyInput(text)) {
+          return 'Enter a valid name';
         }
         return null;
       default:

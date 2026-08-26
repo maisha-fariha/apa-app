@@ -38,6 +38,7 @@ dependencies:
   flutter_screenutil: ^5.9.3
   google_fonts: ^6.2.1
   dio: ^5.4.0
+  connectivity_plus: ^5.0.2
 
   gems_core:
     path: flutter_gems/packages/gems_core
