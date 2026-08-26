@@ -3,15 +3,17 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
-import '../../../../data/models/post/post_model.dart';
-import '../../../../data/models/post/post_item_extensions.dart';
 import '../../../../core/constants/apa_assets.dart';
 import '../../../../core/constants/apa_shell_insets.dart';
+import '../../../../core/network/connectivity_controller.dart';
 import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../core/utils/html_utils.dart';
+import '../../../../core/widgets/apa_empty_retry.dart';
 import '../../../../core/widgets/apa_shared_widgets.dart';
+import '../../../../data/models/post/post_model.dart';
+import '../../../../data/models/post/post_item_extensions.dart';
 import '../../../shell/presentation/controllers/pages_controller.dart';
 import '../../../shell/presentation/mapping/apa_page_templates.dart';
 import '../../../shell/presentation/models/apa_nav_item.dart';
@@ -56,6 +58,54 @@ class ProjectsPage extends StatelessWidget {
           child: Obx(() {
             pagesController?.items.length;
             pagesController?.pageDetailsById.length;
+            pagesController?.isLoading.value;
+            if (ConnectivityController.registered) {
+              ConnectivityController.to.isOnline.value;
+            }
+
+            final blank = pagesController?.isBlankForTemplate(
+                  ApaPageTemplates.projects,
+                ) ??
+                true;
+            final loading = pagesController != null &&
+                ((pagesController.isLoading.value &&
+                        pagesController.items.isEmpty) ||
+                    pagesController.isLoadingDetailsForTemplate(
+                      ApaPageTemplates.projects,
+                    ));
+
+            if (loading) {
+              return const ColoredBox(
+                color: ApaColors.white,
+                child: Center(
+                  child: CircularProgressIndicator(color: ApaColors.primaryRed),
+                ),
+              );
+            }
+
+            if (blank) {
+              return ColoredBox(
+                color: ApaColors.white,
+                child: ListView(
+                  controller: scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(
+                    20.w,
+                    48.h,
+                    20.w,
+                    navBottomPad,
+                  ),
+                  children: [
+                    ApaEmptyRetry.forConnectivity(
+                      onRetry: () => pagesController?.retryLoad(
+                        template: ApaPageTemplates.projects,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
             final current =
                 pagesController?.resolvedPageForShell(ApaShellPage.projects) ??
                     page;

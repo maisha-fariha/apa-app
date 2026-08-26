@@ -37,6 +37,11 @@ class ContactController extends BaseListController<ContactFormField> {
   @override
   Future<void> loadItems() => loadForm();
 
+  /// Called when connectivity returns — reload form if missing / stale.
+  Future<void> onConnectivityRestored() {
+    return loadForm(force: true);
+  }
+
   Future<void> loadForm({bool force = false}) async {
     if (isLoading.value) return;
     if (!force && items.isNotEmpty) return;

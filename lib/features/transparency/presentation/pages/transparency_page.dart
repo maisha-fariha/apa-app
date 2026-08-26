@@ -5,9 +5,11 @@ import 'package:get/get.dart';
 
 import '../../../../core/constants/apa_assets.dart';
 import '../../../../core/constants/apa_shell_insets.dart';
+import '../../../../core/network/connectivity_controller.dart';
 import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
 import '../../../../core/utils/responsive.dart';
+import '../../../../core/widgets/apa_empty_retry.dart';
 import '../../../../core/widgets/apa_shared_widgets.dart';
 import '../../../shell/presentation/controllers/pages_controller.dart';
 import '../../../shell/presentation/mapping/apa_page_templates.dart';
@@ -134,13 +136,29 @@ class TransparencyPage extends StatelessWidget {
     if (pagesController == null) return const SizedBox.shrink();
 
     return Obx(() {
+      if (ConnectivityController.registered) {
+        ConnectivityController.to.isOnline.value;
+      }
       final content = _content(pagesController);
       if (content == null) {
-        if (pagesController.isLoading.value && pagesController.items.isEmpty) {
+        final loadingList =
+            pagesController.isLoading.value && pagesController.items.isEmpty;
+        final loadingDetails = pagesController.isLoadingDetailsForTemplate(
+          ApaPageTemplates.transparency,
+        );
+        if (loadingList || loadingDetails) {
           return Padding(
             padding: EdgeInsets.symmetric(vertical: 48.h),
             child: const Center(
               child: CircularProgressIndicator(color: ApaColors.primaryRed),
+            ),
+          );
+        }
+        if (!ConnectivityController.currentlyOnline ||
+            pagesController.isBlankForTemplate(ApaPageTemplates.transparency)) {
+          return ApaEmptyRetry.forConnectivity(
+            onRetry: () => pagesController.retryLoad(
+              template: ApaPageTemplates.transparency,
             ),
           );
         }

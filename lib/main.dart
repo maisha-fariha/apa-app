@@ -45,6 +45,12 @@ Future<void> main() async {
   Get.put(AppServices.getIt<ContactController>(), permanent: true);
   Get.put(AppServices.getIt<DonationController>(), permanent: true);
 
+  AppServices.getIt<ConnectivityController>().onRestored = () {
+    unawaited(Get.find<PagesController>().onConnectivityRestored());
+    unawaited(Get.find<ContactController>().onConnectivityRestored());
+    unawaited(Get.find<DonationController>().onConnectivityRestored());
+  };
+
   runApp(const ApaApp());
 }
 

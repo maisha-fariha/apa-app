@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/network/connectivity_controller.dart';
 import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
 import '../../../../core/utils/responsive.dart';
+import '../../../../core/widgets/apa_empty_retry.dart';
 import '../../../../data/models/post/post_model.dart';
 import '../../../../data/models/post/post_item_extensions.dart';
 import '../../../contact/presentation/controllers/contact_controller.dart';
@@ -342,12 +344,31 @@ class _ApaShellState extends State<ApaShell> {
         pagesController.items.length;
         pagesController.selectedPageId.value;
         pagesController.pageDetailsById.length;
+        if (ConnectivityController.registered) {
+          ConnectivityController.to.isOnline.value;
+        }
+        final loading =
+            pagesController.isLoading.value && pagesController.items.isEmpty;
+        final blank = !loading && pagesController.items.isEmpty;
+
         return Stack(
           fit: StackFit.expand,
           children: [
-            buildPages(),
-            if (pagesController.isLoading.value &&
-                pagesController.items.isEmpty)
+            if (blank)
+              ColoredBox(
+                color: ApaColors.white,
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: ApaEmptyRetry.forConnectivity(
+                      onRetry: () => pagesController.retryLoad(),
+                    ),
+                  ),
+                ),
+              )
+            else
+              buildPages(),
+            if (loading)
               const ColoredBox(
                 color: Color(0x59000000),
                 child: Center(
