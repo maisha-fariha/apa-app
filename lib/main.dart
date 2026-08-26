@@ -7,9 +7,11 @@ import 'package:gems_core/gems_core.dart';
 import 'package:get/get.dart';
 
 import 'core/network/apa_api_config.dart';
+import 'core/network/connectivity_controller.dart';
 import 'core/theme/apa_fonts.dart';
 import 'core/theme/apa_theme.dart';
 import 'core/utils/responsive.dart';
+import 'core/widgets/apa_offline_banner.dart';
 import 'features/contact/presentation/controllers/contact_controller.dart';
 import 'features/donation/data/stripe_checkout.dart';
 import 'features/donation/presentation/controllers/donation_controller.dart';
@@ -35,6 +37,9 @@ Future<void> main() async {
       },
     ),
   );
+
+  Get.put(AppServices.getIt<ConnectivityController>(), permanent: true);
+  await AppServices.getIt<ConnectivityController>().refreshStatus();
 
   Get.put(AppServices.getIt<PagesController>(), permanent: true);
   Get.put(AppServices.getIt<ContactController>(), permanent: true);
@@ -87,9 +92,11 @@ class _ApaAppState extends State<ApaApp> {
       theme: ApaTheme.light,
       builder: (context, child) {
         return ApaResponsiveFrame(
-          child: DefaultTextStyle(
-            style: ApaFonts.inter(),
-            child: child ?? const SizedBox.shrink(),
+          child: ApaOfflineBannerHost(
+            child: DefaultTextStyle(
+              style: ApaFonts.inter(),
+              child: child ?? const SizedBox.shrink(),
+            ),
           ),
         );
       },

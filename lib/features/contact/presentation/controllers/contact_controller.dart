@@ -3,6 +3,7 @@ import 'package:gems_core/gems_core.dart';
 import 'package:gems_data_layer/gems_data_layer.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/network/connectivity_controller.dart';
 import '../../../../data/models/contact/contact_form_model.dart';
 import '../../../../data/repositories/contact_repository.dart';
 import '../../domain/contact_form_validator.dart';
@@ -40,10 +41,14 @@ class ContactController extends BaseListController<ContactFormField> {
     if (isLoading.value) return;
     if (!force && items.isNotEmpty) return;
 
+    final online = ConnectivityController.currentlyOnline;
+    // Offline pull-to-refresh: keep existing fields, do not hit the network.
+    if (!online && items.isNotEmpty) return;
+
     setLoading(true);
     errorMessage.value = '';
     try {
-      final result = await repository.getForm();
+      final result = await repository.getForm(useCache: !force || !online);
       result.when(
         success: (fields) {
           final previousSignature = schemaSignature;
@@ -55,6 +60,10 @@ class ContactController extends BaseListController<ContactFormField> {
           }
         },
         failure: (error) {
+          if (!online) {
+            // Banner already covers offline; do not surface an error UI.
+            return;
+          }
           if (items.isNotEmpty) return;
           items.clear();
           _disposeTextControllers();
@@ -111,8 +120,19 @@ class ContactController extends BaseListController<ContactFormField> {
 
   Future<Result<String>> submit() async {
     if (isSubmitting.value || isLoading.value || items.isEmpty) {
+      if (!ConnectivityController.currentlyOnline) {
+        return Result.failure(
+          const NetworkError(message: ConnectivityController.offlineMessage),
+        );
+      }
       return Result.failure(
         const ValidationError(message: 'The contact form is not ready yet.'),
+      );
+    }
+
+    if (!ConnectivityController.currentlyOnline) {
+      return Result.failure(
+        const NetworkError(message: ConnectivityController.offlineMessage),
       );
     }
 

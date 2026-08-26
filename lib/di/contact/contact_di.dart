@@ -9,7 +9,10 @@ Future<void> setupContactDomainServices() async {
   final getIt = GetIt.instance;
 
   DIHelper.registerRepository<ContactRepository>(
-    factory: () => ContactRepository(apiService: getIt<ApiService>()),
+    factory: () => ContactRepository(
+      apiService: getIt<ApiService>(),
+      databaseService: getIt<DatabaseService>(),
+    ),
   );
 
   DIHelper.registerController<ContactController>(

@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import '../../../../core/constants/apa_assets.dart';
 import '../../../../core/constants/apa_shell_insets.dart';
+import '../../../../core/network/connectivity_controller.dart';
 import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
 import '../../../../core/utils/responsive.dart';
@@ -390,6 +391,14 @@ class DonationPage extends StatelessWidget {
             verticalPadding: 20,
             horizontalPadding: 24,
             onPressed: () {
+              if (!ConnectivityController.currentlyOnline) {
+                _showSnackBar(
+                  context,
+                  message: ConnectivityController.offlineMessage,
+                  isError: true,
+                );
+                return;
+              }
               final error = controller.validateCurrentSelection();
               if (error != null) {
                 _showSnackBar(context, message: error, isError: true);

@@ -9,7 +9,10 @@ Future<void> setupDonationDomainServices() async {
   final getIt = GetIt.instance;
 
   DIHelper.registerRepository<StripeRepository>(
-    factory: () => StripeRepository(apiService: getIt<ApiService>()),
+    factory: () => StripeRepository(
+      apiService: getIt<ApiService>(),
+      databaseService: getIt<DatabaseService>(),
+    ),
   );
 
   DIHelper.registerController<DonationController>(

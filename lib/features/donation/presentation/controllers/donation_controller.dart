@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
+import '../../../../core/network/connectivity_controller.dart';
 import '../../../../core/utils/input_validators.dart';
 import '../../../../data/models/stripe/stripe_models.dart';
 import '../../../../data/repositories/stripe_repository.dart';
@@ -116,11 +117,15 @@ class DonationController extends GetxController {
     if (isLoading.value) return;
     if (!force && catalog.value != null) return;
 
+    final online = ConnectivityController.currentlyOnline;
+    if (!online && catalog.value != null) return;
+
     isLoading.value = true;
     errorMessage.value = '';
     try {
-      final configResult = await repository.getConfig();
-      final pricesResult = await repository.getPrices();
+      final useCache = !force || !online;
+      final configResult = await repository.getConfig(useCache: useCache);
+      final pricesResult = await repository.getPrices(useCache: useCache);
 
       StripePublicConfig? loadedConfig;
       List<StripePriceOption> loadedPrices = const [];
@@ -137,6 +142,10 @@ class DonationController extends GetxController {
 
       final config = loadedConfig;
       if (config == null) {
+        if (!online) {
+          // Banner covers offline; keep any prior catalog and stay silent.
+          return;
+        }
         catalog.value = null;
         errorMessage.value = failure ?? 'Unable to load payment settings.';
         return;
@@ -146,6 +155,7 @@ class DonationController extends GetxController {
       catalog.value = StripeCatalog(config: config, prices: loadedPrices);
       _selectDefaultChip();
     } catch (error) {
+      if (!ConnectivityController.currentlyOnline) return;
       catalog.value = null;
       errorMessage.value = error.toString();
     } finally {
@@ -243,6 +253,13 @@ class DonationController extends GetxController {
     required String name,
     required String email,
   }) async {
+    if (!ConnectivityController.currentlyOnline) {
+      return (
+        session: null,
+        message: ConnectivityController.offlineMessage,
+      );
+    }
+
     final validation = validateDonor(name: name, email: email);
     if (validation != null) {
       return (session: null, message: validation);

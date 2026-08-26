@@ -33,6 +33,18 @@ class StripePublicConfig {
       customMaxAmountCents: _asInt(oneTimeMap['custom_max_amount']) ?? 500000,
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'mode': mode,
+        'publishable_key': publishableKey,
+        'currency': currency,
+        'one_time': {
+          'custom_enabled': customEnabled,
+          'custom_min_amount': customMinAmountCents,
+          'custom_max_amount': customMaxAmountCents,
+          'custom_currency': currency,
+        },
+      };
 }
 
 class StripePriceOption {
@@ -72,6 +84,16 @@ class StripePriceOption {
       recurringInterval: json['recurring_interval']?.toString(),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'product_id': productId,
+        'stripe_price_id': stripePriceId,
+        'price_type': priceType,
+        'unit_amount': unitAmountCents,
+        'currency': currency,
+        if (recurringInterval != null) 'recurring_interval': recurringInterval,
+      };
 
   /// Supports both legacy `{ prices: [...] }` and current `{ products: [...] }`
   /// payloads where each product already includes price fields.

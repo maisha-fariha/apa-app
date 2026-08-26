@@ -1,8 +1,10 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:gems_core/gems_core.dart';
 import 'package:gems_data_layer/gems_data_layer.dart';
 import 'package:get_it/get_it.dart';
 
 import '../core/network/apa_api_config.dart';
+import '../core/network/connectivity_controller.dart';
 import '../data/repositories/contact_repository.dart';
 import '../data/repositories/posts_repository.dart';
 import '../data/repositories/stripe_repository.dart';
@@ -41,12 +43,21 @@ class AppServices {
     );
 
     await setupDataLayerServices(apiConfig: apiConfig);
+
+    if (!getIt.isRegistered<ConnectivityController>()) {
+      getIt.registerSingleton<ConnectivityController>(
+        ConnectivityController(connectivity: getIt<Connectivity>()),
+      );
+    }
+
     await setupPagesDomainServices();
     await setupContactDomainServices();
     await setupDonationDomainServices();
   }
 
   ApiService get apiService => getIt<ApiService>();
+  ConnectivityController get connectivityController =>
+      getIt<ConnectivityController>();
   PostsRepository get postsRepository => getIt<PostsRepository>();
   PagesController get pagesController => getIt<PagesController>();
   ContactRepository get contactRepository => getIt<ContactRepository>();
