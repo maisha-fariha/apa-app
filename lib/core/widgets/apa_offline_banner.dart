@@ -36,7 +36,7 @@ class ApaOfflineBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: ApaColors.gray800,
+      color: ApaColors.primaryRed,
       child: SafeArea(
         bottom: false,
         child: Padding(
