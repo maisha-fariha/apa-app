@@ -163,6 +163,11 @@ class DonationController extends GetxController {
     }
   }
 
+  /// Called when connectivity returns — refresh Stripe catalog.
+  Future<void> onConnectivityRestored() {
+    return loadCatalog(force: true);
+  }
+
   void setMonthly(bool value) {
     if (monthly.value == value) return;
     monthly.value = value;

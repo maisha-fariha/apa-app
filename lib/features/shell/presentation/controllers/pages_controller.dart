@@ -25,6 +25,21 @@ class PagesController extends BaseListController<PostItem>
 
   final Set<int> _loadingDetails = <int>{};
 
+  bool isLoadingDetailsFor(int pageId) => _loadingDetails.contains(pageId);
+
+  bool isLoadingDetailsForTemplate(String template) {
+    final page = pageByTemplate(template);
+    if (page == null) return isLoading.value && items.isEmpty;
+    return isLoadingDetailsFor(page.id);
+  }
+
+  /// True when page list + details for [template] have nothing useful yet.
+  bool isBlankForTemplate(String template) {
+    final page = pageByTemplate(template);
+    if (page == null) return true;
+    return detailsForPageId(page.id) == null;
+  }
+
   @override
   Future<void> loadItems() async {
     if (isLoading.value) return;
@@ -56,6 +71,34 @@ class PagesController extends BaseListController<PostItem>
       );
     } finally {
       setLoading(false);
+    }
+  }
+
+  /// Clears the one-shot fetch guard and reloads list + optional page details.
+  Future<void> retryLoad({String? template}) async {
+    if (items.isEmpty) {
+      _fetched = false;
+      await loadItems();
+    }
+    if (template != null && template.trim().isNotEmpty) {
+      await loadDetailsForTemplate(template, force: true);
+    }
+  }
+
+  /// Called when connectivity returns — refresh blank/stale CMS data.
+  Future<void> onConnectivityRestored() async {
+    if (items.isEmpty) {
+      _fetched = false;
+      await loadItems();
+    }
+    final selectedId = selectedPageId.value;
+    if (selectedId != null && selectedId > 0) {
+      await loadPageDetails(selectedId, force: true);
+      return;
+    }
+    final home = pageByTemplate(ApaPageTemplates.home);
+    if (home != null) {
+      await loadPageDetails(home.id, force: true);
     }
   }
 

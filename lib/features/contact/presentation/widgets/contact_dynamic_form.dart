@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import '../../../../core/network/connectivity_controller.dart';
 import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
 import '../../../../core/widgets/apa_shared_widgets.dart';
@@ -100,7 +101,20 @@ class ContactFormError extends StatelessWidget {
             fontSize: 13,
             verticalPadding: 10,
             horizontalPadding: 20,
-            onPressed: onRetry,
+            onPressed: () {
+              if (!ConnectivityController.currentlyOnline) {
+                final messenger = ScaffoldMessenger.of(context);
+                messenger.hideCurrentSnackBar();
+                messenger.showSnackBar(
+                  const SnackBar(
+                    content: Text(ConnectivityController.offlineMessage),
+                    backgroundColor: ApaColors.primaryRed,
+                  ),
+                );
+                return;
+              }
+              onRetry();
+            },
           ),
         ],
       ),

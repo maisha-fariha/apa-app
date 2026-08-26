@@ -9,6 +9,7 @@ import '../../../../core/network/connectivity_controller.dart';
 import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
 import '../../../../core/utils/responsive.dart';
+import '../../../../core/widgets/apa_empty_retry.dart';
 import '../../../../core/widgets/apa_shared_widgets.dart';
 import '../../data/stripe_checkout.dart';
 import '../controllers/donation_controller.dart';
@@ -241,6 +242,10 @@ class DonationPage extends StatelessWidget {
     }
 
     return Obx(() {
+      if (ConnectivityController.registered) {
+        ConnectivityController.to.isOnline.value;
+      }
+      final offline = !ConnectivityController.currentlyOnline;
       if (controller.isLoading.value && controller.catalog.value == null) {
         return Padding(
           padding: EdgeInsets.symmetric(vertical: 48.h),
@@ -248,32 +253,19 @@ class DonationPage extends StatelessWidget {
         );
       }
 
-      if (controller.errorMessage.value.isNotEmpty &&
-          controller.catalog.value == null) {
-        return Padding(
-          padding: EdgeInsets.symmetric(vertical: 24.h),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                controller.errorMessage.value,
-                style: ApaFonts.inter(
-                  color: ApaColors.primaryRed,
-                  fontSize: 15.sp,
-                  height: 22 / 15,
-                ),
-              ),
-              SizedBox(height: 16.h),
-              ApaBlackPillButton(
-                label: 'TRY AGAIN',
-                expanded: true,
-                fontSize: 16,
-                verticalPadding: 16,
-                horizontalPadding: 24,
-                onPressed: () => controller.loadCatalog(force: true),
-              ),
-            ],
-          ),
+      if (controller.catalog.value == null) {
+        if (controller.errorMessage.value.isNotEmpty || offline) {
+          return ApaEmptyRetry(
+            message: controller.errorMessage.value.isNotEmpty
+                ? controller.errorMessage.value
+                : (offline
+                    ? ApaEmptyRetry.offlineMessage
+                    : ApaEmptyRetry.unavailableMessage),
+            onRetry: () => controller.loadCatalog(force: true),
+          );
+        }
+        return ApaEmptyRetry.forConnectivity(
+          onRetry: () => controller.loadCatalog(force: true),
         );
       }
 

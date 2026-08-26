@@ -6,9 +6,11 @@ import 'package:get/get.dart';
 
 import '../../../../core/constants/apa_assets.dart';
 import '../../../../core/constants/apa_shell_insets.dart';
+import '../../../../core/network/connectivity_controller.dart';
 import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
 import '../../../../core/utils/responsive.dart';
+import '../../../../core/widgets/apa_empty_retry.dart';
 import '../../../../core/widgets/apa_shared_widgets.dart';
 import '../../../shell/presentation/controllers/pages_controller.dart';
 import '../../../shell/presentation/mapping/apa_page_templates.dart';
@@ -176,6 +178,9 @@ class ContactPage extends StatelessWidget {
     return Obx(() {
       controller.formEpoch.value;
       controller.schemaSignature;
+      if (ConnectivityController.registered) {
+        ConnectivityController.to.isOnline.value;
+      }
       final loading = controller.isLoading.value;
       final submitting = controller.isSubmitting.value;
       final error = controller.errorMessage.value;
@@ -184,9 +189,14 @@ class ContactPage extends StatelessWidget {
         return const ContactFormLoading();
       }
 
-      if (error.isNotEmpty && controller.items.isEmpty) {
-        return ContactFormError(
-          message: error,
+      if (controller.items.isEmpty) {
+        if (error.isNotEmpty) {
+          return ContactFormError(
+            message: error,
+            onRetry: () => controller.loadForm(force: true),
+          );
+        }
+        return ApaEmptyRetry.forConnectivity(
           onRetry: () => controller.loadForm(force: true),
         );
       }

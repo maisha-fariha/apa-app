@@ -5,9 +5,11 @@ import 'package:get/get.dart';
 
 import '../../../../core/constants/apa_assets.dart';
 import '../../../../core/constants/apa_shell_insets.dart';
+import '../../../../core/network/connectivity_controller.dart';
 import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
 import '../../../../core/utils/responsive.dart';
+import '../../../../core/widgets/apa_empty_retry.dart';
 import '../../../../core/widgets/apa_shared_widgets.dart';
 import '../../../../data/models/post/post_model.dart';
 import '../../../../data/models/post/post_item_extensions.dart';
@@ -55,6 +57,54 @@ class NewsPage extends StatelessWidget {
           child: Obx(() {
             pagesController?.items.length;
             pagesController?.pageDetailsById.length;
+            pagesController?.isLoading.value;
+            if (ConnectivityController.registered) {
+              ConnectivityController.to.isOnline.value;
+            }
+
+            final blank = pagesController?.isBlankForTemplate(
+                  ApaPageTemplates.news,
+                ) ??
+                true;
+            final loading = pagesController != null &&
+                ((pagesController.isLoading.value &&
+                        pagesController.items.isEmpty) ||
+                    pagesController.isLoadingDetailsForTemplate(
+                      ApaPageTemplates.news,
+                    ));
+
+            if (loading) {
+              return const ColoredBox(
+                color: ApaColors.white,
+                child: Center(
+                  child: CircularProgressIndicator(color: ApaColors.primaryRed),
+                ),
+              );
+            }
+
+            if (blank) {
+              return ColoredBox(
+                color: ApaColors.white,
+                child: ListView(
+                  controller: scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(
+                    20.w,
+                    48.h,
+                    20.w,
+                    navBottomPad,
+                  ),
+                  children: [
+                    ApaEmptyRetry.forConnectivity(
+                      onRetry: () => pagesController?.retryLoad(
+                        template: ApaPageTemplates.news,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
             final current =
                 pagesController?.resolvedPageForShell(ApaShellPage.news) ??
                     page;
