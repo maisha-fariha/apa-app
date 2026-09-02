@@ -8,7 +8,7 @@
 PRODUCT_NAME = apa
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.example.apa
+PRODUCT_BUNDLE_IDENTIFIER = com.ansanmpouhaiti.org
 
 // The copyright displayed in application information
-PRODUCT_COPYRIGHT = Copyright © 2026 com.example. All rights reserved.
+PRODUCT_COPYRIGHT = Copyright © 2026 Ansanm Pou Ayiti. All rights reserved.

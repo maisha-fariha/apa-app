@@ -1,4 +1,4 @@
-package com.example.apa
+package com.ansanmpouhaiti.org
 
 import android.content.Intent
 import io.flutter.embedding.android.FlutterFragmentActivity
