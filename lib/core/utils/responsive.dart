@@ -42,18 +42,19 @@ abstract final class R {
       isTabletLandscape(context) ? 48 : 24;
 
   static double cw(double value, BuildContext context) {
-    if (!isTabletLandscape(context)) return value.w;
-    return value.w.clamp(value * 0.9, value * 1.2);
+    if (!isTablet(context)) return value.w;
+    // Tablet (portrait or landscape): keep .w from exploding vs 390 design.
+    return value.w.clamp(value * 0.85, value * 1.25);
   }
 
   static double ch(double value, BuildContext context) {
-    if (!isTabletLandscape(context)) return value.h;
-    return value.h.clamp(value * 0.85, value * 1.15);
+    if (!isTablet(context)) return value.h;
+    return value.h.clamp(value * 0.8, value * 1.2);
   }
 
   static double csp(double value, BuildContext context) {
-    if (!isTabletLandscape(context)) return value.sp;
-    return value.sp.clamp(value * 0.9, value * 1.2);
+    if (!isTablet(context)) return value.sp;
+    return value.sp.clamp(value * 0.9, value * 1.15);
   }
 
   static T pick<T>(BuildContext context, {required T s, T? m, T? l}) {

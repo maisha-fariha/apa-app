@@ -204,6 +204,17 @@ class ApaBlackPillButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final enabled = onPressed != null && !isLoading;
+    final tablet = MediaQuery.sizeOf(context).shortestSide >= 600;
+    final hPad = tablet
+        ? horizontalPadding.clamp(16.0, 36.0)
+        : horizontalPadding.w;
+    final vPad = tablet
+        ? verticalPadding.clamp(12.0, 20.0)
+        : verticalPadding.h;
+    final textSize = tablet
+        ? fontSize.clamp(14.0, 18.0)
+        : fontSize.sp;
+
     final child = Material(
       color: enabled ? ApaColors.black : ApaColors.gray800,
       borderRadius: BorderRadius.circular(9999),
@@ -212,16 +223,16 @@ class ApaBlackPillButton extends StatelessWidget {
         borderRadius: BorderRadius.circular(9999),
         child: Padding(
           padding: EdgeInsets.symmetric(
-            horizontal: horizontalPadding.w,
-            vertical: verticalPadding.h,
+            horizontal: hPad,
+            vertical: vPad,
           ),
           child: isLoading
               ? SizedBox(
-                  height: fontSize.sp * 1.4,
+                  height: textSize * 1.4,
                   child: Center(
                     child: SizedBox(
-                      width: 18.w,
-                      height: 18.w,
+                      width: textSize,
+                      height: textSize,
                       child: const CircularProgressIndicator(
                         strokeWidth: 2,
                         color: ApaColors.white,
@@ -232,12 +243,14 @@ class ApaBlackPillButton extends StatelessWidget {
               : Text(
                   label.toUpperCase(),
                   textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: ApaFonts.inter(
                     color: ApaColors.white,
-                    fontSize: fontSize.sp,
+                    fontSize: textSize,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: fontSize * 0.025,
-                    height: 1.4,
+                    letterSpacing: textSize * 0.025,
+                    height: 1.25,
                   ),
                 ),
         ),

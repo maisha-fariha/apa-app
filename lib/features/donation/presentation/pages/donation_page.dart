@@ -541,23 +541,29 @@ class _CompleteDonationDialogState extends State<_CompleteDonationDialog> {
     final email = _emailController.text;
     final thanks =
         'Thank you. Your ${widget.frequencyLabel.toLowerCase()} gift of \$${widget.amount} was submitted.';
-    Navigator.of(context).pop();
+    final session = created.session!;
+    final controller = widget.controller;
+    final onFinished = widget.onFinished;
+
+    // Close the form first so Stripe presents above the donation page
+    // (UIScene needs a stable key window / root VC).
+    if (mounted) Navigator.of(context).pop();
     await StripeCheckout.waitForNativePresentation();
 
     var wentHome = false;
-    final result = await widget.controller.presentCheckout(
-      created.session!,
+    final result = await controller.presentCheckout(
+      session,
       name: name,
       email: email,
       onAuthorized: () {
         wentHome = true;
-        widget.onFinished(thanks, isError: false);
+        onFinished(thanks, isError: false);
       },
     );
 
     if (wentHome) {
       if (!result.success && !result.canceled) {
-        widget.onFinished(
+        onFinished(
           result.message ?? 'Payment could not be completed.',
           isError: true,
         );
@@ -567,14 +573,14 @@ class _CompleteDonationDialogState extends State<_CompleteDonationDialog> {
 
     if (result.canceled) return;
     if (!result.success) {
-      widget.onFinished(
+      onFinished(
         result.message ?? 'Payment could not be completed.',
         isError: true,
       );
       return;
     }
 
-    widget.onFinished(thanks, isError: false);
+    onFinished(thanks, isError: false);
   }
 
   @override
@@ -586,23 +592,27 @@ class _CompleteDonationDialogState extends State<_CompleteDonationDialog> {
     final landscape = R.isLandscape(context);
     final tablet = R.isTablet(context);
 
-    final outerHorizontal = R.pick(context, s: 12.0, m: 20.0, l: 32.0);
-    final outerVertical = landscape ? 12.0 : R.pick(context, s: 20.0, m: 24.0, l: 32.0);
-    final innerHorizontal = R.pick(context, s: 14.0, m: 18.0, l: 22.0);
-    final innerVertical = R.pick(context, s: 18.0, m: 22.0, l: 24.0);
-    final maxDialogWidth = R.pick(
-      context,
-      s: screenWidth - outerHorizontal * 2,
-      m: 440.0,
-      l: tablet && landscape ? 520.0 : 480.0,
-    ).clamp(280.0, 560.0);
+    // Use logical px on tablet so ScreenUtil (phone design) cannot shrink the
+    // dialog or inflate title/button into a clipped layout.
+    final outerHorizontal = tablet
+        ? (landscape ? 48.0 : 40.0)
+        : R.pick(context, s: 12.0, m: 20.0, l: 32.0);
+    final outerVertical = landscape ? 16.0 : (tablet ? 28.0 : 20.0);
+    final innerHorizontal = tablet ? 28.0 : R.pick(context, s: 14.0, m: 18.0, l: 22.0);
+    final innerVertical = tablet ? 28.0 : R.pick(context, s: 18.0, m: 22.0, l: 24.0);
+    final maxDialogWidth = tablet
+        ? (landscape ? 560.0 : 520.0).clamp(400.0, screenWidth - outerHorizontal * 2)
+        : (screenWidth - outerHorizontal * 2).clamp(280.0, 420.0);
 
-    final titleSize = R.csp(R.pick(context, s: 26.0, m: 26.0, l: 30.0), context);
-    final labelSize = R.csp(13, context);
-    final fieldSize = R.csp(R.pick(context, s: 17.0, m: 18.0, l: 19.0), context);
-    final summarySize = R.csp(15, context);
-    final fieldPaddingH = R.pick(context, s: 12.0, m: 14.0, l: 16.0);
-    final fieldPaddingV = R.pick(context, s: 14.0, m: 16.0, l: 18.0);
+    final titleSize = tablet
+        ? 28.0
+        : R.csp(R.pick(context, s: 26.0, m: 26.0, l: 28.0), context);
+    final labelSize = tablet ? 13.0 : R.csp(13, context);
+    final fieldSize = tablet ? 17.0 : R.csp(R.pick(context, s: 17.0, m: 18.0, l: 19.0), context);
+    final summarySize = tablet ? 15.0 : R.csp(15, context);
+    final fieldPaddingH = tablet ? 16.0 : R.pick(context, s: 12.0, m: 14.0, l: 16.0);
+    final fieldPaddingV = tablet ? 16.0 : R.pick(context, s: 14.0, m: 16.0, l: 18.0);
+    final gap = tablet ? 16.0 : R.ch(12, context);
 
     InputDecoration fieldDecoration(String hint) {
       final border = OutlineInputBorder(
@@ -630,6 +640,9 @@ class _CompleteDonationDialogState extends State<_CompleteDonationDialog> {
       );
     }
 
+    // Pin width so ScreenUtil / shrink-wrap cannot crush the title + CTA.
+    final dialogWidth = maxDialogWidth.toDouble();
+
     return Dialog(
       backgroundColor: Colors.white,
       insetPadding: EdgeInsets.symmetric(
@@ -637,26 +650,33 @@ class _CompleteDonationDialogState extends State<_CompleteDonationDialog> {
         vertical: outerVertical,
       ),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(R.pick(context, s: 16.0, m: 20.0, l: 24.0)),
+        borderRadius: BorderRadius.circular(tablet ? 20.0 : 16.0),
       ),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: maxDialogWidth,
-          maxHeight: media.size.height * (landscape ? 0.92 : 0.88),
+      child: MediaQuery(
+        data: media.copyWith(
+          textScaler: media.textScaler.clamp(
+            minScaleFactor: 1.0,
+            maxScaleFactor: tablet ? 1.15 : 1.3,
+          ),
         ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final stackSummary = constraints.maxWidth < 340;
-
-            return SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: dialogWidth,
+            maxWidth: dialogWidth,
+            maxHeight: media.size.height * (landscape ? 0.9 : 0.86),
+          ),
+          child: SizedBox(
+            width: dialogWidth,
+            child: SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
                 innerHorizontal,
                 innerVertical,
                 innerHorizontal,
-                innerVertical,
+                innerVertical + (tablet ? 8.0 : 0.0),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -664,28 +684,33 @@ class _CompleteDonationDialogState extends State<_CompleteDonationDialog> {
                       Expanded(
                         child: Text(
                           'COMPLETE DONATION',
+                          softWrap: true,
                           style: ApaFonts.inter(
                             color: ApaColors.black,
                             fontSize: titleSize,
                             fontWeight: FontWeight.w800,
-                            height: 1.05,
-                            letterSpacing: -0.5,
+                            height: 1.15,
+                            letterSpacing: -0.4,
                           ),
                         ),
                       ),
+                      const SizedBox(width: 8),
                       IconButton(
                         onPressed: () => Navigator.of(context).pop(),
                         icon: const Icon(Icons.close),
                         color: ApaColors.black,
-                        iconSize: R.pick(context, s: 24.0, m: 26.0, l: 28.0),
+                        iconSize: tablet ? 26.0 : 24.0,
                         padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
+                        constraints: const BoxConstraints(
+                          minWidth: 36,
+                          minHeight: 36,
+                        ),
                       ),
                     ],
                   ),
-                  SizedBox(height: R.ch(12, context)),
+                  SizedBox(height: gap),
                   const Divider(thickness: 1, height: 1),
-                  SizedBox(height: R.ch(20, context)),
+                  SizedBox(height: gap + 4),
 
                   Text(
                     'YOUR FULL NAME',
@@ -696,9 +721,10 @@ class _CompleteDonationDialogState extends State<_CompleteDonationDialog> {
                       letterSpacing: 0.8,
                     ),
                   ),
-                  SizedBox(height: R.ch(8, context)),
+                  SizedBox(height: gap * 0.5),
                   TextField(
                     controller: _nameController,
+                    textInputAction: TextInputAction.next,
                     decoration: fieldDecoration('John Doe'),
                     style: ApaFonts.inter(
                       color: ApaColors.nearBlack,
@@ -706,7 +732,7 @@ class _CompleteDonationDialogState extends State<_CompleteDonationDialog> {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  SizedBox(height: R.ch(18, context)),
+                  SizedBox(height: gap + 2),
 
                   Text(
                     'YOUR EMAIL ADDRESS',
@@ -717,10 +743,14 @@ class _CompleteDonationDialogState extends State<_CompleteDonationDialog> {
                       letterSpacing: 0.8,
                     ),
                   ),
-                  SizedBox(height: R.ch(8, context)),
+                  SizedBox(height: gap * 0.5),
                   TextField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.done,
+                    onSubmitted: (_) {
+                      if (!_submitting) _proceed();
+                    },
                     decoration: fieldDecoration('john@example.com'),
                     style: ApaFonts.inter(
                       color: ApaColors.nearBlack,
@@ -729,58 +759,18 @@ class _CompleteDonationDialogState extends State<_CompleteDonationDialog> {
                     ),
                   ),
 
-                  SizedBox(height: R.ch(18, context)),
-                  if (stackSummary)
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Selected Donation:',
-                          style: ApaFonts.inter(
-                            color: ApaColors.black,
-                            fontSize: summarySize,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        SizedBox(height: R.ch(4, context)),
-                        Text(
-                          selectedDonation,
-                          style: ApaFonts.inter(
-                            color: ApaColors.black,
-                            fontSize: summarySize,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    )
-                  else
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Selected Donation:',
-                            style: ApaFonts.inter(
-                              color: ApaColors.black,
-                              fontSize: summarySize,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        Flexible(
-                          child: Text(
-                            selectedDonation,
-                            textAlign: TextAlign.end,
-                            style: ApaFonts.inter(
-                              color: ApaColors.black,
-                              fontSize: summarySize,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
+                  SizedBox(height: gap + 2),
+                  Text(
+                    'Selected Donation: $selectedDonation',
+                    style: ApaFonts.inter(
+                      color: ApaColors.black,
+                      fontSize: summarySize,
+                      fontWeight: FontWeight.w600,
+                      height: 1.35,
                     ),
+                  ),
 
-                  SizedBox(height: R.ch(22, context)),
+                  SizedBox(height: gap + 6),
                   if (_localError != null) ...[
                     Text(
                       _localError!,
@@ -790,22 +780,23 @@ class _CompleteDonationDialogState extends State<_CompleteDonationDialog> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    SizedBox(height: R.ch(12, context)),
+                    SizedBox(height: gap),
                   ],
                   ApaBlackPillButton(
                     label: _submitting
                         ? 'PROCESSING…'
                         : 'PROCEED TO SECURE PAYMENT',
                     expanded: true,
-                    fontSize: R.pick(context, s: 16.0, m: 18.0, l: 20.0),
-                    verticalPadding: R.pick(context, s: 18.0, m: 20.0, l: 22.0),
-                    horizontalPadding: R.pick(context, s: 16.0, m: 22.0, l: 28.0),
+                    isLoading: _submitting,
+                    fontSize: 16.0,
+                    verticalPadding: tablet ? 16.0 : 18.0,
+                    horizontalPadding: tablet ? 20.0 : 16.0,
                     onPressed: _submitting ? null : _proceed,
                   ),
                 ],
               ),
-            );
-          },
+            ),
+          ),
         ),
       ),
     );

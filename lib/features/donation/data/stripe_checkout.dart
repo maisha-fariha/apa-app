@@ -22,7 +22,7 @@ class StripeCheckout {
   static const merchantDisplayName = 'Ansanm Pou Ayiti';
   static const urlScheme = 'apa';
   static const returnURL = ApiEndpoints.stripeReturnUrl;
-  static const _presentationDelay = Duration(milliseconds: 350);
+  static const _presentationDelay = Duration(milliseconds: 300);
   static const _androidPresentationDelay = Duration(milliseconds: 700);
 
   static bool _gotStripeReturnUrl = false;
@@ -53,14 +53,14 @@ class StripeCheckout {
           : _presentationDelay,
     );
     await WidgetsBinding.instance.endOfFrame;
-    await Future<void>.delayed(
-      !kIsWeb && Platform.isAndroid
-          ? const Duration(milliseconds: 150)
-          : Duration.zero,
-    );
   }
 
   Future<void> configure({required String publishableKey}) async {
+    if (publishableKey.trim().isEmpty) {
+      throw StripeCheckoutException(
+        'Missing Stripe publishable key. Unable to open payment.',
+      );
+    }
     Stripe.publishableKey = publishableKey;
     await _applySettings();
   }
@@ -72,20 +72,31 @@ class StripeCheckout {
     String? name,
     VoidCallback? onAuthorized,
   }) async {
+    final secret = clientSecret.trim();
+    if (secret.isEmpty) {
+      throw StripeCheckoutException(
+        'Missing payment secret. Unable to open Stripe checkout.',
+      );
+    }
+
     await configure(publishableKey: publishableKey);
     _gotStripeReturnUrl = false;
 
-    final isSetupIntent = clientSecret.startsWith('seti_');
+    final isSetupIntent = secret.startsWith('seti_');
     final lifecycle = _RedirectLifecycle(
       onReturnedWithoutRedirect: _resetProcessingAfterAbandonedAuth,
     )..attach();
 
     try {
+      debugPrint(
+        '[Stripe] initPaymentSheet '
+        '(${isSetupIntent ? 'setup' : 'payment'} intent)',
+      );
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           merchantDisplayName: merchantDisplayName,
-          paymentIntentClientSecret: isSetupIntent ? null : clientSecret,
-          setupIntentClientSecret: isSetupIntent ? clientSecret : null,
+          paymentIntentClientSecret: isSetupIntent ? null : secret,
+          setupIntentClientSecret: isSetupIntent ? secret : null,
           returnURL: returnURL,
           style: ThemeMode.light,
           primaryButtonLabel: 'PAY NOW',
@@ -104,10 +115,15 @@ class StripeCheckout {
         ),
       );
       await waitForNativePresentation();
+      debugPrint('[Stripe] presentPaymentSheet');
       await Stripe.instance.presentPaymentSheet();
       onAuthorized?.call();
       return StripeCheckoutOutcome.completed;
     } on StripeException catch (error) {
+      debugPrint(
+        '[Stripe] StripeException '
+        'code=${error.error.code} message=${error.error.message}',
+      );
       if (error.error.code == FailureCode.Canceled) {
         return StripeCheckoutOutcome.canceled;
       }
@@ -115,6 +131,12 @@ class StripeCheckout {
         error.error.localizedMessage ??
             error.error.message ??
             'Payment could not be completed.',
+      );
+    } catch (error, stack) {
+      debugPrint('[Stripe] present failed: $error\n$stack');
+      if (error is StripeCheckoutException) rethrow;
+      throw StripeCheckoutException(
+        'Payment could not be opened. Please try again.',
       );
     } finally {
       lifecycle.detach();
