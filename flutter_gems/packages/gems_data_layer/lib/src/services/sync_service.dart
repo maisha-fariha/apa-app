@@ -73,8 +73,8 @@ class SyncService {
   /// Sync queue (call manually when online)
   Future<void> syncQueue() async {
     try {
-      final result = await connectivity.checkConnectivity();
-      if (result == ConnectivityResult.none) return;
+      final results = await connectivity.checkConnectivity();
+      if (results.every((r) => r == ConnectivityResult.none)) return;
     } catch (e) {
       return;
     }

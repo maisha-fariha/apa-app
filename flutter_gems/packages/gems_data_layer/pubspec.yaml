@@ -25,7 +25,7 @@ dependencies:
   dio: ^5.4.0
   
   # Connectivity
-  connectivity_plus: ^5.0.2
+  connectivity_plus: 6.0.3
   
   # Storage & Cache
   shared_preferences: ^2.2.2

@@ -1,10 +1,6 @@
 # Uncomment this line to define a global platform for your project
-platform :ios, '13.0'
+platform :ios, '15.0'
 
-# Fixes Xcode Archive "Module 'app_links' not found" with Flutter plugins.
-install! 'cocoapods', :disable_input_output_paths => true
-
-# CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
 project 'Runner', {
@@ -30,8 +26,7 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 
 flutter_ios_podfile_setup
 
-# flutter_stripe 11.x presents Payment Sheet via AppDelegate.window, which is nil
-# under Flutter UIScene. Rewrite lookups to use the scene key window.
+# flutter_stripe 11.x presents Payment Sheet via AppDelegate.window (nil under UIScene).
 def patch_stripe_ios_uiscene!
   stripe_root = File.expand_path('.symlinks/plugins/stripe_ios', __dir__)
   return unless Dir.exist?(stripe_root)
@@ -58,7 +53,6 @@ def patch_stripe_ios_uiscene!
 
     File.write(path, contents.gsub(old, new))
     patched_files << path
-    puts "Patched Stripe UIScene presenter: #{File.basename(path)}"
   end
   return if patched_files.empty?
 
@@ -67,13 +61,169 @@ def patch_stripe_ios_uiscene!
   return if host_contents.include?("func #{helper_name}()")
 
   File.write(host, host_contents + helper)
-  puts "Added #{helper_name}() to #{File.basename(host)}"
+end
+
+# Permanent Archive fix for static frameworks (Stripe, plugins).
+# NEVER use: install! 'cocoapods', :disable_input_output_paths => true
+# That flag breaks Archive product discovery → framework not found / internal inconsistency.
+def archive_safe_static_frameworks!
+  Dir.glob(File.join(__dir__, 'Pods/Target Support Files/*/*.xcconfig')).each do |path|
+    text = File.read(path)
+    updated = text.gsub(
+      /^CONFIGURATION_BUILD_DIR = \$\{PODS_CONFIGURATION_BUILD_DIR\}\/.*$/,
+      'CONFIGURATION_BUILD_DIR = ${PODS_CONFIGURATION_BUILD_DIR}'
+    )
+    updated = updated
+      .gsub(/ ?-Xcc -fmodule-map-file="\$\{PODS_CONFIGURATION_BUILD_DIR\}[^"]+"/, '')
+      .gsub(/ ?-fmodule-map-file="\$\{PODS_CONFIGURATION_BUILD_DIR\}[^"]+"/, '')
+      .gsub(
+        %r{\$\{PODS_CONFIGURATION_BUILD_DIR\}/[^/\s"]+/([^/\s"]+\.framework/Headers)},
+        '${PODS_CONFIGURATION_BUILD_DIR}/\1'
+      )
+    File.write(path, updated) if updated != text
+  end
+
+  Dir.glob(File.join(__dir__, 'Pods/Target Support Files/Pods-Runner/*.xcconfig')).each do |path|
+    text = File.read(path)
+    updated = text
+      .gsub(
+        /^FRAMEWORK_SEARCH_PATHS =.*$/,
+        'FRAMEWORK_SEARCH_PATHS = $(inherited) "${PODS_CONFIGURATION_BUILD_DIR}"'
+      )
+      .gsub(
+        /^LIBRARY_SEARCH_PATHS =.*$/,
+        'LIBRARY_SEARCH_PATHS = $(inherited) "${PODS_CONFIGURATION_BUILD_DIR}" "${TOOLCHAIN_DIR}/usr/lib/swift/${PLATFORM_NAME}" /usr/lib/swift $(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)/ $(SDKROOT)/usr/lib/swift'
+      )
+      .gsub(/^OTHER_MODULE_VERIFIER_FLAGS =.*\n/, '')
+      .gsub(/ ?-Xcc -fmodule-map-file="\$\{PODS_CONFIGURATION_BUILD_DIR\}[^"]+"/, '')
+      .gsub(/ ?-fmodule-map-file="\$\{PODS_CONFIGURATION_BUILD_DIR\}[^"]+"/, '')
+    File.write(path, updated) if updated != text
+  end
+
+  support = File.join(__dir__, 'Pods/Target Support Files/Pods-Runner')
+  Dir.glob(File.join(support, 'Pods-Runner-resources*')).each do |path|
+    text = File.read(path)
+    updated = text.gsub(
+      %r{\$\{PODS_CONFIGURATION_BUILD_DIR\}/[^/\s"]+/([^/\s"]+\.bundle)},
+      '${PODS_CONFIGURATION_BUILD_DIR}/\1'
+    )
+    File.write(path, updated) if updated != text
+  end
+end
+
+def ensure_runner_depends_on_pods_runner!
+  require 'xcodeproj'
+  app_path = File.join(__dir__, 'Runner.xcodeproj')
+  pods_path = File.join(__dir__, 'Pods', 'Pods.xcodeproj')
+  return unless File.exist?(app_path) && File.exist?(pods_path)
+
+  app = Xcodeproj::Project.open(app_path)
+  pods = Xcodeproj::Project.open(pods_path)
+  runner = app.targets.find { |t| t.name == 'Runner' }
+  pods_runner = pods.targets.find { |t| t.name == 'Pods-Runner' }
+  return unless runner && pods_runner
+
+  pods_ref = app.files.find { |f| f.path == 'Pods/Pods.xcodeproj' || f.path == 'Pods.xcodeproj' }
+  pods_ref ||= app.new_file(File.join('Pods', 'Pods.xcodeproj'))
+
+  unless app.root_object.project_references.any? { |pr| pr[:project_ref].uuid == pods_ref.uuid }
+    product_group = app.new(Xcodeproj::Project::Object::PBXGroup)
+    product_group.name = 'Products'
+    app.root_object.project_references << { :product_group => product_group, :project_ref => pods_ref }
+
+    container_proxy = app.new(Xcodeproj::Project::Object::PBXContainerItemProxy)
+    container_proxy.container_portal = pods_ref.uuid
+    container_proxy.proxy_type = '2'
+    container_proxy.remote_global_id_string = pods_runner.product_reference.uuid
+    container_proxy.remote_info = pods_runner.name
+
+    product_proxy = app.new(Xcodeproj::Project::Object::PBXReferenceProxy)
+    product_proxy.file_type = 'wrapper.framework'
+    product_proxy.path = 'Pods_Runner.framework'
+    product_proxy.remote_ref = container_proxy
+    product_proxy.source_tree = 'BUILT_PRODUCTS_DIR'
+    product_group.children << product_proxy
+  end
+
+  unless runner.dependencies.any? { |d| d.name == 'Pods-Runner' }
+    runner.add_dependency(pods_runner)
+  end
+
+  %w[Debug Release Profile].each do |cfg_name|
+    config = runner.build_configurations.find { |c| c.name == cfg_name }
+    next unless config
+    config.build_settings['FRAMEWORK_SEARCH_PATHS'] = [
+      '$(inherited)',
+      '${PODS_CONFIGURATION_BUILD_DIR}',
+      '${PODS_CONFIGURATION_BUILD_DIR}/Stripe',
+      '${PODS_CONFIGURATION_BUILD_DIR}/StripeApplePay',
+      '${PODS_CONFIGURATION_BUILD_DIR}/StripeCore',
+      '${PODS_CONFIGURATION_BUILD_DIR}/StripeFinancialConnections',
+      '${PODS_CONFIGURATION_BUILD_DIR}/StripePaymentSheet',
+      '${PODS_CONFIGURATION_BUILD_DIR}/StripePayments',
+      '${PODS_CONFIGURATION_BUILD_DIR}/StripePaymentsUI',
+      '${PODS_CONFIGURATION_BUILD_DIR}/StripeUICore',
+      '${PODS_CONFIGURATION_BUILD_DIR}/stripe_ios',
+      '$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)',
+    ]
+  end
+
+  app.save
+end
+
+def ensure_stripe_prelink_check_phase!
+  require 'xcodeproj'
+  app = Xcodeproj::Project.open(File.join(__dir__, 'Runner.xcodeproj'))
+  runner = app.targets.find { |t| t.name == 'Runner' }
+  return unless runner
+
+  phase_name = '[APA] Ensure Stripe framework built'
+  existing = runner.shell_script_build_phases.find { |p| p.name == phase_name }
+  script = <<~'SCRIPT'
+    set -e
+    FLAT="${PODS_CONFIGURATION_BUILD_DIR}/Stripe.framework"
+    NESTED="${PODS_CONFIGURATION_BUILD_DIR}/Stripe/Stripe.framework"
+    if [ -d "$FLAT" ] || [ -d "$NESTED" ]; then
+      exit 0
+    fi
+    echo "error: Stripe.framework not found under ${PODS_CONFIGURATION_BUILD_DIR}" >&2
+    echo "error: Quit Xcode, open ios/Runner.xcworkspace (NOT .xcodeproj), Clean Build Folder, Archive." >&2
+    echo "error: Also run: cd ios && pod install" >&2
+    exit 1
+  SCRIPT
+
+  phase = existing || runner.new_shell_script_build_phase(phase_name)
+  phase.shell_script = script
+  phase.show_env_vars_in_log = '0'
+  frameworks = runner.frameworks_build_phase
+  runner.build_phases.delete(phase)
+  idx = runner.build_phases.index(frameworks) || runner.build_phases.size
+  runner.build_phases.insert(idx, phase)
+  app.save
+end
+
+def ensure_pods_runner_scheme_entry!
+  scheme_path = File.join(__dir__, 'Runner.xcodeproj/xcshareddata/xcschemes/Runner.xcscheme')
+  return unless File.exist?(scheme_path)
+
+  require 'xcodeproj'
+  pods = Xcodeproj::Project.open(File.join(__dir__, 'Pods/Pods.xcodeproj'))
+  pods_runner = pods.targets.find { |t| t.name == 'Pods-Runner' }
+  return unless pods_runner
+
+  text = File.read(scheme_path)
+  text = text.gsub('BuildableName = "libPods-Runner.a"', 'BuildableName = "Pods_Runner.framework"')
+  text = text.gsub('BuildableName = "Pods-Runner"', 'BuildableName = "Pods_Runner.framework"')
+  text = text.gsub(
+    /BlueprintIdentifier = "[A-F0-9]+"(\s*BuildableName = "Pods_Runner\.framework")/,
+    "BlueprintIdentifier = \"#{pods_runner.uuid}\"\\1"
+  )
+  File.write(scheme_path, text)
 end
 
 target 'Runner' do
-  # Static linkage is required for reliable Flutter plugin modules on Archive.
   use_frameworks! :linkage => :static
-
+  use_modular_headers!
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
   target 'RunnerTests' do
     inherit! :search_paths
@@ -84,13 +234,12 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
     target.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
       config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'NO'
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-      # Xcode 16 Explicit Modules breaks @import in GeneratedPluginRegistrant.m
       config.build_settings['CLANG_ENABLE_EXPLICIT_MODULES'] = 'NO'
       config.build_settings['SWIFT_ENABLE_EXPLICIT_MODULES'] = 'NO'
-      config.build_settings['DEFINES_MODULE'] = 'YES'
+      config.build_settings['CONFIGURATION_BUILD_DIR'] = '${PODS_CONFIGURATION_BUILD_DIR}'
     end
   end
 
@@ -100,4 +249,11 @@ post_install do |installer|
   end
 
   patch_stripe_ios_uiscene!
+  archive_safe_static_frameworks!
+end
+
+post_integrate do |_installer|
+  ensure_runner_depends_on_pods_runner!
+  ensure_stripe_prelink_check_phase!
+  ensure_pods_runner_scheme_entry!
 end

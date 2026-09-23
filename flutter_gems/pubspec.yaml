@@ -49,7 +49,7 @@ dependencies:
   # Required for gems_data_layer
   get: ^4.6.6
   shared_preferences: ^2.2.2
-  connectivity_plus: ^5.0.2
+  connectivity_plus: 6.0.3
   
   # Dependency Injection
   get_it: ^7.7.0

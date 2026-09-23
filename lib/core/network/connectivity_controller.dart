@@ -15,7 +15,7 @@ class ConnectivityController extends GetxController
   final Connectivity _connectivity;
   final RxBool isOnline = true.obs;
 
-  StreamSubscription<ConnectivityResult>? _subscription;
+  StreamSubscription<List<ConnectivityResult>>? _subscription;
 
   /// Invoked as soon as the device transitions offline → online.
   VoidCallback? onRestored;
@@ -57,21 +57,21 @@ class ConnectivityController extends GetxController
   }
 
   Future<bool> refreshStatus() async {
-    final result = await _connectivity.checkConnectivity();
-    _apply(result, fromPoll: true);
+    final results = await _connectivity.checkConnectivity();
+    _apply(results, fromPoll: true);
     return isOnline.value;
   }
 
-  void _onConnectivityChanged(ConnectivityResult result) {
+  void _onConnectivityChanged(List<ConnectivityResult> results) {
     // Apply stream value immediately so the banner/UI flips right away.
-    _apply(result);
+    _apply(results);
     // Confirm with a fresh check — some platforms emit before the
     // interface is fully usable, or miss a quick reconnect edge.
     unawaited(refreshStatus());
   }
 
-  void _apply(ConnectivityResult result, {bool fromPoll = false}) {
-    final online = result != ConnectivityResult.none;
+  void _apply(List<ConnectivityResult> results, {bool fromPoll = false}) {
+    final online = results.any((r) => r != ConnectivityResult.none);
     final wasOnline = isOnline.value;
     if (online == wasOnline) {
       // Still force a notify when polling confirms online so Obx rebuilds

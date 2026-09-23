@@ -62,7 +62,9 @@
 	</array>
 	<key>FlutterDeepLinkingEnabled</key>
 	<false/>
-	<!-- Standard HTTPS / Stripe only — no custom encryption. Speeds App Store Connect review. -->
+	<!-- Stripe Payment Sheet may use the camera to scan cards. -->
+	<key>NSCameraUsageDescription</key>
+	<string>Ansanm Pou Ayiti needs camera access to scan your card for secure donations.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>

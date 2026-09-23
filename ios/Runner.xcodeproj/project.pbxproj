@@ -20,12 +20,201 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		06C57585EFB1A8C7835198D2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 7DBC3A921194DAA2FBCAC320884C52B5;
+			remoteInfo = Subproject;
+		};
+		0CADE7C2A5ED6C0DCF38A78E /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 8B74B458B450D74B75744B87BD747314;
+			remoteInfo = "Pods-Runner";
+		};
+		1291DD6660EF7C1CD2DE76B3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = F2A1401CA8459B8838AA3410E4768D45;
+			remoteInfo = Subproject;
+		};
+		1A3268A687902D88AC3F4B18 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = CD78492F029E736C7230218B03723A36;
+			remoteInfo = Subproject;
+		};
+		23E5D9F2E93EFC707B14E961 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = A7FDAD353CD0C36BFE493AB478B7ECF2;
+			remoteInfo = Subproject;
+		};
+		3031F32B9F22D061D82934D0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 6D3FD4746C5C4B5292B7C4C862F01EF9;
+			remoteInfo = Subproject;
+		};
+		3098570B11153580CAD631BB /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C39BE06027F24EB0328A76E7507FA463;
+			remoteInfo = Subproject;
+		};
 		331C8085294A63A400263BE5 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 97C146ED1CF9000F007C117D;
 			remoteInfo = Runner;
+		};
+		42103A3ED5EC21C69A2A58C4 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = FB6636041994D9612D4143A77A726F3B;
+			remoteInfo = Subproject;
+		};
+		4B42FA7B75D88F21693EF2FA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 6C3345B1B3CAEDF5B03B1F731FDC492E;
+			remoteInfo = Subproject;
+		};
+		51F32936FCA43C2BE4E6EDAB /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 36444B74F6F7D765EF08797514F32C0E;
+			remoteInfo = Subproject;
+		};
+		70DCC9A5E8B5148B0AFAF04D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = F736DADBB5B440FAEB83E60E7B9117BC;
+			remoteInfo = Subproject;
+		};
+		717BEA98474D3F932FCF5846 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 79FEBE6D236B0380466DE57B7E3ECE2E;
+			remoteInfo = Subproject;
+		};
+		72A66F34344E520AF410791D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = EB1EB2CB2B08C7B7F870A9FC0BAA19E2;
+			remoteInfo = Subproject;
+		};
+		87180585526B2CA3BB3D49C2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C263698D7B8662A7017807CAAC982F37;
+			remoteInfo = Subproject;
+		};
+		88C9FCCADA03FB6D9E9F5AAC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 17E30797755FE4D7EEDA34A0BFADCAC5;
+			remoteInfo = Subproject;
+		};
+		964E9ECEC2F0A12881925056 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 15FA1EC9BCF419C637DF591BD6E2748C;
+			remoteInfo = Subproject;
+		};
+		99401437CC48D822208C214A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 669E8F25E1897672BDB80B7EB784DA24;
+			remoteInfo = Subproject;
+		};
+		A10E8A329B0A7B8C52CD16F8 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 07B86FEE5E4676ED01EB950B6DE17FA7;
+			remoteInfo = Subproject;
+		};
+		A993D3D1A53AD35A86EDFB78 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 0652FCE3FC19056983AABE058B3CC45B;
+			remoteInfo = Subproject;
+		};
+		AA503A8F921A7E16BA87B961 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 497F2B75C867D2399270877559788776;
+			remoteInfo = Subproject;
+		};
+		C6126087B45616339ECA9DF6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 42536BCC099D97F8C08F859CA906C373;
+			remoteInfo = Subproject;
+		};
+		CBBBFD68969D3177315AF8F2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 93C6A45C6E4792269BE9BE0073839BF0;
+			remoteInfo = Subproject;
+		};
+		CD887A5F511B8D806EF3BC96 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 8AE0BAD58C3D6B8F9990A76423AE29E1;
+			remoteInfo = Subproject;
+		};
+		D18A9A31895C9EB55ABA5ACB /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 438D5204F2714F9C297FB5C27756E888;
+			remoteInfo = Subproject;
+		};
+		D9F87ECE3E2C28361886874F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = A740160EC327416CA30F6F6CCE620C52;
+			remoteInfo = Subproject;
+		};
+		E01993C56DE8FADCD5564708 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = C741B5B166030660BC3D33B8B81F3518;
+			remoteInfo = Subproject;
+		};
+		E080C55DF7D9FB92BD6E9278 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = DDE7A3F6C65E34F22503AFE43F1233CB;
+			remoteInfo = Subproject;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -55,6 +244,7 @@
 		74858FAE1ED2DC5600515810 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7884E8672EC3CC0400C636F2 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
 		7AFA3C8E1D35360C0083082E /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = Flutter/Release.xcconfig; sourceTree = "<group>"; };
+		8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Pods.xcodeproj; path = Pods/Pods.xcodeproj; sourceTree = "<group>"; };
 		942F24E22682A5FAD947382B /* Pods-RunnerTests.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.profile.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.profile.xcconfig"; sourceTree = "<group>"; };
 		95410DB01F74BE3F8026682B /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
 		9740EEB21CF90195004384FC /* Debug.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = Flutter/Debug.xcconfig; sourceTree = "<group>"; };
@@ -126,6 +316,7 @@
 				331C8082294A63A400263BE5 /* RunnerTests */,
 				E510F35BF2D7019C87B64483 /* Pods */,
 				3EAECF0FDD521EF8A458A706 /* Frameworks */,
+				8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */,
 			);
 			sourceTree = "<group>";
 		};
@@ -134,6 +325,32 @@
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				331C8081294A63A400263BE5 /* RunnerTests.xctest */,
+				AF392B7A6B6A76940E00EAD0 /* app_links.framework */,
+				3894035D400CBEE2D06F9EFB /* app_links_ios_privacy.bundle */,
+				43C401F5F5AB8BB8B7D6C486 /* connectivity_plus.framework */,
+				2E4104C4376ACB612499945F /* connectivity_plus_privacy.bundle */,
+				068797FD0B2404FCBFB10A2B /* package_info_plus.framework */,
+				0A4CB609B76A8947AC2A22E8 /* Pods_Runner.framework */,
+				E7436E2C521B9E61416C4993 /* Pods_RunnerTests.framework */,
+				881839DC38E0F98218962E72 /* shared_preferences_foundation.framework */,
+				7F786829488614EDDDC8EC16 /* shared_preferences_foundation_privacy.bundle */,
+				651AC8225CB3C627F7EF7CE9 /* Stripe.framework */,
+				C30C067A3A9A5D1A686DC04E /* StripeBundle.bundle */,
+				30AC9448D857074720FC83E9 /* stripe_ios.framework */,
+				73DF52AC8D32FAE729FBB54E /* StripeApplePay.framework */,
+				589F832C31D7B7836CAA7BFE /* StripeCore.framework */,
+				D93CBF0C5B9DDBBB94D0B6EC /* StripeCoreBundle.bundle */,
+				9211F7A9A2EA35A88DC93714 /* StripeFinancialConnections.framework */,
+				80FDFA24B74A5E290E23B9AC /* StripeFinancialConnectionsBundle.bundle */,
+				F6200E42FC56E8935AAB9B55 /* StripePayments.framework */,
+				5B29A95896AC32B05918D95C /* Stripe3DS2.bundle */,
+				557960399177E9A7A7AE095F /* StripePaymentsBundle.bundle */,
+				3BB36CEBDDCE57DB16E3D25D /* StripePaymentSheet.framework */,
+				B0D24E287D0369B5BAEE5636 /* StripePaymentSheetBundle.bundle */,
+				AB90AB89ACBD2908D18EE1C2 /* StripePaymentsUI.framework */,
+				F74EDDF6B061B982D183443F /* StripePaymentsUIBundle.bundle */,
+				0632422DCEED7CCB8F216FA1 /* StripeUICore.framework */,
+				2513668C7B3A0DAD890A4BAB /* StripeUICoreBundle.bundle */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -197,6 +414,7 @@
 				7F4D6F60B133DFFD2FAD026D /* [CP] Check Pods Manifest.lock */,
 				9740EEB61CF901F6004384FC /* Run Script */,
 				97C146EA1CF9000F007C117D /* Sources */,
+				C890014402B914E4FAF2E648 /* [APA] Ensure Stripe framework built */,
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
@@ -206,6 +424,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				525A0933C0D467D4E9F6C7EB /* PBXTargetDependency */,
 			);
 			name = Runner;
 			productName = Runner;
@@ -243,6 +462,12 @@
 			mainGroup = 97C146E51CF9000F007C117D;
 			productRefGroup = 97C146EF1CF9000F007C117D /* Products */;
 			projectDirPath = "";
+			projectReferences = (
+				{
+					ProductGroup = 97C146EF1CF9000F007C117D /* Products */;
+					ProjectRef = 8DB7708C444ECCE3DE24712E /* Pods.xcodeproj */;
+				},
+			);
 			projectRoot = "";
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
@@ -250,6 +475,191 @@
 			);
 		};
 /* End PBXProject section */
+
+/* Begin PBXReferenceProxy section */
+		0632422DCEED7CCB8F216FA1 /* StripeUICore.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = StripeUICore.framework;
+			remoteRef = 88C9FCCADA03FB6D9E9F5AAC /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		068797FD0B2404FCBFB10A2B /* package_info_plus.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = package_info_plus.framework;
+			remoteRef = 3098570B11153580CAD631BB /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		0A4CB609B76A8947AC2A22E8 /* Pods_Runner.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = Pods_Runner.framework;
+			remoteRef = 99401437CC48D822208C214A /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		2513668C7B3A0DAD890A4BAB /* StripeUICoreBundle.bundle */ = {
+			isa = PBXReferenceProxy;
+			fileType = "wrapper.plug-in";
+			path = StripeUICoreBundle.bundle;
+			remoteRef = A10E8A329B0A7B8C52CD16F8 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		2E4104C4376ACB612499945F /* connectivity_plus_privacy.bundle */ = {
+			isa = PBXReferenceProxy;
+			fileType = "wrapper.plug-in";
+			path = connectivity_plus_privacy.bundle;
+			remoteRef = AA503A8F921A7E16BA87B961 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		30AC9448D857074720FC83E9 /* stripe_ios.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = stripe_ios.framework;
+			remoteRef = 72A66F34344E520AF410791D /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		3894035D400CBEE2D06F9EFB /* app_links_ios_privacy.bundle */ = {
+			isa = PBXReferenceProxy;
+			fileType = "wrapper.plug-in";
+			path = app_links_ios_privacy.bundle;
+			remoteRef = 42103A3ED5EC21C69A2A58C4 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		3BB36CEBDDCE57DB16E3D25D /* StripePaymentSheet.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = StripePaymentSheet.framework;
+			remoteRef = E01993C56DE8FADCD5564708 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		43C401F5F5AB8BB8B7D6C486 /* connectivity_plus.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = connectivity_plus.framework;
+			remoteRef = 3031F32B9F22D061D82934D0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		557960399177E9A7A7AE095F /* StripePaymentsBundle.bundle */ = {
+			isa = PBXReferenceProxy;
+			fileType = "wrapper.plug-in";
+			path = StripePaymentsBundle.bundle;
+			remoteRef = C6126087B45616339ECA9DF6 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		589F832C31D7B7836CAA7BFE /* StripeCore.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = StripeCore.framework;
+			remoteRef = 1291DD6660EF7C1CD2DE76B3 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		5B29A95896AC32B05918D95C /* Stripe3DS2.bundle */ = {
+			isa = PBXReferenceProxy;
+			fileType = "wrapper.plug-in";
+			path = Stripe3DS2.bundle;
+			remoteRef = 06C57585EFB1A8C7835198D2 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		651AC8225CB3C627F7EF7CE9 /* Stripe.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = Stripe.framework;
+			remoteRef = E080C55DF7D9FB92BD6E9278 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		73DF52AC8D32FAE729FBB54E /* StripeApplePay.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = StripeApplePay.framework;
+			remoteRef = 51F32936FCA43C2BE4E6EDAB /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		7F786829488614EDDDC8EC16 /* shared_preferences_foundation_privacy.bundle */ = {
+			isa = PBXReferenceProxy;
+			fileType = "wrapper.plug-in";
+			path = shared_preferences_foundation_privacy.bundle;
+			remoteRef = A993D3D1A53AD35A86EDFB78 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		80FDFA24B74A5E290E23B9AC /* StripeFinancialConnectionsBundle.bundle */ = {
+			isa = PBXReferenceProxy;
+			fileType = "wrapper.plug-in";
+			path = StripeFinancialConnectionsBundle.bundle;
+			remoteRef = 70DCC9A5E8B5148B0AFAF04D /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		881839DC38E0F98218962E72 /* shared_preferences_foundation.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = shared_preferences_foundation.framework;
+			remoteRef = CBBBFD68969D3177315AF8F2 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		9211F7A9A2EA35A88DC93714 /* StripeFinancialConnections.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = StripeFinancialConnections.framework;
+			remoteRef = 23E5D9F2E93EFC707B14E961 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		AB90AB89ACBD2908D18EE1C2 /* StripePaymentsUI.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = StripePaymentsUI.framework;
+			remoteRef = D9F87ECE3E2C28361886874F /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		AF392B7A6B6A76940E00EAD0 /* app_links.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = app_links.framework;
+			remoteRef = 717BEA98474D3F932FCF5846 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		B0D24E287D0369B5BAEE5636 /* StripePaymentSheetBundle.bundle */ = {
+			isa = PBXReferenceProxy;
+			fileType = "wrapper.plug-in";
+			path = StripePaymentSheetBundle.bundle;
+			remoteRef = 87180585526B2CA3BB3D49C2 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		C30C067A3A9A5D1A686DC04E /* StripeBundle.bundle */ = {
+			isa = PBXReferenceProxy;
+			fileType = "wrapper.plug-in";
+			path = StripeBundle.bundle;
+			remoteRef = CD887A5F511B8D806EF3BC96 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		D93CBF0C5B9DDBBB94D0B6EC /* StripeCoreBundle.bundle */ = {
+			isa = PBXReferenceProxy;
+			fileType = "wrapper.plug-in";
+			path = StripeCoreBundle.bundle;
+			remoteRef = 964E9ECEC2F0A12881925056 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		E7436E2C521B9E61416C4993 /* Pods_RunnerTests.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = Pods_RunnerTests.framework;
+			remoteRef = 4B42FA7B75D88F21693EF2FA /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		F6200E42FC56E8935AAB9B55 /* StripePayments.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = StripePayments.framework;
+			remoteRef = D18A9A31895C9EB55ABA5ACB /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		F74EDDF6B061B982D183443F /* StripePaymentsUIBundle.bundle */ = {
+			isa = PBXReferenceProxy;
+			fileType = "wrapper.plug-in";
+			path = StripePaymentsUIBundle.bundle;
+			remoteRef = 1A3268A687902D88AC3F4B18 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
 		331C807F294A63A400263BE5 /* Resources */ = {
@@ -348,15 +758,36 @@
 			shellPath = /bin/sh;
 			shellScript = "/bin/sh \"$FLUTTER_ROOT/packages/flutter_tools/bin/xcode_backend.sh\" build";
 		};
-		F09CADD6393BBA7C95E27D16 /* [CP] Copy Pods Resources */ = {
+		C890014402B914E4FAF2E648 /* [APA] Ensure Stripe framework built */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputFileListPaths = (
 			);
+			inputPaths = (
+			);
+			name = "[APA] Ensure Stripe framework built";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\nFLAT=\"${PODS_CONFIGURATION_BUILD_DIR}/Stripe.framework\"\nNESTED=\"${PODS_CONFIGURATION_BUILD_DIR}/Stripe/Stripe.framework\"\nif [ -d \"$FLAT\" ] || [ -d \"$NESTED\" ]; then\n  exit 0\nfi\necho \"error: Stripe.framework not found under ${PODS_CONFIGURATION_BUILD_DIR}\" >&2\necho \"error: Quit Xcode, open ios/Runner.xcworkspace (NOT .xcodeproj), Clean Build Folder, Archive.\" >&2\necho \"error: Also run: cd ios && pod install\" >&2\nexit 1\n";
+			showEnvVarsInLog = 0;
+		};
+		F09CADD6393BBA7C95E27D16 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
 			name = "[CP] Copy Pods Resources";
 			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Runner/Pods-Runner-resources-${CONFIGURATION}-output-files.xcfilelist",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -391,6 +822,11 @@
 			isa = PBXTargetDependency;
 			target = 97C146ED1CF9000F007C117D /* Runner */;
 			targetProxy = 331C8085294A63A400263BE5 /* PBXContainerItemProxy */;
+		};
+		525A0933C0D467D4E9F6C7EB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = "Pods-Runner";
+			targetProxy = 0CADE7C2A5ED6C0DCF38A78E /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -457,7 +893,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = iphoneos;
@@ -476,6 +912,20 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = S68V6982Y3;
 				ENABLE_BITCODE = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"${PODS_CONFIGURATION_BUILD_DIR}",
+					"${PODS_CONFIGURATION_BUILD_DIR}/Stripe",
+					"${PODS_CONFIGURATION_BUILD_DIR}/StripeApplePay",
+					"${PODS_CONFIGURATION_BUILD_DIR}/StripeCore",
+					"${PODS_CONFIGURATION_BUILD_DIR}/StripeFinancialConnections",
+					"${PODS_CONFIGURATION_BUILD_DIR}/StripePaymentSheet",
+					"${PODS_CONFIGURATION_BUILD_DIR}/StripePayments",
+					"${PODS_CONFIGURATION_BUILD_DIR}/StripePaymentsUI",
+					"${PODS_CONFIGURATION_BUILD_DIR}/StripeUICore",
+					"${PODS_CONFIGURATION_BUILD_DIR}/stripe_ios",
+					"$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)",
+				);
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -589,7 +1039,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
@@ -640,7 +1090,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = iphoneos;
@@ -661,6 +1111,20 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = S68V6982Y3;
 				ENABLE_BITCODE = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"${PODS_CONFIGURATION_BUILD_DIR}",
+					"${PODS_CONFIGURATION_BUILD_DIR}/Stripe",
+					"${PODS_CONFIGURATION_BUILD_DIR}/StripeApplePay",
+					"${PODS_CONFIGURATION_BUILD_DIR}/StripeCore",
+					"${PODS_CONFIGURATION_BUILD_DIR}/StripeFinancialConnections",
+					"${PODS_CONFIGURATION_BUILD_DIR}/StripePaymentSheet",
+					"${PODS_CONFIGURATION_BUILD_DIR}/StripePayments",
+					"${PODS_CONFIGURATION_BUILD_DIR}/StripePaymentsUI",
+					"${PODS_CONFIGURATION_BUILD_DIR}/StripeUICore",
+					"${PODS_CONFIGURATION_BUILD_DIR}/stripe_ios",
+					"$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)",
+				);
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -686,6 +1150,20 @@
 				CURRENT_PROJECT_VERSION = "$(FLUTTER_BUILD_NUMBER)";
 				DEVELOPMENT_TEAM = S68V6982Y3;
 				ENABLE_BITCODE = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"${PODS_CONFIGURATION_BUILD_DIR}",
+					"${PODS_CONFIGURATION_BUILD_DIR}/Stripe",
+					"${PODS_CONFIGURATION_BUILD_DIR}/StripeApplePay",
+					"${PODS_CONFIGURATION_BUILD_DIR}/StripeCore",
+					"${PODS_CONFIGURATION_BUILD_DIR}/StripeFinancialConnections",
+					"${PODS_CONFIGURATION_BUILD_DIR}/StripePaymentSheet",
+					"${PODS_CONFIGURATION_BUILD_DIR}/StripePayments",
+					"${PODS_CONFIGURATION_BUILD_DIR}/StripePaymentsUI",
+					"${PODS_CONFIGURATION_BUILD_DIR}/StripeUICore",
+					"${PODS_CONFIGURATION_BUILD_DIR}/stripe_ios",
+					"$(BUILD_DIR)/$(CONFIGURATION)$(EFFECTIVE_PLATFORM_NAME)",
+				);
 				INFOPLIST_FILE = Runner/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
