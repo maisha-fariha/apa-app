@@ -1,7 +1,6 @@
 plugins {
     id("com.android.application")
-    id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    // The Flutter Gradle Plugin must be applied after the Android Gradle plugin.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -21,10 +20,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
     defaultConfig {
@@ -61,6 +56,12 @@ android {
                 "proguard-rules.pro",
             )
         }
+    }
+
+    // stripe_android's optional push-provisioning dep pulls a missing
+    // play-services-tapandpay artifact into lintVital; skip vital lint for release.
+    lint {
+        checkReleaseBuilds = false
     }
 }
 

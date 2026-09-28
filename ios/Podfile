@@ -1,7 +1,12 @@
+# CocoaPods CDN must be declared first (avoids stale/master-repo resolve errors).
+source 'https://cdn.cocoapods.org/'
+
 # Uncomment this line to define a global platform for your project
 platform :ios, '15.0'
 
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
+ENV['LANG'] = 'en_US.UTF-8'
+ENV['LC_ALL'] = 'en_US.UTF-8'
 
 project 'Runner', {
   'Debug' => :debug,
@@ -218,6 +223,31 @@ def ensure_pods_runner_scheme_entry!
     /BlueprintIdentifier = "[A-F0-9]+"(\s*BuildableName = "Pods_Runner\.framework")/,
     "BlueprintIdentifier = \"#{pods_runner.uuid}\"\\1"
   )
+
+  # Ensure Pods-Runner is archived before Runner.app (fixes Stripe.framework missing).
+  unless text.include?('BlueprintName = "Pods-Runner"')
+    entry = <<~XML
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "#{pods_runner.uuid}"
+               BuildableName = "Pods_Runner.framework"
+               BlueprintName = "Pods-Runner"
+               ReferencedContainer = "container:Pods/Pods.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+    XML
+    text = text.sub(
+      %r{(<BuildActionEntries>\n)},
+      "\\1#{entry}"
+    )
+  end
+
   File.write(scheme_path, text)
 end
 

@@ -93,7 +93,7 @@ class _ApaAppState extends State<ApaApp> {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: 'APA — Ansanm Pou Ayiti',
+      title: 'Ansanm Pou Ayiti',
       debugShowCheckedModeBanner: false,
       theme: ApaTheme.light,
       builder: (context, child) {

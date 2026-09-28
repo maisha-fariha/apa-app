@@ -3,72 +3,79 @@ PODS:
     - Flutter
   - connectivity_plus (0.0.1):
     - Flutter
-    - FlutterMacOS
   - Flutter (1.0.0)
   - package_info_plus (0.4.5):
     - Flutter
   - shared_preferences_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
-  - Stripe (24.7.0):
-    - StripeApplePay (= 24.7.0)
-    - StripeCore (= 24.7.0)
-    - StripePayments (= 24.7.0)
-    - StripePaymentsUI (= 24.7.0)
-    - StripeUICore (= 24.7.0)
+  - Stripe (26.9.0):
+    - StripeApplePay (= 26.9.0)
+    - StripeCore (= 26.9.0)
+    - StripeIssuing (= 26.9.0)
+    - StripePayments (= 26.9.0)
+    - StripePaymentsUI (= 26.9.0)
+    - StripeUICore (= 26.9.0)
   - stripe_ios (0.0.1):
     - Flutter
-    - Stripe (~> 24.7.0)
+    - Stripe (~> 26.9.0)
     - stripe_ios/stripe_ios (= 0.0.1)
     - stripe_ios/stripe_objc (= 0.0.1)
-    - StripeApplePay (~> 24.7.0)
-    - StripeFinancialConnections (~> 24.7.0)
-    - StripePayments (~> 24.7.0)
-    - StripePaymentSheet (~> 24.7.0)
-    - StripePaymentsUI (~> 24.7.0)
+    - StripeApplePay (~> 26.9.0)
+    - StripeFinancialConnections (~> 26.9.0)
+    - StripePayments (~> 26.9.0)
+    - StripePaymentSheet (~> 26.9.0)
+    - StripePaymentsUI (~> 26.9.0)
   - stripe_ios/stripe_ios (0.0.1):
     - Flutter
-    - Stripe (~> 24.7.0)
+    - Stripe (~> 26.9.0)
     - stripe_ios/stripe_objc
-    - StripeApplePay (~> 24.7.0)
-    - StripeFinancialConnections (~> 24.7.0)
-    - StripePayments (~> 24.7.0)
-    - StripePaymentSheet (~> 24.7.0)
-    - StripePaymentsUI (~> 24.7.0)
+    - StripeApplePay (~> 26.9.0)
+    - StripeFinancialConnections (~> 26.9.0)
+    - StripePayments (~> 26.9.0)
+    - StripePaymentSheet (~> 26.9.0)
+    - StripePaymentsUI (~> 26.9.0)
   - stripe_ios/stripe_objc (0.0.1):
     - Flutter
-    - Stripe (~> 24.7.0)
-    - StripeApplePay (~> 24.7.0)
-    - StripeFinancialConnections (~> 24.7.0)
-    - StripePayments (~> 24.7.0)
-    - StripePaymentSheet (~> 24.7.0)
-    - StripePaymentsUI (~> 24.7.0)
-  - StripeApplePay (24.7.0):
-    - StripeCore (= 24.7.0)
-  - StripeCore (24.7.0)
-  - StripeFinancialConnections (24.7.0):
-    - StripeCore (= 24.7.0)
-    - StripeUICore (= 24.7.0)
-  - StripePayments (24.7.0):
-    - StripeCore (= 24.7.0)
-    - StripePayments/Stripe3DS2 (= 24.7.0)
-  - StripePayments/Stripe3DS2 (24.7.0):
-    - StripeCore (= 24.7.0)
-  - StripePaymentSheet (24.7.0):
-    - StripeApplePay (= 24.7.0)
-    - StripeCore (= 24.7.0)
-    - StripePayments (= 24.7.0)
-    - StripePaymentsUI (= 24.7.0)
-  - StripePaymentsUI (24.7.0):
-    - StripeCore (= 24.7.0)
-    - StripePayments (= 24.7.0)
-    - StripeUICore (= 24.7.0)
-  - StripeUICore (24.7.0):
-    - StripeCore (= 24.7.0)
+    - Stripe (~> 26.9.0)
+    - StripeApplePay (~> 26.9.0)
+    - StripeFinancialConnections (~> 26.9.0)
+    - StripePayments (~> 26.9.0)
+    - StripePaymentSheet (~> 26.9.0)
+    - StripePaymentsUI (~> 26.9.0)
+  - StripeApplePay (26.9.0):
+    - StripeCore (= 26.9.0)
+  - StripeCore (26.9.0)
+  - StripeFinancialConnections (26.9.0):
+    - StripeCore (= 26.9.0)
+    - StripeUICore (= 26.9.0)
+  - StripeFinancialConnectionsLite (26.9.0):
+    - StripeCore (= 26.9.0)
+  - StripeIssuing (26.9.0):
+    - StripeCore (= 26.9.0)
+    - StripePayments (= 26.9.0)
+    - StripePaymentsUI (= 26.9.0)
+  - StripePayments (26.9.0):
+    - StripeCore (= 26.9.0)
+    - StripePayments/Stripe3DS2 (= 26.9.0)
+  - StripePayments/Stripe3DS2 (26.9.0):
+    - StripeCore (= 26.9.0)
+  - StripePaymentSheet (26.9.0):
+    - StripeApplePay (= 26.9.0)
+    - StripeCore (= 26.9.0)
+    - StripeFinancialConnectionsLite (= 26.9.0)
+    - StripePayments (= 26.9.0)
+    - StripePaymentsUI (= 26.9.0)
+  - StripePaymentsUI (26.9.0):
+    - StripeCore (= 26.9.0)
+    - StripePayments (= 26.9.0)
+    - StripeUICore (= 26.9.0)
+  - StripeUICore (26.9.0):
+    - StripeCore (= 26.9.0)
 
 DEPENDENCIES:
   - app_links (from `.symlinks/plugins/app_links/ios`)
-  - connectivity_plus (from `.symlinks/plugins/connectivity_plus/darwin`)
+  - connectivity_plus (from `.symlinks/plugins/connectivity_plus/ios`)
   - Flutter (from `Flutter`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
@@ -80,6 +87,8 @@ SPEC REPOS:
     - StripeApplePay
     - StripeCore
     - StripeFinancialConnections
+    - StripeFinancialConnectionsLite
+    - StripeIssuing
     - StripePayments
     - StripePaymentSheet
     - StripePaymentsUI
@@ -89,7 +98,7 @@ EXTERNAL SOURCES:
   app_links:
     :path: ".symlinks/plugins/app_links/ios"
   connectivity_plus:
-    :path: ".symlinks/plugins/connectivity_plus/darwin"
+    :path: ".symlinks/plugins/connectivity_plus/ios"
   Flutter:
     :path: Flutter
   package_info_plus:
@@ -101,20 +110,22 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   app_links: 3dbc685f76b1693c66a6d9dd1e9ab6f73d97dc0a
-  connectivity_plus: 3f6c9057f4cd64198dc826edfb0542892f825343
-  Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
-  package_info_plus: 566e1b7a2f3900e4b0020914ad3fc051dcc95596
+  connectivity_plus: cb623214f4e1f6ef8fe7403d580fdad517d2f7dd
+  Flutter: 71a624a5bc0c04062bf19101d501e466baf2fb47
+  package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
   shared_preferences_foundation: 7036424c3d8ec98dfe75ff1667cb0cd531ec82bb
-  Stripe: 8a03a78bfa16b197f9fac51e42670ac563b34388
-  stripe_ios: 95bdf6ba58efd184fe1dfed194cd8692299d66ca
-  StripeApplePay: 3c1b43d9b5130f6b714863bf8c9482c24168ab27
-  StripeCore: 4955c2af14446db04818ad043d19d8f97b73c5fa
-  StripeFinancialConnections: 8cf97b04c2f354879a2a5473126efac38f11f406
-  StripePayments: 91820845bece6117809bcfdcaef39c84c2b4cae5
-  StripePaymentSheet: 1810187cbdbc73410b8fb86cecafaaa41c1481fc
-  StripePaymentsUI: 326376e23caa369d1f58041bdb858c89c2b17ed4
-  StripeUICore: 17a4f3adb81ae05ab885e1b353022a430176eab1
+  Stripe: a232266e1c9709b56cfdeffaa731370407b0e3e2
+  stripe_ios: acd494dc5a2aa7cf5d4a6b486fb94e497a6af853
+  StripeApplePay: 83587609b80bc165a941fbe7c6ba7db8822bcc36
+  StripeCore: 0d4533f5ca61b8abd60004464e0125ee98df91b7
+  StripeFinancialConnections: e61972f157473f6bdced8d25075ddfad48d36ca9
+  StripeFinancialConnectionsLite: 0b51780316bb63a94fd5ef11a4480fb9a0951661
+  StripeIssuing: 4a0c35bebc94b586c4c3b73fe432280330f75739
+  StripePayments: 57614a765aa5dce6d5e5c4d669afda2b80c64e5e
+  StripePaymentSheet: 6ecef03b5032a1acff02a47e0bbfc17fb730bb3d
+  StripePaymentsUI: bcb256b2cb9cb0926842ca92cd19e9705c3339f8
+  StripeUICore: cd7242a0449cea4e4b38b61d11584dfabb8e28ce
 
-PODFILE CHECKSUM: 4757c2348d3d257cbbf65c6552a164c35461b4e7
+PODFILE CHECKSUM: 05b488282ae18acc83341c3ec657ce6ae6610f7f
 
 COCOAPODS: 1.16.2
