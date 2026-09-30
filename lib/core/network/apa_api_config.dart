@@ -20,7 +20,7 @@ abstract final class ApaApiConfig {
   static const String developmentBaseUrl =
       'https://encoder-staging.space/ansanm-pou-haiti/wp-json';
 
-  static const String productionBaseUrl = 'https://ansanmpouhaiti.com/wp-json';
+  static const String productionBaseUrl = 'https://ansanmpouayiti.com/wp-json';
 
   /// Base URL for the selected [environment].
   static String get baseUrl => switch (environment) {
