@@ -344,41 +344,33 @@ class _ApaShellState extends State<ApaShell> {
         pagesController.items.length;
         pagesController.selectedPageId.value;
         pagesController.pageDetailsById.length;
+        pagesController.initialLoadSettled.value;
+        pagesController.isLoading.value;
         if (ConnectivityController.registered) {
           ConnectivityController.to.isOnline.value;
         }
-        final loading =
-            pagesController.isLoading.value && pagesController.items.isEmpty;
-        final blank = !loading && pagesController.items.isEmpty;
+        // Empty + not loading is also the state before the first request
+        // starts, and after a startup connectivity blip. Only show retry
+        // once an online fetch has finished with nothing to display.
+        final showFailure = pagesController.initialLoadSettled.value &&
+            !pagesController.isLoading.value &&
+            pagesController.items.isEmpty;
 
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            if (blank)
-              ColoredBox(
-                color: ApaColors.white,
-                child: SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: ApaEmptyRetry.forConnectivity(
-                      onRetry: () => pagesController.retryLoad(),
-                    ),
-                  ),
-                ),
-              )
-            else
-              buildPages(),
-            if (loading)
-              const ColoredBox(
-                color: Color(0x59000000),
-                child: Center(
-                  child: CircularProgressIndicator(
-                    color: ApaColors.primaryRed,
-                  ),
+        if (showFailure) {
+          return ColoredBox(
+            color: ApaColors.white,
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: ApaEmptyRetry.forConnectivity(
+                  onRetry: () => pagesController.retryLoad(),
                 ),
               ),
-          ],
-        );
+            ),
+          );
+        }
+
+        return buildPages();
       });
     }
 

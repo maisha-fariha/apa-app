@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:get/get.dart';
 import 'package:gems_core/gems_core.dart';
 import 'package:gems_data_layer/gems_data_layer.dart';
@@ -16,6 +18,10 @@ class PagesController extends BaseListController<PostItem>
   final PostsRepository repository;
 
   bool _fetched = false;
+
+  /// True only after an online fetch finishes. A startup offline blip
+  /// leaves this false so the shell does not flash the retry screen.
+  final RxBool initialLoadSettled = false.obs;
 
   /// WordPress post id for the page currently shown in the shell.
   final RxnInt selectedPageId = RxnInt();
@@ -41,6 +47,12 @@ class PagesController extends BaseListController<PostItem>
   }
 
   @override
+  void onInit() {
+    super.onInit();
+    unawaited(loadItems());
+  }
+
+  @override
   Future<void> loadItems() async {
     if (isLoading.value) return;
     if (_fetched && items.isNotEmpty) return;
@@ -51,6 +63,7 @@ class PagesController extends BaseListController<PostItem>
       result.when(
         success: (pages) {
           _fetched = true;
+          initialLoadSettled.value = true;
           items
             ..clear()
             ..addAll(pages);
@@ -63,8 +76,10 @@ class PagesController extends BaseListController<PostItem>
           _ensureInitialSelection();
         },
         failure: (error) {
-          // Offline: keep any cached/in-memory data and stay silent.
+          // Offline at launch is often a false reading. Stay unsettled so
+          // the home screen stays up until connectivity restore retries.
           if (!ConnectivityController.currentlyOnline) return;
+          initialLoadSettled.value = true;
           setError(error.message);
           Get.snackbar('Error', error.message);
         },
