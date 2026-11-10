@@ -11,9 +11,6 @@ class SceneDelegate: FlutterSceneDelegate {
     options connectionOptions: UIScene.ConnectionOptions
   ) {
     super.scene(scene, willConnectTo: session, options: connectionOptions)
-    if let windowScene = scene as? UIWindowScene {
-      windowScene.windows.forEach { $0.backgroundColor = .black }
-    }
     // flutter_stripe (and older StripeSdk lookups) still read
     // UIApplication.shared.delegate?.window, which is nil under UIScene.
     // Mirror the scene key window so Payment Sheet can present.
