@@ -147,7 +147,7 @@ class PagesController extends BaseListController<PostItem>
     if (selectedPageId.value != null) return;
     final home = pageByTemplate(ApaPageTemplates.home);
     if (home != null) {
-      selectPage(home, fetchDetails: false);
+      selectPage(home, fetchDetails: true);
     }
   }
 
@@ -223,7 +223,14 @@ class PagesController extends BaseListController<PostItem>
 
   Future<void> loadPageDetails(int pageId, {bool force = false}) async {
     if (pageId <= 0) return;
-    if (!force && pageDetailsById.containsKey(pageId)) return;
+    if (!force && pageDetailsById.containsKey(pageId)) {
+      // Keep showing memory/cache immediately, but refresh so CMS edits
+      // (e.g. Home minimum_donate_amount) appear without an app reinstall.
+      if (ConnectivityController.currentlyOnline) {
+        unawaited(_refreshPageDetailsInBackground(pageId));
+      }
+      return;
+    }
     if (!force && _loadingDetails.contains(pageId)) return;
 
     // Offline: never force a network round-trip; serve cache/memory only.
@@ -241,6 +248,31 @@ class PagesController extends BaseListController<PostItem>
         success: (details) {
           pageDetailsById[pageId] = details;
           _resetListPagingForPage(pageId, details);
+        },
+        failure: (_) {},
+      );
+    } finally {
+      _loadingDetails.remove(pageId);
+    }
+  }
+
+  Future<void> _refreshPageDetailsInBackground(int pageId) async {
+    if (_loadingDetails.contains(pageId)) return;
+    _loadingDetails.add(pageId);
+    try {
+      final result = await repository.getPostDetails(
+        pageId,
+        useCache: false,
+      );
+      result.when(
+        success: (details) {
+          final previous = pageDetailsById[pageId];
+          pageDetailsById[pageId] = details;
+          // Avoid wiping Projects/News load-more unless CMS pagination changed.
+          if (previous?.listPagination.hasMore != details.listPagination.hasMore ||
+              previous?.listPagination.perPage != details.listPagination.perPage) {
+            _resetListPagingForPage(pageId, details);
+          }
         },
         failure: (_) {},
       );

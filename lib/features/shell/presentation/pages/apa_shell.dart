@@ -75,8 +75,15 @@ class _ApaShellState extends State<ApaShell> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _pagesController?.loadItems();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final pages = _pagesController;
+      if (pages == null) return;
+      await pages.loadItems();
+      await Future.wait([
+        pages.loadDetailsForTemplate(ApaPageTemplates.home),
+        pages.loadDetailsForTemplate(ApaPageTemplates.donation),
+        pages.loadGlobalSettings(),
+      ]);
     });
   }
 
@@ -128,6 +135,12 @@ class _ApaShellState extends State<ApaShell> {
   void _go(ApaShellPage page) {
     setState(() => _page = page);
     _scrollToTop(page);
+    if (page == ApaShellPage.home) {
+      _reloadHome();
+    }
+    if (page == ApaShellPage.donation) {
+      _reloadDonation();
+    }
     if (page == ApaShellPage.contact) {
       _reloadContact();
     }
@@ -143,6 +156,20 @@ class _ApaShellState extends State<ApaShell> {
     if (page == ApaShellPage.news) {
       _reloadNews();
     }
+  }
+
+  void _reloadHome() {
+    _pagesController?.loadDetailsForTemplate(
+      ApaPageTemplates.home,
+      force: true,
+    );
+  }
+
+  void _reloadDonation() {
+    _pagesController?.loadDetailsForTemplate(
+      ApaPageTemplates.donation,
+      force: true,
+    );
   }
 
   void _reloadNews() {
@@ -298,6 +325,7 @@ class _ApaShellState extends State<ApaShell> {
         children: [
           HomePage(
             scrollController: _homeScroll,
+            page: pagesController?.resolvedPageForShell(ApaShellPage.home),
             onDonatePressed: (amount) {
               if (Get.isRegistered<DonationController>()) {
                 Get.find<DonationController>().applyHomeAmount(amount);
@@ -321,6 +349,7 @@ class _ApaShellState extends State<ApaShell> {
           ),
           DonationPage(
             scrollController: _donationScroll,
+            page: pagesController?.resolvedPageForShell(ApaShellPage.donation),
             imageUrl: _imageUrl(ApaShellPage.donation),
             onPaymentSucceeded: (message) {
               _openByTemplate(ApaPageTemplates.home, ApaShellPage.home);
