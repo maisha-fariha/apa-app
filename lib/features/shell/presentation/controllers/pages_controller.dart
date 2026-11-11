@@ -4,7 +4,10 @@ import 'package:get/get.dart';
 import 'package:gems_core/gems_core.dart';
 import 'package:gems_data_layer/gems_data_layer.dart';
 
+import '../../../../core/network/apa_api_config.dart';
 import '../../../../core/network/connectivity_controller.dart';
+import '../../../../data/models/post/content_detail_models.dart';
+import '../../../../data/models/post/post_item_extensions.dart';
 import '../../../../data/models/post/post_model.dart';
 import '../../../../data/repositories/posts_repository.dart';
 import '../mapping/apa_page_templates.dart';
@@ -29,7 +32,28 @@ class PagesController extends BaseListController<PostItem>
   /// Full page payloads loaded via `get-post-details`, keyed by post id.
   final RxMap<int, PostItem> pageDetailsById = <int, PostItem>{}.obs;
 
+  /// Extra project cards loaded via `get-paginated-posts` (after first page).
+  final RxList<PostItem> extraProjects = <PostItem>[].obs;
+
+  /// Extra news stories loaded via `get-paginated-posts` (after first page).
+  final RxList<PostItem> extraNewsPosts = <PostItem>[].obs;
+
+  /// Active news keyword search (`get-paginated-posts?search=`).
+  final RxString newsSearchQuery = ''.obs;
+  final RxList<PostItem> newsSearchResults = <PostItem>[].obs;
+  final RxBool newsSearchHasMore = false.obs;
+  final RxBool searchingNews = false.obs;
+
+  final RxBool projectsHasMore = false.obs;
+  final RxBool newsHasMore = false.obs;
+  final RxBool loadingMoreProjects = false.obs;
+  final RxBool loadingMoreNews = false.obs;
+
+  /// Global Settings page (`post_id=5`) — shared labels / donate CTA / logo.
+  final Rxn<PostItem> globalSettings = Rxn<PostItem>();
+
   final Set<int> _loadingDetails = <int>{};
+  final Set<String> _loadingContentKeys = <String>{};
 
   bool isLoadingDetailsFor(int pageId) => _loadingDetails.contains(pageId);
 
@@ -50,6 +74,7 @@ class PagesController extends BaseListController<PostItem>
   void onInit() {
     super.onInit();
     unawaited(loadItems());
+    unawaited(loadGlobalSettings());
   }
 
   @override
@@ -106,6 +131,7 @@ class PagesController extends BaseListController<PostItem>
       _fetched = false;
       await loadItems();
     }
+    unawaited(loadGlobalSettings(force: true));
     final selectedId = selectedPageId.value;
     if (selectedId != null && selectedId > 0) {
       await loadPageDetails(selectedId, force: true);
@@ -212,13 +238,111 @@ class PagesController extends BaseListController<PostItem>
         useCache: useCache,
       );
       result.when(
-        success: (details) => pageDetailsById[pageId] = details,
+        success: (details) {
+          pageDetailsById[pageId] = details;
+          _resetListPagingForPage(pageId, details);
+        },
         failure: (_) {},
       );
     } finally {
       _loadingDetails.remove(pageId);
     }
   }
+
+  /// Loads Global Settings once (labels, donate CTA, site logo).
+  Future<void> loadGlobalSettings({bool force = false}) async {
+    if (!force && globalSettings.value != null) return;
+
+    final online = ConnectivityController.currentlyOnline;
+    final useCache = !force || !online;
+
+    final result = await repository.getPostDetails(
+      ApaApiConfig.globalSettingsId,
+      useCache: useCache,
+    );
+    result.when(
+      success: (details) => globalSettings.value = details,
+      failure: (_) {},
+    );
+  }
+
+  static String _contentCacheKey(int postId, String postType) =>
+      '${postType.trim()}:$postId';
+
+  /// Single news/project details with `post_type` (collection folder 2).
+  Future<void> loadContentDetails(
+    int postId, {
+    required String postType,
+    bool force = false,
+  }) async {
+    if (postId <= 0 || postType.trim().isEmpty) return;
+
+    final key = _contentCacheKey(postId, postType);
+    final existing = pageDetailsById[postId];
+    if (!force &&
+        existing != null &&
+        _isTypedContentPayload(existing, postType)) {
+      return;
+    }
+    if (!force && _loadingContentKeys.contains(key)) return;
+
+    final online = ConnectivityController.currentlyOnline;
+    final useCache = !force || !online;
+    if (!online && existing != null) return;
+
+    _loadingContentKeys.add(key);
+    try {
+      final result = await repository.getPostDetails(
+        postId,
+        postType: postType,
+        useCache: useCache,
+      );
+      result.when(
+        success: (details) => pageDetailsById[postId] = details,
+        failure: (_) {},
+      );
+    } finally {
+      _loadingContentKeys.remove(key);
+    }
+  }
+
+  bool _isTypedContentPayload(PostItem item, String postType) {
+    if (item.type == postType) return true;
+    if (postType == ApaApiConfig.postTypePost) {
+      return item.acfFields.containsKey('news_facts') ||
+          item.acfFields.containsKey('related_posts');
+    }
+    if (postType == ApaApiConfig.postTypeProjects) {
+      return item.acfFields.containsKey('project_details') ||
+          item.acfFields.containsKey('related_projects');
+    }
+    return false;
+  }
+
+  bool isLoadingContentDetails(int postId, String postType) =>
+      _loadingContentKeys.contains(_contentCacheKey(postId, postType));
+
+  ContentLabels newsLabelsFor(PostItem? detail) {
+    final fromDetail = detail?.newsLabels ?? ContentLabels.empty;
+    if (!fromDetail.isEmpty) return fromDetail;
+    return globalSettings.value?.newsLabels ?? ContentLabels.empty;
+  }
+
+  ContentLabels projectLabelsFor(PostItem? detail) {
+    final fromDetail = detail?.projectLabels ?? ContentLabels.empty;
+    if (!fromDetail.isEmpty) return fromDetail;
+    return globalSettings.value?.projectLabels ?? ContentLabels.empty;
+  }
+
+  DonateCta donateCtaFor(PostItem? detail) {
+    final fromDetail = detail?.donateCta ?? DonateCta.empty;
+    if (!fromDetail.isEmpty) return fromDetail;
+    return globalSettings.value?.donateCta ?? DonateCta.empty;
+  }
+
+  String? get siteLogoUrl =>
+      globalSettings.value?.siteLogoUrl ??
+      globalSettings.value?.featuredImageUrl;
 
   Future<void> loadDetailsForTemplate(
     String template, {
@@ -228,6 +352,188 @@ class PagesController extends BaseListController<PostItem>
     if (page == null) return;
     selectPage(page, fetchDetails: false);
     await loadPageDetails(page.id, force: force);
+  }
+
+  void _resetListPagingForPage(int pageId, PostItem details) {
+    final projectsPage = pageByTemplate(ApaPageTemplates.projects);
+    final newsPage = pageByTemplate(ApaPageTemplates.news);
+    final pagination = details.listPagination;
+
+    if (projectsPage?.id == pageId) {
+      extraProjects.clear();
+      projectsHasMore.value = pagination.hasMore;
+    }
+    if (newsPage?.id == pageId) {
+      extraNewsPosts.clear();
+      newsHasMore.value = pagination.hasMore;
+      clearNewsSearch();
+    }
+  }
+
+  /// Combined first-page + paginated project cards for the Projects screen.
+  List<PostItem> projectsForDisplay(PostItem? page) {
+    final first = page?.relatedProjects ?? const <PostItem>[];
+    if (extraProjects.isEmpty) return first;
+    final seen = first.map((p) => p.id).toSet();
+    return [
+      ...first,
+      for (final project in extraProjects)
+        if (seen.add(project.id)) project,
+    ];
+  }
+
+  bool get isNewsSearchActive => newsSearchQuery.value.trim().isNotEmpty;
+
+  /// Non-featured news stories including load-more / search results.
+  List<PostItem> newsStoriesForDisplay(PostItem? page) {
+    if (isNewsSearchActive) {
+      return List<PostItem>.unmodifiable(newsSearchResults);
+    }
+    final first = page?.nonFeaturedPosts ?? const <PostItem>[];
+    if (extraNewsPosts.isEmpty) return first;
+    final seen = first.map((p) => p.id).toSet();
+    final featuredId = page?.featuredPost?.id;
+    return [
+      ...first,
+      for (final post in extraNewsPosts)
+        if (post.id != featuredId && seen.add(post.id)) post,
+    ];
+  }
+
+  /// Keyword search against `get-paginated-posts?post_type=post&search=`.
+  Future<void> searchNews(String query, {int limit = 10}) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      clearNewsSearch();
+      return;
+    }
+    if (!ConnectivityController.currentlyOnline) {
+      Get.snackbar('Error', ConnectivityController.offlineMessage);
+      return;
+    }
+    if (searchingNews.value) return;
+
+    searchingNews.value = true;
+    newsSearchQuery.value = trimmed;
+    try {
+      final result = await repository.getPaginatedPosts(
+        postType: ApaApiConfig.postTypePost,
+        limit: limit,
+        offset: 0,
+        search: trimmed,
+      );
+      result.when(
+        success: (pageResult) {
+          newsSearchResults
+            ..clear()
+            ..addAll(pageResult.posts);
+          newsSearchHasMore.value = pageResult.hasMore;
+        },
+        failure: (error) {
+          Get.snackbar('Error', error.message);
+        },
+      );
+    } finally {
+      searchingNews.value = false;
+    }
+  }
+
+  void clearNewsSearch() {
+    newsSearchQuery.value = '';
+    newsSearchResults.clear();
+    newsSearchHasMore.value = false;
+    searchingNews.value = false;
+  }
+
+  Future<void> loadMoreProjects() async {
+    if (loadingMoreProjects.value || !projectsHasMore.value) return;
+    if (!ConnectivityController.currentlyOnline) {
+      Get.snackbar('Error', ConnectivityController.offlineMessage);
+      return;
+    }
+
+    final page = resolvedPageForShell(ApaShellPage.projects);
+    if (page == null) return;
+
+    final already = projectsForDisplay(page).length;
+    final limit = page.listPagination.perPage > 0
+        ? page.listPagination.perPage
+        : 9;
+
+    loadingMoreProjects.value = true;
+    try {
+      final result = await repository.getPaginatedPosts(
+        postType: ApaApiConfig.postTypeProjects,
+        limit: limit,
+        offset: already,
+      );
+      result.when(
+        success: (pageResult) {
+          extraProjects.addAll(pageResult.posts);
+          projectsHasMore.value = pageResult.hasMore;
+        },
+        failure: (error) {
+          Get.snackbar('Error', error.message);
+        },
+      );
+    } finally {
+      loadingMoreProjects.value = false;
+    }
+  }
+
+  Future<void> loadMoreNews() async {
+    if (loadingMoreNews.value) return;
+    if (!ConnectivityController.currentlyOnline) {
+      Get.snackbar('Error', ConnectivityController.offlineMessage);
+      return;
+    }
+
+    final searching = isNewsSearchActive;
+    if (searching) {
+      if (!newsSearchHasMore.value) return;
+    } else if (!newsHasMore.value) {
+      return;
+    }
+
+    final page = resolvedPageForShell(ApaShellPage.news);
+    if (!searching && page == null) return;
+
+    final limit = searching
+        ? 10
+        : (page!.listPagination.loadMoreCount > 0
+            ? page.listPagination.loadMoreCount
+            : 3);
+    final already = searching
+        ? newsSearchResults.length
+        : page!.newsPosts.length + extraNewsPosts.length;
+    final excludeId = searching ? null : page!.featuredPost?.id;
+
+    loadingMoreNews.value = true;
+    try {
+      final result = await repository.getPaginatedPosts(
+        postType: ApaApiConfig.postTypePost,
+        limit: limit,
+        offset: already,
+        excludeId: excludeId,
+        search: searching ? newsSearchQuery.value : null,
+      );
+      result.when(
+        success: (pageResult) {
+          if (searching) {
+            newsSearchResults.addAll(pageResult.posts);
+            newsSearchHasMore.value = pageResult.hasMore;
+          } else {
+            extraNewsPosts.addAll(pageResult.posts);
+            newsHasMore.value = pageResult.hasMore;
+          }
+        },
+        failure: (error) {
+          Get.snackbar('Error', error.message);
+        },
+      );
+    } finally {
+      loadingMoreNews.value = false;
+    }
   }
 
   Future<String?> mediaSourceUrl(int mediaId) {

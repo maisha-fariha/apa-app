@@ -15,6 +15,7 @@ import '../../../donation/presentation/pages/donation_page.dart';
 import '../../../home/presentation/pages/home_page.dart';
 import '../../../news/presentation/pages/article_page.dart';
 import '../../../news/presentation/pages/news_page.dart';
+import '../../../projects/presentation/pages/project_detail_page.dart';
 import '../../../projects/presentation/pages/projects_page.dart';
 import '../../../transparency/presentation/pages/transparency_page.dart';
 import '../../../vision/presentation/pages/vision_page.dart';
@@ -254,6 +255,34 @@ class _ApaShellState extends State<ApaShell> {
     );
   }
 
+  void _openProject(PostItem project) {
+    final projectsPage =
+        _pagesController?.resolvedPageForShell(ApaShellPage.projects);
+    final more = _pagesController
+            ?.projectsForDisplay(projectsPage)
+            .where((p) => p.id != project.id)
+            .take(3)
+            .toList() ??
+        const [];
+
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => ProjectDetailPage(
+          project: project,
+          moreProjects: more,
+          onBackToProjects: () {
+            Navigator.of(context).pop();
+            _scrollToTop(ApaShellPage.projects);
+          },
+          onDonatePressed: () {
+            Navigator.of(context).pop();
+            _openByTemplate(ApaPageTemplates.donation, ApaShellPage.donation);
+          },
+        ),
+      ),
+    );
+  }
+
   String? _imageUrl(ApaShellPage page) {
     return _pagesController?.resolvedPageForShell(page)?.featuredImageUrl;
   }
@@ -287,6 +316,7 @@ class _ApaShellState extends State<ApaShell> {
               ApaPageTemplates.donation,
               ApaShellPage.donation,
             ),
+            onProjectPressed: _openProject,
             imageUrl: _imageUrl(ApaShellPage.projects),
           ),
           DonationPage(

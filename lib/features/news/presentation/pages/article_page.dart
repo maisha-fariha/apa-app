@@ -4,15 +4,16 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../../core/constants/apa_assets.dart';
+import '../../../../core/network/apa_api_config.dart';
 import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
 import '../../../../core/utils/html_utils.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../core/widgets/apa_svg_icon.dart';
+import '../../../../data/models/post/content_detail_models.dart';
 import '../../../../data/models/post/post_model.dart';
 import '../../../../data/models/post/post_item_extensions.dart';
 import '../../../shell/presentation/controllers/pages_controller.dart';
-import '../../../shell/presentation/mapping/apa_page_templates.dart';
 import '../../../shell/presentation/models/apa_nav_item.dart';
 
 /// Article / Read More page — Figma frame `14:811`.
@@ -54,40 +55,45 @@ class _ArticlePageState extends State<ArticlePage> {
     final controller = _pagesController;
     if (controller == null) return;
     await Future.wait<void>([
-      controller.loadDetailsForTemplate(
-        ApaPageTemplates.news,
-        force: true,
-      ),
+      controller.loadGlobalSettings(),
       if (widget.article.id > 0)
-        controller.loadPageDetails(widget.article.id, force: true),
+        controller.loadContentDetails(
+          widget.article.id,
+          postType: ApaApiConfig.postTypePost,
+          force: true,
+        ),
     ]);
   }
 
   PostItem _resolvedArticle(PagesController? controller) {
     final id = widget.article.id;
     if (controller != null && id > 0) {
+      final detailed = controller.detailsForPageId(id);
+      if (detailed != null) return detailed;
       final newsPosts =
           controller.resolvedPageForShell(ApaShellPage.news)?.newsPosts ??
               const <PostItem>[];
       for (final post in newsPosts) {
         if (post.id == id) return post;
       }
-      final detailed = controller.detailsForPageId(id);
-      if (detailed != null) return detailed;
     }
     return widget.article;
   }
 
   List<PostItem> _resolvedMoreStories(
     PagesController? controller,
-    int articleId,
+    PostItem article,
   ) {
+    final related = article.relatedNewsPosts;
+    if (related.isNotEmpty) {
+      return related.where((post) => post.id != article.id).take(3).toList();
+    }
     final newsPosts =
         controller?.resolvedPageForShell(ApaShellPage.news)?.newsPosts;
     final source = (newsPosts != null && newsPosts.isNotEmpty)
         ? newsPosts
         : widget.moreStories;
-    return source.where((post) => post.id != articleId).take(3).toList();
+    return source.where((post) => post.id != article.id).take(3).toList();
   }
 
   @override
@@ -105,13 +111,20 @@ class _ArticlePageState extends State<ArticlePage> {
           child: Obx(() {
             pagesController?.items.length;
             pagesController?.pageDetailsById.length;
+            pagesController?.globalSettings.value;
             final article = _resolvedArticle(pagesController);
             final moreStories =
-                _resolvedMoreStories(pagesController, article.id);
+                _resolvedMoreStories(pagesController, article);
+            final labels = pagesController?.newsLabelsFor(article) ??
+                article.newsLabels;
+            final donate = pagesController?.donateCtaFor(article) ??
+                article.donateCta;
             return _buildScrollView(
               context,
               article: article,
               moreStories: moreStories,
+              labels: labels,
+              donate: donate,
               top: top,
             );
           }),
@@ -124,6 +137,8 @@ class _ArticlePageState extends State<ArticlePage> {
     BuildContext context, {
     required PostItem article,
     required List<PostItem> moreStories,
+    required ContentLabels labels,
+    required DonateCta donate,
     required double top,
   }) {
     final imageUrl = article.featuredImageUrl;
@@ -132,10 +147,30 @@ class _ArticlePageState extends State<ArticlePage> {
     final author = article.authorName;
     final quote = article.featuredQuote;
     final quoteAuthor = article.featuredQuoteAuthor;
-    final facts = article.quickFacts;
+    final factRows = article.contentFactRows;
+    final legacyFacts = article.quickFacts;
     final contentHtml = article.content.trim();
     final bullets = HtmlUtils.bulletsFromHtml(contentHtml);
     final paragraphs = _extractParagraphs(contentHtml);
+    final backLabel = labels.backLabel.isNotEmpty
+        ? labels.backLabel.toUpperCase()
+        : 'BACK TO NEWS';
+    final factsTitle = labels.factsTitle.isNotEmpty
+        ? labels.factsTitle
+        : 'Quick facts';
+    final relatedTitle = labels.relatedTitle.isNotEmpty
+        ? labels.relatedTitle.toUpperCase()
+        : 'MORE STORIES';
+    final donateTitle = donate.title.isNotEmpty
+        ? donate.title
+        : 'Help fund the next stretch';
+    final donateText = donate.text.isNotEmpty
+        ? donate.text
+        : 'Every gift moves phase one forward in Sud.';
+    final donateButton = donate.buttonLabel.isNotEmpty
+        ? '${donate.buttonLabel.toUpperCase()} →'
+        : 'DONATE →';
+    final logoUrl = _pagesController?.siteLogoUrl;
 
     final metaParts = <String>[
       if (category.isNotEmpty) category.toUpperCase(),
@@ -192,12 +227,26 @@ class _ArticlePageState extends State<ArticlePage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Center(
-                                child: Image.asset(
-                                  ApaAssets.apaLogo,
-                                  width: 180.w,
-                                  height: 67.5.h,
-                                  fit: BoxFit.contain,
-                                ),
+                                child: logoUrl != null && logoUrl.isNotEmpty
+                                    ? Image.network(
+                                        logoUrl,
+                                        width: 180.w,
+                                        height: 67.5.h,
+                                        fit: BoxFit.contain,
+                                        errorBuilder: (context, error, stackTrace) =>
+                                            Image.asset(
+                                          ApaAssets.apaLogo,
+                                          width: 180.w,
+                                          height: 67.5.h,
+                                          fit: BoxFit.contain,
+                                        ),
+                                      )
+                                    : Image.asset(
+                                        ApaAssets.apaLogo,
+                                        width: 180.w,
+                                        height: 67.5.h,
+                                        fit: BoxFit.contain,
+                                      ),
                               ),
                               const Spacer(),
                               if (category.isNotEmpty)
@@ -271,7 +320,7 @@ class _ArticlePageState extends State<ArticlePage> {
                             ),
                             SizedBox(width: 8.w),
                             Text(
-                              'BACK TO NEWS',
+                              backLabel,
                               style: ApaFonts.inter(
                                 color: ApaColors.primaryRed,
                                 fontSize: 13.sp,
@@ -364,7 +413,7 @@ class _ArticlePageState extends State<ArticlePage> {
                       ],
 
                       // Quick facts
-                      if (facts.isNotEmpty) ...[
+                      if (factRows.isNotEmpty || legacyFacts.isNotEmpty) ...[
                         SizedBox(height: 32.h),
                         Container(
                           width: double.infinity,
@@ -378,7 +427,7 @@ class _ArticlePageState extends State<ArticlePage> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Project quick facts',
+                                factsTitle,
                                 style: ApaFonts.inter(
                                   color: ApaColors.black,
                                   fontSize: 20.sp,
@@ -386,12 +435,20 @@ class _ArticlePageState extends State<ArticlePage> {
                                 ),
                               ),
                               SizedBox(height: 20.h),
-                              ...facts.entries.map(
-                                (e) => _FactRow(
-                                  label: _humanizeKey(e.key),
-                                  value: e.value,
+                              if (factRows.isNotEmpty)
+                                ...factRows.map(
+                                  (row) => _FactRow(
+                                    label: row.label,
+                                    value: row.text,
+                                  ),
+                                )
+                              else
+                                ...legacyFacts.entries.map(
+                                  (e) => _FactRow(
+                                    label: _humanizeKey(e.key),
+                                    value: e.value,
+                                  ),
                                 ),
-                              ),
                             ],
                           ),
                         ),
@@ -412,7 +469,7 @@ class _ArticlePageState extends State<ArticlePage> {
                         child: Column(
                           children: [
                             Text(
-                              'Help fund the next stretch',
+                              donateTitle,
                               textAlign: TextAlign.center,
                               style: ApaFonts.inter(
                                 color: ApaColors.white,
@@ -423,7 +480,7 @@ class _ArticlePageState extends State<ArticlePage> {
                             ),
                             SizedBox(height: 12.h),
                             Text(
-                              'Every gift moves phase one forward in Sud.',
+                              donateText,
                               textAlign: TextAlign.center,
                               style: ApaFonts.inter(
                                 color: ApaColors.white80,
@@ -440,7 +497,7 @@ class _ArticlePageState extends State<ArticlePage> {
                                   padding:
                                       EdgeInsets.symmetric(vertical: 8.h),
                                   child: Text(
-                                    'DONATE →',
+                                    donateButton,
                                     style: ApaFonts.inter(
                                       color: ApaColors.primaryRed,
                                       fontSize: 16.sp,
@@ -459,7 +516,7 @@ class _ArticlePageState extends State<ArticlePage> {
                       if (moreStories.isNotEmpty) ...[
                         SizedBox(height: 48.h),
                         Text(
-                          'MORE STORIES',
+                          relatedTitle,
                           style: ApaFonts.inter(
                             color: ApaColors.black,
                             fontSize: 28.sp,
@@ -487,7 +544,7 @@ class _ArticlePageState extends State<ArticlePage> {
   }
 
   void _openStory(BuildContext context, PostItem post) {
-    final remaining = _resolvedMoreStories(_pagesController, post.id);
+    final remaining = _resolvedMoreStories(_pagesController, post);
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => ArticlePage(

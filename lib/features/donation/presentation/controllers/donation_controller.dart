@@ -277,6 +277,10 @@ class DonationController extends GetxController {
     final loaded = catalog.value!;
     isProcessing.value = true;
     try {
+      final predefinedPriceId = current.price?.stripePriceId.trim() ?? '';
+      final usePredefinedOneTime =
+          !current.monthly && !current.custom && predefinedPriceId.isNotEmpty;
+
       final sessionResult = current.monthly
           ? await repository.createSubscription(
               priceId: current.price!.stripePriceId,
@@ -284,10 +288,13 @@ class DonationController extends GetxController {
               name: name.trim(),
             )
           : await repository.createOneTimePayment(
-              amountDollars: current.amountDollars,
               email: email.trim(),
               name: name.trim(),
               currency: loaded.config.currency,
+              custom: !usePredefinedOneTime,
+              amountDollars:
+                  usePredefinedOneTime ? null : current.amountDollars,
+              priceId: usePredefinedOneTime ? predefinedPriceId : null,
             );
 
       StripeCheckoutSession? session;
@@ -382,6 +389,44 @@ class DonationController extends GetxController {
       return;
     }
     setCustomAmount('$dollars');
+  }
+
+  /// True when the last monthly checkout left cancel credentials on device.
+  bool get canCancelRememberedSubscription =>
+      repository.rememberedSubscription() != null;
+
+  /// Cancels the last app-created subscription (Bearer status token).
+  Future<DonationCheckoutResult> cancelRememberedSubscription() async {
+    if (!ConnectivityController.currentlyOnline) {
+      return const DonationCheckoutResult.failure(
+        ConnectivityController.offlineMessage,
+      );
+    }
+    if (isProcessing.value) {
+      return const DonationCheckoutResult.failure(
+        'Payment is already in progress.',
+      );
+    }
+
+    isProcessing.value = true;
+    try {
+      final result = await repository.cancelRememberedSubscription();
+      String? failure;
+      result.when(
+        success: (_) {},
+        failure: (error) => failure = error.message,
+      );
+      if (failure != null) {
+        return DonationCheckoutResult.failure(failure!);
+      }
+      return const DonationCheckoutResult.success();
+    } catch (_) {
+      return const DonationCheckoutResult.failure(
+        'Unable to cancel the subscription. Please try again.',
+      );
+    } finally {
+      isProcessing.value = false;
+    }
   }
 
   void _selectDefaultChip() {

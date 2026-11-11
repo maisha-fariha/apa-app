@@ -1,3 +1,5 @@
+import 'content_detail_models.dart';
+import 'paginated_posts.dart';
 import 'post_model.dart';
 import '../../../core/utils/html_utils.dart';
 
@@ -10,14 +12,25 @@ extension PostItemProjectsX on PostItem {
     return const {};
   }
 
+  /// First-page project cards from `get-post-details`.
+  ///
+  /// Prefers the collection field `projects`, falls back to `related_projects`.
   List<PostItem> get relatedProjects {
-    final raw = acfFields['related_projects'];
+    final raw = acfFields['projects'] ?? acfFields['related_projects'];
     if (raw is! List) return const [];
 
     return raw
         .whereType<Map>()
         .map((item) => PostItem.fromJson(Map<String, dynamic>.from(item)))
         .toList();
+  }
+
+  PageListPagination get listPagination {
+    final raw = acfFields['pagination'];
+    if (raw is Map) {
+      return PageListPagination.fromJson(Map<String, dynamic>.from(raw));
+    }
+    return PageListPagination.empty;
   }
 
   String? get footerHtml {
@@ -93,8 +106,13 @@ extension PostItemNewsX on PostItem {
     return PostItem.fromJson(json);
   }
 
-  /// First post marked `is_featured == true`, or the first post overall.
+  /// Featured story from `featured_post`, else first `is_featured` post.
   PostItem? get featuredPost {
+    final raw = acfFields['featured_post'];
+    if (raw is Map) {
+      return _parseNewsPost(Map<String, dynamic>.from(raw));
+    }
+
     final posts = newsPosts;
     if (posts.isEmpty) return null;
     for (final p in posts) {
@@ -194,5 +212,66 @@ extension PostItemNewsX on PostItem {
   bool get isFeatured {
     final flag = acfFields['is_featured'];
     return flag == true || flag == 1 || flag == '1' || flag == 'true';
+  }
+}
+
+extension PostItemContentDetailX on PostItem {
+  /// Related news cards from a single-news `get-post-details` response.
+  List<PostItem> get relatedNewsPosts {
+    final raw = acfFields['related_posts'];
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((item) => PostItemNewsX._parseNewsPost(Map<String, dynamic>.from(item)))
+        .toList();
+  }
+
+  /// Fact rows from single news (`news_facts`) or single project (`project_details`).
+  List<ContentFactRow> get contentFactRows {
+    final raw = acfFields['news_facts'] ??
+        acfFields['project_details'] ??
+        acfFields['details'];
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((item) => ContentFactRow.fromJson(Map<String, dynamic>.from(item)))
+        .where((row) => row.label.isNotEmpty || row.text.isNotEmpty)
+        .toList();
+  }
+
+  ContentLabels get newsLabels {
+    final raw = acfFields['news_labels'] ?? acfFields['news_single'];
+    if (raw is Map) {
+      return ContentLabels.fromJson(Map<String, dynamic>.from(raw));
+    }
+    return ContentLabels.empty;
+  }
+
+  ContentLabels get projectLabels {
+    final raw = acfFields['project_labels'] ?? acfFields['project_single'];
+    if (raw is Map) {
+      return ContentLabels.fromJson(Map<String, dynamic>.from(raw));
+    }
+    return ContentLabels.empty;
+  }
+
+  DonateCta get donateCta {
+    final raw = acfFields['donate_cta'];
+    if (raw is Map) {
+      return DonateCta.fromJson(Map<String, dynamic>.from(raw));
+    }
+    return DonateCta.empty;
+  }
+
+  String? get siteLogoUrl {
+    final root = acfFields['site_logo_url'];
+    if (root is String && root.trim().isNotEmpty) return root.trim();
+    final nested = acfFields['site_logo'];
+    if (nested is Map) {
+      final url = nested['url'] ?? nested['site_logo_url'];
+      if (url is String && url.trim().isNotEmpty) return url.trim();
+    }
+    if (nested is String && nested.trim().isNotEmpty) return nested.trim();
+    return null;
   }
 }

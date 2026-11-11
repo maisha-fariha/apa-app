@@ -99,8 +99,18 @@ class _StubPostsRepository extends PostsRepository {
   @override
   Future<Result<PostItem>> getPostDetails(
     int postId, {
+    String? postType,
+    String? slug,
     bool useCache = true,
   }) {
-    return Future.value(Result.success(PostItem(id: postId)));
+    return Future.value(
+      Result.success(
+        PostItem(
+          id: postId,
+          type: postType ?? '',
+          slug: slug ?? '',
+        ),
+      ),
+    );
   }
 }

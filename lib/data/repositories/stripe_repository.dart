@@ -20,6 +20,7 @@ class StripeRepository {
 
   static const _configCacheKey = 'stripe-public-config';
   static const _pricesCacheKey = 'stripe-products-prices';
+  static const _lastSubscriptionKey = 'stripe-last-subscription';
 
   bool get _isOnline => ConnectivityController.currentlyOnline;
 
@@ -224,21 +225,71 @@ class StripeRepository {
     );
   }
 
-  Future<Result<StripeCheckoutSession>> createOneTimePayment({
-    required int amountDollars,
+  /// Builds the one-time payment POST body to match the Postman collection.
+  static Map<String, dynamic> oneTimePaymentBody({
     required String email,
     required String name,
     required String currency,
+    required bool custom,
+    int? amountDollars,
+    String? priceId,
+  }) {
+    final body = <String, dynamic>{
+      'email': email,
+      'name': name,
+      'source': ApiEndpoints.stripeSourceApp,
+      'return_url': ApiEndpoints.stripeReturnUrl,
+    };
+
+    if (custom) {
+      body['payment_type'] = 'custom';
+      body['amount'] = amountDollars;
+      body['currency'] = currency;
+    } else {
+      body['payment_type'] = 'predefined';
+      body['price_id'] = priceId;
+    }
+    return body;
+  }
+
+  /// Builds the subscription POST body to match the Postman collection.
+  static Map<String, dynamic> subscriptionBody({
+    required String priceId,
+    required String email,
+    required String name,
+  }) {
+    return {
+      'price_id': priceId,
+      'email': email,
+      'name': name,
+      'source': ApiEndpoints.stripeSourceApp,
+      'return_url': ApiEndpoints.stripeReturnUrl,
+    };
+  }
+
+  /// Creates a one-time PaymentIntent session.
+  ///
+  /// Matches Postman collection:
+  /// - predefined chips → `payment_type: predefined` + `price_id`
+  /// - custom amount → `payment_type: custom` + `amount`
+  Future<Result<StripeCheckoutSession>> createOneTimePayment({
+    required String email,
+    required String name,
+    required String currency,
+    required bool custom,
+    int? amountDollars,
+    String? priceId,
   }) {
     return _createSession(
       ApiEndpoints.stripePayments,
-      {
-        'amount': amountDollars,
-        'currency': currency,
-        'email': email,
-        'name': name,
-        'return_url': ApiEndpoints.stripeReturnUrl,
-      },
+      oneTimePaymentBody(
+        email: email,
+        name: name,
+        currency: currency,
+        custom: custom,
+        amountDollars: amountDollars,
+        priceId: priceId,
+      ),
     );
   }
 
@@ -249,12 +300,7 @@ class StripeRepository {
   }) {
     return _createSession(
       ApiEndpoints.stripeSubscriptions,
-      {
-        'price_id': priceId,
-        'email': email,
-        'name': name,
-        'return_url': ApiEndpoints.stripeReturnUrl,
-      },
+      subscriptionBody(priceId: priceId, email: email, name: name),
     );
   }
 
@@ -275,6 +321,118 @@ class StripeRepository {
     return _getStatus(
       ApiEndpoints.stripeSubscriptionStatus(subscriptionReference),
       accessToken,
+    );
+  }
+
+  /// Cancels a subscription immediately in Stripe via WordPress.
+  ///
+  /// Requires the `status_access_token` returned when the subscription was
+  /// created (`Authorization: Bearer …`), matching the Postman collection.
+  Future<Result<StripePaymentStatus>> cancelSubscription({
+    required String subscriptionReference,
+    required String accessToken,
+  }) async {
+    if (!_isOnline) {
+      return Result.failure(
+        const NetworkError(message: ConnectivityController.offlineMessage),
+      );
+    }
+
+    final reference = subscriptionReference.trim();
+    final token = accessToken.trim();
+    if (reference.isEmpty || token.isEmpty) {
+      return Result.failure(
+        ApiError(message: 'Missing subscription reference or access token.'),
+      );
+    }
+
+    try {
+      final response = await apiService.post<StripePaymentStatus>(
+        ApiEndpoints.stripeSubscriptionCancel(reference),
+        options: Options(
+          headers: {
+            'Authorization': 'Bearer $token',
+            'x-api-key': ApaApiConfig.apiKey,
+          },
+        ),
+        fromJson: (data) {
+          if (data is! Map) {
+            throw const FormatException('Malformed cancel subscription response');
+          }
+          return StripePaymentStatus.fromJson(Map<String, dynamic>.from(data));
+        },
+      );
+
+      if (!response.success || response.data == null) {
+        return Result.failure(
+          ApiError(
+            message: _friendly(
+              response.message,
+              'Unable to cancel the subscription.',
+            ),
+            statusCode: response.statusCode,
+          ),
+        );
+      }
+
+      await clearRememberedSubscription();
+      return Result.success(response.data!);
+    } catch (e, stackTrace) {
+      return Result.failure(
+        NetworkError(
+          message: 'Unable to cancel the subscription.',
+          originalError: e,
+          stackTrace: stackTrace,
+        ),
+      );
+    }
+  }
+
+  /// Cancels the most recent in-app subscription when credentials were stored.
+  Future<Result<StripePaymentStatus>> cancelRememberedSubscription() async {
+    final remembered = rememberedSubscription();
+    if (remembered == null) {
+      return Result.failure(
+        ApiError(message: 'No subscription is available to cancel.'),
+      );
+    }
+    return cancelSubscription(
+      subscriptionReference: remembered.reference,
+      accessToken: remembered.token,
+    );
+  }
+
+  ({String reference, String token})? rememberedSubscription() {
+    final raw = databaseService.get<String>(_lastSubscriptionKey);
+    if (raw == null || raw.trim().isEmpty) return null;
+    try {
+      final map = jsonDecode(raw);
+      if (map is! Map) return null;
+      final reference = map['subscription_reference']?.toString().trim() ?? '';
+      final token = map['status_access_token']?.toString().trim() ?? '';
+      if (reference.isEmpty || token.isEmpty) return null;
+      return (reference: reference, token: token);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> clearRememberedSubscription() async {
+    await databaseService.delete(_lastSubscriptionKey);
+  }
+
+  Future<void> _rememberSubscriptionCredentials(
+    StripeCheckoutSession session,
+  ) async {
+    final reference = session.subscriptionReference?.trim() ?? '';
+    final token = session.statusAccessToken?.trim() ?? '';
+    if (reference.isEmpty || token.isEmpty) return;
+    await databaseService.save(
+      _lastSubscriptionKey,
+      jsonEncode({
+        'subscription_reference': reference,
+        'status_access_token': token,
+      }),
     );
   }
 
@@ -414,6 +572,7 @@ class StripeRepository {
         );
       }
 
+      await _rememberSubscriptionCredentials(session);
       return Result.success(session);
     } catch (e, stackTrace) {
       return Result.failure(

@@ -25,12 +25,14 @@ class ProjectsPage extends StatelessWidget {
     this.scrollController,
     this.page,
     this.onFundPressed,
+    this.onProjectPressed,
     this.imageUrl,
   });
 
   final ScrollController? scrollController;
   final PostItem? page;
   final VoidCallback? onFundPressed;
+  final ValueChanged<PostItem>? onProjectPressed;
   final String? imageUrl;
 
   PagesController? get _pagesController {
@@ -58,6 +60,9 @@ class ProjectsPage extends StatelessWidget {
           child: Obx(() {
             pagesController?.items.length;
             pagesController?.pageDetailsById.length;
+            pagesController?.extraProjects.length;
+            pagesController?.projectsHasMore.value;
+            pagesController?.loadingMoreProjects.value;
             pagesController?.isLoading.value;
             if (ConnectivityController.registered) {
               ConnectivityController.to.isOnline.value;
@@ -109,10 +114,19 @@ class ProjectsPage extends StatelessWidget {
             final current =
                 pagesController?.resolvedPageForShell(ApaShellPage.projects) ??
                     page;
+            final projects = pagesController?.projectsForDisplay(current) ??
+                current?.relatedProjects ??
+                const <PostItem>[];
             return _buildScrollView(
               context,
               current,
+              projects,
               navBottomPad,
+              hasMore: pagesController?.projectsHasMore.value ?? false,
+              loadingMore: pagesController?.loadingMoreProjects.value ?? false,
+              onLoadMore: pagesController == null
+                  ? null
+                  : () => pagesController.loadMoreProjects(),
             );
           }),
         ),
@@ -123,10 +137,13 @@ class ProjectsPage extends StatelessWidget {
   Widget _buildScrollView(
     BuildContext context,
     PostItem? current,
-    double navBottomPad,
-  ) {
+    List<PostItem> projects,
+    double navBottomPad, {
+    required bool hasMore,
+    required bool loadingMore,
+    required VoidCallback? onLoadMore,
+  }) {
     final commonHeader = current?.commonHeader ?? const <String, dynamic>{};
-    final relatedProjects = current?.relatedProjects ?? const <PostItem>[];
 
     final badge = commonHeader['top_tag_line']?.toString() ?? '';
     final headingOne =
@@ -165,8 +182,13 @@ class ProjectsPage extends StatelessWidget {
       );
     }
 
-    final sections = relatedProjects.take(3).toList(growable: false);
     final heroImage = current?.featuredImageUrl ?? imageUrl;
+    final isLandscape = R.isTabletLandscape(context);
+    // Landscape hero row stays 3-up; extra projects stack below (no layout break).
+    final rowProjects =
+        isLandscape ? projects.take(3).toList(growable: false) : projects;
+    final overflowProjects =
+        isLandscape && projects.length > 3 ? projects.sublist(3) : const <PostItem>[];
 
     return CustomScrollView(
       controller: scrollController,
@@ -192,61 +214,74 @@ class ProjectsPage extends StatelessWidget {
           child: ApaPageWidth(
             child: Padding(
               padding: EdgeInsets.fromLTRB(
-                R.isTabletLandscape(context) ? 48 : 24.w,
+                isLandscape ? 48 : 24.w,
                 48.h,
-                R.isTabletLandscape(context) ? 48 : 24.w,
+                isLandscape ? 48 : 24.w,
                 navBottomPad,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (R.isTabletLandscape(context) && sections.length >= 3)
+                  if (isLandscape && rowProjects.length >= 3)
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: _ProjectSection(
-                            label: sections[0].projectTypeLabel ?? '',
-                            title: sections[0].title,
-                            body: sections[0].tagLine ?? '',
-                            bullets: sections[0].contentBullets,
+                        for (var i = 0; i < 3; i++) ...[
+                          if (i > 0) const SizedBox(width: 28),
+                          Expanded(
+                            child: _ProjectSection(
+                              project: rowProjects[i],
+                              onTap: onProjectPressed == null
+                                  ? null
+                                  : () => onProjectPressed!(rowProjects[i]),
+                            ),
                           ),
-                        ),
-                        SizedBox(width: 28),
-                        Expanded(
-                          child: _ProjectSection(
-                            label: sections[1].projectTypeLabel ?? '',
-                            title: sections[1].title,
-                            body: sections[1].tagLine ?? '',
-                            bullets: sections[1].contentBullets,
-                          ),
-                        ),
-                        SizedBox(width: 28),
-                        Expanded(
-                          child: _ProjectSection(
-                            label: sections[2].projectTypeLabel ?? '',
-                            title: sections[2].title,
-                            body: sections[2].tagLine ?? '',
-                            bullets: sections[2].contentBullets,
-                          ),
-                        ),
+                        ],
                       ],
                     )
-                  else ...sections.asMap().entries.map(
-                        (e) => Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _ProjectSection(
-                              label: e.value.projectTypeLabel ?? '',
-                              title: e.value.title,
-                              body: e.value.tagLine ?? '',
-                              bullets: e.value.contentBullets,
-                            ),
-                            if (e.key != sections.length - 1)
-                              const _BlackSeparator(),
-                          ],
+                  else
+                    ...rowProjects.asMap().entries.map(
+                          (e) => Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _ProjectSection(
+                                project: e.value,
+                                onTap: onProjectPressed == null
+                                    ? null
+                                    : () => onProjectPressed!(e.value),
+                              ),
+                              if (e.key != rowProjects.length - 1)
+                                const _BlackSeparator(),
+                            ],
+                          ),
                         ),
-                      ),
+                  for (final project in overflowProjects) ...[
+                    const _BlackSeparator(),
+                    _ProjectSection(
+                      project: project,
+                      onTap: onProjectPressed == null
+                          ? null
+                          : () => onProjectPressed!(project),
+                    ),
+                  ],
+                  if (hasMore) ...[
+                    SizedBox(height: 28.h),
+                    Center(
+                      child: loadingMore
+                          ? const SizedBox(
+                              width: 28,
+                              height: 28,
+                              child: CircularProgressIndicator(
+                                color: ApaColors.primaryRed,
+                                strokeWidth: 2.5,
+                              ),
+                            )
+                          : ApaBlackPillButton(
+                              label: 'LOAD MORE',
+                              onPressed: onLoadMore,
+                            ),
+                    ),
+                  ],
                   const _BlackSeparator(),
                   _ProjectsFooterHtml(html: current?.footerHtml),
                   SizedBox(height: 28.h),
@@ -283,20 +318,21 @@ class _BlackSeparator extends StatelessWidget {
 
 class _ProjectSection extends StatelessWidget {
   const _ProjectSection({
-    required this.label,
-    required this.title,
-    required this.body,
-    required this.bullets,
+    required this.project,
+    this.onTap,
   });
 
-  final String label;
-  final String title;
-  final String body;
-  final List<String> bullets;
+  final PostItem project;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final label = project.projectTypeLabel ?? '';
+    final title = project.title;
+    final body = project.tagLine ?? '';
+    final bullets = project.contentBullets;
+
+    final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ApaSectionLabel(label),
@@ -322,6 +358,13 @@ class _ProjectSection extends StatelessWidget {
         SizedBox(height: 12.h),
         ...bullets.map((b) => ApaBulletItem(text: b)),
       ],
+    );
+
+    if (onTap == null) return content;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8.r),
+      child: content,
     );
   }
 }
