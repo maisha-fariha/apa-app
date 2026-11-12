@@ -8,15 +8,27 @@ import '../../../../core/constants/apa_shell_insets.dart';
 import '../../../../core/network/connectivity_controller.dart';
 import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
+import '../../../../core/utils/cms_text.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../core/utils/html_utils.dart';
 import '../../../../core/widgets/apa_empty_retry.dart';
 import '../../../../core/widgets/apa_shared_widgets.dart';
+import '../../../../data/models/post/content_detail_models.dart';
 import '../../../../data/models/post/post_model.dart';
 import '../../../../data/models/post/post_item_extensions.dart';
+import '../../../../data/models/post/project_list_utils.dart';
 import '../../../shell/presentation/controllers/pages_controller.dart';
 import '../../../shell/presentation/mapping/apa_page_templates.dart';
 import '../../../shell/presentation/models/apa_nav_item.dart';
+
+/// Web-finished Projects hero copy used when ACF still has placeholders.
+abstract final class _ProjectsHeroFallback {
+  static const topTagLine = 'Phase one · Haiti';
+  static const headingTextOne = 'Three things a';
+  static const headingTextTwo = 'street needs.';
+  static const lastContent =
+      'Every project is chosen the same way: it must solve something urgent now, and still be working ten years from now.';
+}
 
 /// Projects Page — Figma frame `6:203`.
 class ProjectsPage extends StatelessWidget {
@@ -60,9 +72,10 @@ class ProjectsPage extends StatelessWidget {
           child: Obx(() {
             pagesController?.items.length;
             pagesController?.pageDetailsById.length;
-            pagesController?.extraProjects.length;
-            pagesController?.projectsHasMore.value;
-            pagesController?.loadingMoreProjects.value;
+            pagesController?.projectsPageItems.length;
+            pagesController?.projectsPage.value;
+            pagesController?.projectsTotalPages.value;
+            pagesController?.loadingProjectsPage.value;
             pagesController?.isLoading.value;
             if (ConnectivityController.registered) {
               ConnectivityController.to.isOnline.value;
@@ -122,11 +135,23 @@ class ProjectsPage extends StatelessWidget {
               current,
               projects,
               navBottomPad,
-              hasMore: pagesController?.projectsHasMore.value ?? false,
-              loadingMore: pagesController?.loadingMoreProjects.value ?? false,
-              onLoadMore: pagesController == null
+              currentPage: pagesController?.projectsPage.value ?? 1,
+              totalPages: pagesController?.projectsTotalPages.value ?? 1,
+              loadingPage:
+                  pagesController?.loadingProjectsPage.value ?? false,
+              onPageSelected: pagesController == null
                   ? null
-                  : () => pagesController.loadMoreProjects(),
+                  : (pageNumber) async {
+                      await pagesController.goToProjectsPage(pageNumber);
+                      final controller = scrollController;
+                      if (controller != null && controller.hasClients) {
+                        await controller.animateTo(
+                          0,
+                          duration: const Duration(milliseconds: 280),
+                          curve: Curves.easeOut,
+                        );
+                      }
+                    },
             );
           }),
         ),
@@ -139,18 +164,29 @@ class ProjectsPage extends StatelessWidget {
     PostItem? current,
     List<PostItem> projects,
     double navBottomPad, {
-    required bool hasMore,
-    required bool loadingMore,
-    required VoidCallback? onLoadMore,
+    required int currentPage,
+    required int totalPages,
+    required bool loadingPage,
+    required ValueChanged<int>? onPageSelected,
   }) {
     final commonHeader = current?.commonHeader ?? const <String, dynamic>{};
 
-    final badge = commonHeader['top_tag_line']?.toString() ?? '';
-    final headingOne =
-        (commonHeader['heading_text_one']?.toString() ?? '').trim();
-    final headingTwo =
-        (commonHeader['heading_text_two']?.toString() ?? '').trim();
-    final subtitle = commonHeader['last_content']?.toString();
+    final badge = cmsOr(
+      commonHeader['top_tag_line'],
+      _ProjectsHeroFallback.topTagLine,
+    );
+    final headingOne = cmsOr(
+      commonHeader['heading_text_one'],
+      _ProjectsHeroFallback.headingTextOne,
+    );
+    final headingTwo = cmsOr(
+      commonHeader['heading_text_two'],
+      _ProjectsHeroFallback.headingTextTwo,
+    );
+    final subtitle = cmsOr(
+      commonHeader['last_content'],
+      _ProjectsHeroFallback.lastContent,
+    );
 
     final headline = <InlineSpan>[];
     if (headingOne.isNotEmpty) {
@@ -264,32 +300,25 @@ class ProjectsPage extends StatelessWidget {
                           : () => onProjectPressed!(project),
                     ),
                   ],
-                  if (hasMore) ...[
+                  if (totalPages > 1) ...[
                     SizedBox(height: 28.h),
-                    Center(
-                      child: loadingMore
-                          ? const SizedBox(
-                              width: 28,
-                              height: 28,
-                              child: CircularProgressIndicator(
-                                color: ApaColors.primaryRed,
-                                strokeWidth: 2.5,
-                              ),
-                            )
-                          : ApaBlackPillButton(
-                              label: 'LOAD MORE',
-                              onPressed: onLoadMore,
-                            ),
+                    _ProjectsNumberedPagination(
+                      currentPage: currentPage,
+                      totalPages: totalPages,
+                      loading: loadingPage,
+                      onPageSelected: onPageSelected,
                     ),
                   ],
                   const _BlackSeparator(),
-                  _ProjectsFooterHtml(html: current?.footerHtml),
-                  SizedBox(height: 28.h),
-                  Center(
-                    child: ApaBlackPillButton(
-                      label: 'FUND A PROJECT',
-                      onPressed: onFundPressed,
-                    ),
+                  _ProjectsFooterBlock(
+                    footer: current?.pageFooter ?? PageFooterSection.empty,
+                    legacyHtml: current?.footerHtml,
+                    fundLabel: () {
+                      final title = current?.pageFooter.buttonTitle.trim() ?? '';
+                      if (title.isNotEmpty) return title.toUpperCase();
+                      return 'FUND A PROJECT';
+                    }(),
+                    onFundPressed: onFundPressed,
                   ),
                 ],
               ),
@@ -316,6 +345,146 @@ class _BlackSeparator extends StatelessWidget {
   }
 }
 
+/// Web-style numbered pager: Previous · 1 2 3 · Next
+class _ProjectsNumberedPagination extends StatelessWidget {
+  const _ProjectsNumberedPagination({
+    required this.currentPage,
+    required this.totalPages,
+    required this.loading,
+    required this.onPageSelected,
+  });
+
+  final int currentPage;
+  final int totalPages;
+  final bool loading;
+  final ValueChanged<int>? onPageSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (totalPages <= 1) return const SizedBox.shrink();
+
+    final canPrev = currentPage > 1 && !loading;
+    final canNext = currentPage < totalPages && !loading;
+
+    return Center(
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.center,
+        spacing: 8.w,
+        runSpacing: 8.h,
+        children: [
+          _PaginationTextButton(
+            label: 'Previous',
+            enabled: canPrev,
+            onTap: canPrev ? () => onPageSelected?.call(currentPage - 1) : null,
+          ),
+          for (var page = 1; page <= totalPages; page++)
+            _PaginationPageButton(
+              page: page,
+              selected: page == currentPage,
+              enabled: !loading,
+              onTap: (!loading && page != currentPage)
+                  ? () => onPageSelected?.call(page)
+                  : null,
+            ),
+          _PaginationTextButton(
+            label: 'Next',
+            enabled: canNext,
+            onTap: canNext ? () => onPageSelected?.call(currentPage + 1) : null,
+          ),
+          if (loading)
+            SizedBox(
+              width: 18.w,
+              height: 18.w,
+              child: const CircularProgressIndicator(
+                color: ApaColors.primaryRed,
+                strokeWidth: 2,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PaginationTextButton extends StatelessWidget {
+  const _PaginationTextButton({
+    required this.label,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool enabled;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(4.r),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+        child: Text(
+          label,
+          style: ApaFonts.inter(
+            color: enabled ? ApaColors.black : ApaColors.gray700.withValues(alpha: 0.45),
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w600,
+            height: 1.2,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PaginationPageButton extends StatelessWidget {
+  const _PaginationPageButton({
+    required this.page,
+    required this.selected,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final int page;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final child = AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      width: 36.w,
+      height: 36.w,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: selected ? ApaColors.black : Colors.transparent,
+        border: Border.all(
+          color: selected ? ApaColors.black : ApaColors.black.withValues(alpha: 0.2),
+        ),
+        borderRadius: BorderRadius.circular(4.r),
+      ),
+      child: Text(
+        '$page',
+        style: ApaFonts.inter(
+          color: selected ? ApaColors.white : ApaColors.black,
+          fontSize: 14.sp,
+          fontWeight: FontWeight.w700,
+          height: 1,
+        ),
+      ),
+    );
+
+    if (!enabled || onTap == null) return child;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(4.r),
+      child: child,
+    );
+  }
+}
+
 class _ProjectSection extends StatelessWidget {
   const _ProjectSection({
     required this.project,
@@ -328,7 +497,7 @@ class _ProjectSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final label = project.projectTypeLabel ?? '';
-    final title = project.title;
+    final title = normalizeProjectTitle(project.title);
     final body = project.tagLine ?? '';
     final bullets = project.contentBullets;
 
@@ -369,6 +538,81 @@ class _ProjectSection extends StatelessWidget {
   }
 }
 
+class _ProjectsFooterBlock extends StatelessWidget {
+  const _ProjectsFooterBlock({
+    required this.footer,
+    required this.fundLabel,
+    this.legacyHtml,
+    this.onFundPressed,
+  });
+
+  final PageFooterSection footer;
+  final String? legacyHtml;
+  final String fundLabel;
+  final VoidCallback? onFundPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasStructured =
+        footer.title.isNotEmpty || footer.content.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (hasStructured)
+          _ProjectsFooterSection(footer: footer)
+        else if (legacyHtml != null && legacyHtml!.trim().isNotEmpty)
+          _ProjectsFooterHtml(html: legacyHtml),
+        SizedBox(height: 28.h),
+        Center(
+          child: ApaBlackPillButton(
+            label: fundLabel,
+            onPressed: onFundPressed,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ProjectsFooterSection extends StatelessWidget {
+  const _ProjectsFooterSection({required this.footer});
+
+  final PageFooterSection footer;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (footer.title.isNotEmpty)
+          Text(
+            footer.title.toUpperCase(),
+            style: ApaFonts.inter(
+              color: ApaColors.black,
+              fontSize: 36.sp,
+              fontWeight: FontWeight.w800,
+              height: 40 / 36,
+              letterSpacing: -0.5,
+            ),
+          ),
+        if (footer.content.isNotEmpty)
+          Padding(
+            padding: EdgeInsets.only(top: footer.title.isEmpty ? 0 : 16.h),
+            child: Text(
+              footer.content,
+              style: ApaFonts.inter(
+                color: ApaColors.gray700,
+                fontSize: 16.sp,
+                height: 24 / 16,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _ProjectsFooterHtml extends StatelessWidget {
   const _ProjectsFooterHtml({required this.html});
 
@@ -390,7 +634,6 @@ class _ProjectsFooterHtml extends StatelessWidget {
       );
     }
 
-    // Render in the order we encounter `<h2>` / `<p>` blocks.
     final children = <Widget>[];
     for (final block in blocks) {
       final type = block['type'];

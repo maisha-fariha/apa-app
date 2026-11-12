@@ -1,7 +1,10 @@
 import 'content_detail_models.dart';
 import 'paginated_posts.dart';
 import 'post_model.dart';
+import 'project_post_parser.dart';
 import '../../../core/utils/html_utils.dart';
+
+export 'project_post_parser.dart' show parseProjectCard;
 
 extension PostItemProjectsX on PostItem {
   Map<String, dynamic> get commonHeader {
@@ -21,7 +24,7 @@ extension PostItemProjectsX on PostItem {
 
     return raw
         .whereType<Map>()
-        .map((item) => PostItem.fromJson(Map<String, dynamic>.from(item)))
+        .map((item) => parseProjectCard(Map<String, dynamic>.from(item)))
         .toList();
   }
 
@@ -34,6 +37,17 @@ extension PostItemProjectsX on PostItem {
   }
 
   String? get footerHtml {
+    final footer = pageFooter;
+    if (!footer.isEmpty) {
+      final parts = <String>[];
+      if (footer.title.isNotEmpty) {
+        parts.add('<h2>${footer.title}</h2>');
+      }
+      if (footer.content.isNotEmpty) {
+        parts.add('<p>${footer.content}</p>');
+      }
+      return parts.isEmpty ? null : parts.join();
+    }
     final raw = acfFields['footer'];
     if (raw is String && raw.trim().isNotEmpty) {
       return raw.trim();
@@ -41,10 +55,50 @@ extension PostItemProjectsX on PostItem {
     return null;
   }
 
+  /// Structured `footer` from Projects / similar ACF pages.
+  PageFooterSection get pageFooter {
+    final raw = acfFields['footer'];
+    if (raw is Map) {
+      return PageFooterSection.fromJson(Map<String, dynamic>.from(raw));
+    }
+    if (raw is String && raw.trim().isNotEmpty) {
+      final blocks = HtmlUtils.extractHeaderAndParagraphs(raw);
+      var title = '';
+      final paragraphs = <String>[];
+      for (final block in blocks) {
+        final text = (block['text'] ?? '').trim();
+        if (text.isEmpty) continue;
+        if (block['type'] == 'h2' && title.isEmpty) {
+          title = text;
+        } else if (block['type'] == 'p') {
+          paragraphs.add(text);
+        }
+      }
+      if (title.isEmpty && paragraphs.isEmpty) {
+        final plain = HtmlUtils.stripHtmlToText(raw);
+        if (plain.isEmpty) return PageFooterSection.empty;
+        return PageFooterSection(title: '', content: plain, buttonTitle: '');
+      }
+      return PageFooterSection(
+        title: title,
+        content: paragraphs.join('\n\n'),
+        buttonTitle: '',
+      );
+    }
+    return PageFooterSection.empty;
+  }
+
   String? get tagLine {
     final raw = acfFields['tag_line'];
     if (raw is String && raw.trim().isNotEmpty) {
       return raw.trim();
+    }
+    final quick = acfFields['quick_facts'];
+    if (quick is Map) {
+      final fromQuick = quick['tag_line'];
+      if (fromQuick is String && fromQuick.trim().isNotEmpty) {
+        return fromQuick.trim();
+      }
     }
     return null;
   }
@@ -67,10 +121,20 @@ extension PostItemProjectsX on PostItem {
         return HtmlUtils.decodeEntities(name.trim());
       }
     }
+    final direct = acfFields['category'];
+    if (direct is String && direct.trim().isNotEmpty) {
+      return HtmlUtils.decodeEntities(direct.trim());
+    }
     return null;
   }
 
-  List<String> get contentBullets => HtmlUtils.bulletsFromHtml(content);
+  /// Bullets from post `content`, falling back to ACF `card_content` (Projects grid).
+  List<String> get contentBullets {
+    final fromContent = HtmlUtils.bulletsFromHtml(content);
+    if (fromContent.isNotEmpty) return fromContent;
+    final card = acfFields['card_content']?.toString() ?? '';
+    return HtmlUtils.bulletsFromHtml(card);
+  }
 }
 
 extension PostItemNewsX on PostItem {

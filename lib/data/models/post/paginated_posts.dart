@@ -1,4 +1,5 @@
 import 'post_model.dart';
+import 'project_post_parser.dart';
 
 /// Response from `GET /ansanm-pou-haiti/v1/get-paginated-posts`.
 class PaginatedPostsResult {
@@ -18,7 +19,13 @@ class PaginatedPostsResult {
     if (postsRaw is List) {
       for (final item in postsRaw) {
         if (item is! Map) continue;
-        posts.add(PostItem.fromJson(Map<String, dynamic>.from(item)));
+        final map = Map<String, dynamic>.from(item);
+        final type = map['type']?.toString();
+        posts.add(
+          type == 'projects'
+              ? parseProjectCard(map)
+              : PostItem.fromJson(map),
+        );
       }
     }
 

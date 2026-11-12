@@ -32,8 +32,8 @@ class PagesController extends BaseListController<PostItem>
   /// Full page payloads loaded via `get-post-details`, keyed by post id.
   final RxMap<int, PostItem> pageDetailsById = <int, PostItem>{}.obs;
 
-  /// Extra project cards loaded via `get-paginated-posts` (after first page).
-  final RxList<PostItem> extraProjects = <PostItem>[].obs;
+  /// Current Projects grid page items (web-style numbered pagination).
+  final RxList<PostItem> projectsPageItems = <PostItem>[].obs;
 
   /// Extra news stories loaded via `get-paginated-posts` (after first page).
   final RxList<PostItem> extraNewsPosts = <PostItem>[].obs;
@@ -44,9 +44,13 @@ class PagesController extends BaseListController<PostItem>
   final RxBool newsSearchHasMore = false.obs;
   final RxBool searchingNews = false.obs;
 
-  final RxBool projectsHasMore = false.obs;
+  /// 1-based Projects grid page (web `pagination.page` / `total_pages`).
+  final RxInt projectsPage = 1.obs;
+  final RxInt projectsTotalPages = 1.obs;
+  final RxInt projectsPerPage = 3.obs;
+  final RxBool loadingProjectsPage = false.obs;
+
   final RxBool newsHasMore = false.obs;
-  final RxBool loadingMoreProjects = false.obs;
   final RxBool loadingMoreNews = false.obs;
 
   /// Global Settings page (`post_id=5`) — shared labels / donate CTA / logo.
@@ -268,9 +272,13 @@ class PagesController extends BaseListController<PostItem>
         success: (details) {
           final previous = pageDetailsById[pageId];
           pageDetailsById[pageId] = details;
-          // Avoid wiping Projects/News load-more unless CMS pagination changed.
-          if (previous?.listPagination.hasMore != details.listPagination.hasMore ||
-              previous?.listPagination.perPage != details.listPagination.perPage) {
+          // Reset Projects/News paging when CMS pagination meta changes.
+          if (previous?.listPagination.hasMore !=
+                  details.listPagination.hasMore ||
+              previous?.listPagination.perPage !=
+                  details.listPagination.perPage ||
+              previous?.listPagination.totalPages !=
+                  details.listPagination.totalPages) {
             _resetListPagingForPage(pageId, details);
           }
         },
@@ -387,13 +395,19 @@ class PagesController extends BaseListController<PostItem>
   }
 
   void _resetListPagingForPage(int pageId, PostItem details) {
-    final projectsPage = pageByTemplate(ApaPageTemplates.projects);
+    final projectsShell = pageByTemplate(ApaPageTemplates.projects);
     final newsPage = pageByTemplate(ApaPageTemplates.news);
     final pagination = details.listPagination;
 
-    if (projectsPage?.id == pageId) {
-      extraProjects.clear();
-      projectsHasMore.value = pagination.hasMore;
+    if (projectsShell?.id == pageId) {
+      final perPage = pagination.perPage > 0 ? pagination.perPage : 3;
+      projectsPerPage.value = perPage;
+      projectsTotalPages.value =
+          pagination.totalPages > 0 ? pagination.totalPages : 1;
+      projectsPage.value = 1;
+      projectsPageItems
+        ..clear()
+        ..addAll(details.relatedProjects);
     }
     if (newsPage?.id == pageId) {
       extraNewsPosts.clear();
@@ -402,16 +416,71 @@ class PagesController extends BaseListController<PostItem>
     }
   }
 
-  /// Combined first-page + paginated project cards for the Projects screen.
+  /// Current Projects grid page (web numbered pagination).
   List<PostItem> projectsForDisplay(PostItem? page) {
-    final first = page?.relatedProjects ?? const <PostItem>[];
-    if (extraProjects.isEmpty) return first;
-    final seen = first.map((p) => p.id).toSet();
-    return [
-      ...first,
-      for (final project in extraProjects)
-        if (seen.add(project.id)) project,
-    ];
+    if (projectsPageItems.isNotEmpty) {
+      return List<PostItem>.unmodifiable(projectsPageItems);
+    }
+    return page?.relatedProjects ?? const [];
+  }
+
+  /// Jump to a Projects grid page — same `per_page` / `total_pages` model as web.
+  Future<void> goToProjectsPage(int pageNumber) async {
+    if (loadingProjectsPage.value) return;
+    final total = projectsTotalPages.value;
+    if (pageNumber < 1 || pageNumber > total) return;
+
+    final details = resolvedPageForShell(ApaShellPage.projects);
+    if (details == null) return;
+
+    final perPage = projectsPerPage.value > 0
+        ? projectsPerPage.value
+        : (details.listPagination.perPage > 0
+            ? details.listPagination.perPage
+            : 3);
+
+    if (pageNumber == 1) {
+      projectsPageItems
+        ..clear()
+        ..addAll(details.relatedProjects);
+      projectsPage.value = 1;
+      return;
+    }
+
+    if (pageNumber == projectsPage.value && projectsPageItems.isNotEmpty) {
+      return;
+    }
+
+    if (!ConnectivityController.currentlyOnline) {
+      Get.snackbar('Error', ConnectivityController.offlineMessage);
+      return;
+    }
+
+    loadingProjectsPage.value = true;
+    try {
+      final result = await repository.getPaginatedPosts(
+        postType: ApaApiConfig.postTypeProjects,
+        limit: perPage,
+        offset: (pageNumber - 1) * perPage,
+      );
+      result.when(
+        success: (pageResult) {
+          projectsPageItems
+            ..clear()
+            ..addAll(pageResult.posts);
+          projectsPage.value = pageNumber;
+          if (pageResult.totalPosts > 0 && perPage > 0) {
+            final pages = (pageResult.totalPosts + perPage - 1) ~/ perPage;
+            if (pages > 0) projectsTotalPages.value = pages;
+          }
+        },
+        failure: (error) {
+          Get.snackbar('Error', error.message);
+        },
+      );
+    } finally {
+      loadingProjectsPage.value = false;
+    }
   }
 
   bool get isNewsSearchActive => newsSearchQuery.value.trim().isNotEmpty;
@@ -475,42 +544,6 @@ class PagesController extends BaseListController<PostItem>
     newsSearchResults.clear();
     newsSearchHasMore.value = false;
     searchingNews.value = false;
-  }
-
-  Future<void> loadMoreProjects() async {
-    if (loadingMoreProjects.value || !projectsHasMore.value) return;
-    if (!ConnectivityController.currentlyOnline) {
-      Get.snackbar('Error', ConnectivityController.offlineMessage);
-      return;
-    }
-
-    final page = resolvedPageForShell(ApaShellPage.projects);
-    if (page == null) return;
-
-    final already = projectsForDisplay(page).length;
-    final limit = page.listPagination.perPage > 0
-        ? page.listPagination.perPage
-        : 9;
-
-    loadingMoreProjects.value = true;
-    try {
-      final result = await repository.getPaginatedPosts(
-        postType: ApaApiConfig.postTypeProjects,
-        limit: limit,
-        offset: already,
-      );
-      result.when(
-        success: (pageResult) {
-          extraProjects.addAll(pageResult.posts);
-          projectsHasMore.value = pageResult.hasMore;
-        },
-        failure: (error) {
-          Get.snackbar('Error', error.message);
-        },
-      );
-    } finally {
-      loadingMoreProjects.value = false;
-    }
   }
 
   Future<void> loadMoreNews() async {

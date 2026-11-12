@@ -74,6 +74,40 @@ class ContentFactRow {
   }
 }
 
+/// ACF `footer` block used by Projects (`page-project.php`) and similar pages.
+class PageFooterSection {
+  const PageFooterSection({
+    required this.title,
+    required this.content,
+    required this.buttonTitle,
+    this.buttonLink = '',
+  });
+
+  final String title;
+  final String content;
+  final String buttonTitle;
+  final String buttonLink;
+
+  static const empty = PageFooterSection(
+    title: '',
+    content: '',
+    buttonTitle: '',
+  );
+
+  factory PageFooterSection.fromJson(Map<String, dynamic>? json) {
+    if (json == null || json.isEmpty) return empty;
+    return PageFooterSection(
+      title: _string(json['title']),
+      content: _string(json['content']),
+      buttonTitle: _string(json['button_title']),
+      buttonLink: _string(json['button_link']),
+    );
+  }
+
+  bool get isEmpty =>
+      title.isEmpty && content.isEmpty && buttonTitle.isEmpty;
+}
+
 String _string(dynamic value) {
   if (value == null) return '';
   return value.toString().trim();
