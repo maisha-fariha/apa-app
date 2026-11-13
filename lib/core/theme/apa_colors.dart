@@ -8,13 +8,23 @@ abstract final class ApaColors {
   static const Color primaryRedBorder = Color(0x80EF4444);
   /// Web `--red` used on Projects hero accent + blockquote rail.
   static const Color webRed = Color(0xFFF3002D);
+  /// Web `--ink` (#0b0b0b).
+  static const Color webInk = Color(0xFF0B0B0B);
+  /// Web `--sky` — editor-content disc markers.
+  static const Color webSky = Color(0xFF5B9BD5);
+  /// Web `--mist` / blockquote fill (`#f1f2f6`).
+  static const Color mist = Color(0xFFF1F2F6);
+  /// Web fact / related card border (`#e3e4ea`).
+  static const Color factBorder = Color(0xFFE3E4EA);
+  /// Web fact row label (`#5a5c66`).
+  static const Color factLabel = Color(0xFF5A5C66);
 
   static const Color navy = Color(0xFF002B80);
   static const Color navyBlue = Color(0xFF0033A0);
   /// Web Projects type label (`text-[#00209f]`).
   static const Color projectTypeNavy = Color(0xFF00209F);
   /// Web blockquote fill (`#f1f2f6`).
-  static const Color calloutFill = Color(0xFFF1F2F6);
+  static const Color calloutFill = mist;
   static const Color blueDot = Color(0xFF3B82F6);
 
   static const Color locationYellow = Color(0xFFFACC15);

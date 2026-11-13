@@ -1,3 +1,5 @@
+import '../network/apa_api_config.dart';
+
 /// Asset paths for APA screens (exported from Figma).
 abstract final class ApaAssets {
   static const String homeBackground = 'assets/images/home_background.jpg';
@@ -12,6 +14,16 @@ abstract final class ApaAssets {
   static const String contactHero = 'assets/images/contact_hero.jpg';
   static const String articleHero = 'assets/images/article_hero.jpg';
   static const String articleRoad = 'assets/images/article_road.jpg';
+
+  /// Web theme fallback when a news card has no featured image
+  /// (`themes/.../assets/images/projects-2.webp` on the live site).
+  static String get webNewsCardFallbackImage {
+    final uri = Uri.tryParse(ApaApiConfig.baseUrl);
+    final origin = (uri != null && uri.hasScheme && uri.host.isNotEmpty)
+        ? '${uri.scheme}://${uri.host}'
+        : 'https://ansanmpouayiti.com';
+    return '$origin/wp-content/themes/non-profit-website-app-build/assets/images/projects-2.webp';
+  }
 
   static const String icCalendar = 'assets/icons/ic_calendar.svg';
   static const String icArrowRight = 'assets/icons/ic_arrow_right.svg';

@@ -9,13 +9,14 @@ import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
 import '../../../../core/utils/html_utils.dart';
 import '../../../../core/utils/responsive.dart';
+import '../../../../core/widgets/apa_shared_widgets.dart';
 import '../../../../core/widgets/apa_svg_icon.dart';
 import '../../../../data/models/post/content_detail_models.dart';
 import '../../../../data/models/post/post_item_extensions.dart';
 import '../../../../data/models/post/post_model.dart';
 import '../../../shell/presentation/controllers/pages_controller.dart';
 
-/// Single project detail — uses `get-post-details?post_type=projects`.
+/// Single project detail — matches live web `single-projects`.
 class ProjectDetailPage extends StatefulWidget {
   const ProjectDetailPage({
     super.key,
@@ -83,6 +84,25 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         .toList();
   }
 
+  /// Web prepends taxonomy Type when not already present in `project_details`.
+  List<ContentFactRow> _factRows(PostItem project, ContentLabels labels) {
+    final rows = List<ContentFactRow>.from(project.contentFactRows);
+    final typeValue = (project.projectTypeLabel ?? '').trim();
+    if (typeValue.isEmpty) return rows;
+
+    final alreadyHasType = rows.any(
+      (row) => row.label.trim().toLowerCase() == 'type',
+    );
+    if (alreadyHasType) return rows;
+
+    final typeLabel =
+        labels.typeLabel.trim().isNotEmpty ? labels.typeLabel.trim() : 'Type';
+    return [
+      ContentFactRow(label: typeLabel, text: typeValue),
+      ...rows,
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final pagesController = _pagesController;
@@ -93,7 +113,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       child: Scaffold(
         backgroundColor: ApaColors.white,
         body: RefreshIndicator(
-          color: ApaColors.primaryRed,
+          color: ApaColors.webRed,
           onRefresh: _refreshLatest,
           child: Obx(() {
             pagesController?.pageDetailsById.length;
@@ -128,12 +148,13 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
   }) {
     final imageUrl = project.featuredImageUrl;
     final typeLabel = project.projectTypeLabel ?? project.categoryLabel;
-    final factRows = project.contentFactRows;
-    final contentHtml = project.content.trim().isNotEmpty
-        ? project.content.trim()
-        : (project.acfFields['card_content']?.toString() ?? '');
-    final bullets = HtmlUtils.bulletsFromHtml(contentHtml);
-    final paragraphs = _extractParagraphs(contentHtml);
+    final factRows = _factRows(project, labels);
+    final rich = project.projectCardContent;
+    final paragraphs = _extractParagraphs(
+      project.content.trim().isNotEmpty
+          ? project.content.trim()
+          : (project.acfFields['card_content']?.toString() ?? ''),
+    );
     final tagLine = project.tagLine ?? '';
 
     final backLabel = labels.backLabel.isNotEmpty
@@ -145,15 +166,19 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     final relatedTitle = labels.relatedTitle.isNotEmpty
         ? labels.relatedTitle.toUpperCase()
         : 'MORE PROJECTS';
-    final donateTitle =
-        donate.title.isNotEmpty ? donate.title : 'Help fund the next one.';
+    final donateTitle = (donate.title.isNotEmpty
+            ? donate.title
+            : 'Help fund the next one.')
+        .toUpperCase();
     final donateText = donate.text.isNotEmpty
         ? donate.text
         : 'Every gift goes straight to project funds, not overhead.';
     final donateButton = donate.buttonLabel.isNotEmpty
-        ? '${donate.buttonLabel.toUpperCase()} →'
-        : 'DONATE →';
+        ? donate.buttonLabel.toUpperCase()
+        : 'DONATE';
     final logoUrl = _pagesController?.siteLogoUrl;
+    final sidePad = R.isTabletLandscape(context) ? 48.0 : 22.w;
+    final wide = MediaQuery.sizeOf(context).width >= 900;
 
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(
@@ -164,8 +189,8 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
           child: SizedBox(
             height: R.isTabletLandscape(context)
                 ? (MediaQuery.sizeOf(context).height * 0.52)
-                    .clamp(340.0, 460.0)
-                : 520.h + top,
+                    .clamp(340.0, 520.0)
+                : 420.h + top,
             width: double.infinity,
             child: Stack(
               fit: StackFit.expand,
@@ -184,16 +209,24 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                     ApaAssets.projectsHero,
                     fit: BoxFit.cover,
                   ),
-                ColoredBox(color: Colors.black.withValues(alpha: 0.7)),
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [
+                        Color(0xCC000000),
+                        Color(0x99000000),
+                        Color(0xB3000000),
+                      ],
+                      stops: [0.0, 0.5, 1.0],
+                    ),
+                  ),
+                ),
                 SafeArea(
                   bottom: false,
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      R.isTabletLandscape(context) ? 48 : 24.w,
-                      24.h,
-                      R.isTabletLandscape(context) ? 48 : 24.w,
-                      40.h,
-                    ),
+                    padding: EdgeInsets.fromLTRB(sidePad, 24.h, sidePad, 40.h),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -204,7 +237,9 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                                   width: 180.w,
                                   height: 67.5.h,
                                   fit: BoxFit.contain,
-                                  errorBuilder: (context, error, stackTrace) => Image.asset(
+                                  errorBuilder:
+                                      (context, error, stackTrace) =>
+                                          Image.asset(
                                     ApaAssets.apaLogo,
                                     width: 180.w,
                                     height: 67.5.h,
@@ -222,43 +257,46 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                         if (typeLabel.isNotEmpty)
                           Container(
                             padding: EdgeInsets.symmetric(
-                              horizontal: 13.w,
-                              vertical: 7.h,
+                              horizontal: 10.w,
+                              vertical: 2.h,
                             ),
                             decoration: BoxDecoration(
                               color: ApaColors.locationYellowFill,
                               borderRadius: BorderRadius.circular(9999),
-                              border: Border.all(color: ApaColors.white20),
+                              border: Border.all(
+                                color: ApaColors.locationYellowBorder,
+                              ),
                             ),
                             child: Text(
                               typeLabel.toUpperCase(),
                               style: ApaFonts.inter(
                                 color: ApaColors.locationYellow,
-                                fontSize: 12.sp,
+                                fontSize: 11.sp,
                                 fontWeight: FontWeight.w700,
-                                letterSpacing: 0.6,
+                                letterSpacing: 1.65,
+                                height: 1.2,
                               ),
                             ),
                           ),
                         SizedBox(height: 16.h),
                         Text(
-                          project.title,
+                          project.title.toUpperCase(),
                           style: ApaFonts.inter(
                             color: ApaColors.white,
                             fontSize: 34.sp,
-                            fontWeight: FontWeight.w800,
-                            height: 40 / 34,
-                            letterSpacing: -0.5,
+                            fontWeight: FontWeight.w700,
+                            height: 1.02,
+                            letterSpacing: -0.85,
                           ),
                         ),
                         if (tagLine.isNotEmpty) ...[
-                          SizedBox(height: 12.h),
+                          SizedBox(height: 16.h),
                           Text(
                             tagLine,
                             style: ApaFonts.inter(
                               color: ApaColors.white80,
-                              fontSize: 15.sp,
-                              height: 22 / 15,
+                              fontSize: 18.sp,
+                              height: 1.55,
                             ),
                           ),
                         ],
@@ -272,12 +310,12 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
         ),
         SliverToBoxAdapter(
           child: ApaPageWidth(
-            maxWidth: 760,
+            maxWidth: 1100,
             child: Padding(
               padding: EdgeInsets.fromLTRB(
-                R.isTabletLandscape(context) ? 48 : 24.w,
-                40.h,
-                R.isTabletLandscape(context) ? 48 : 24.w,
+                sidePad,
+                56.h,
+                sidePad,
                 48.h + MediaQuery.paddingOf(context).bottom,
               ),
               child: Column(
@@ -291,189 +329,78 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
                       children: [
                         const ApaSvgIcon(
                           assetPath: ApaAssets.icBack,
-                          size: 16,
-                          color: ApaColors.primaryRed,
+                          size: 14,
+                          color: ApaColors.webRed,
                         ),
-                        SizedBox(width: 8.w),
+                        SizedBox(width: 6.w),
                         Text(
                           backLabel,
                           style: ApaFonts.inter(
-                            color: ApaColors.primaryRed,
-                            fontSize: 13.sp,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 28.h),
-                  ...paragraphs.map(
-                    (p) => Padding(
-                      padding: EdgeInsets.only(bottom: 20.h),
-                      child: Text(
-                        p,
-                        style: ApaFonts.inter(
-                          color: ApaColors.gray700,
-                          fontSize: 16.sp,
-                          height: 24 / 16,
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (bullets.isNotEmpty) ...[
-                    SizedBox(height: 8.h),
-                    ...bullets.map(
-                      (b) => Padding(
-                        padding: EdgeInsets.only(bottom: 10.h),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '•  ',
-                              style: ApaFonts.inter(
-                                color: ApaColors.black,
-                                fontSize: 15.sp,
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                b,
-                                style: ApaFonts.inter(
-                                  color: ApaColors.gray700,
-                                  fontSize: 15.sp,
-                                  height: 22.5 / 15,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                  if (factRows.isNotEmpty) ...[
-                    SizedBox(height: 32.h),
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.all(24.w),
-                      decoration: BoxDecoration(
-                        color: ApaColors.white,
-                        borderRadius: BorderRadius.circular(12.r),
-                        border: Border.all(color: ApaColors.gray200),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            factsTitle,
-                            style: ApaFonts.inter(
-                              color: ApaColors.black,
-                              fontSize: 20.sp,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          SizedBox(height: 20.h),
-                          ...factRows.map(
-                            (row) => Padding(
-                              padding: EdgeInsets.only(bottom: 12.h),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  SizedBox(
-                                    width: 120.w,
-                                    child: Text(
-                                      row.label,
-                                      style: ApaFonts.inter(
-                                        color: ApaColors.gray500,
-                                        fontSize: 13.sp,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Text(
-                                      row.text,
-                                      style: ApaFonts.inter(
-                                        color: ApaColors.black,
-                                        fontSize: 15.sp,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                  SizedBox(height: 32.h),
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 32.w,
-                      vertical: 36.h,
-                    ),
-                    decoration: BoxDecoration(
-                      color: ApaColors.black,
-                      borderRadius: BorderRadius.circular(16.r),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          donateTitle,
-                          textAlign: TextAlign.center,
-                          style: ApaFonts.inter(
-                            color: ApaColors.white,
-                            fontSize: 24.sp,
-                            fontWeight: FontWeight.w800,
-                            height: 30 / 24,
-                          ),
-                        ),
-                        SizedBox(height: 12.h),
-                        Text(
-                          donateText,
-                          textAlign: TextAlign.center,
-                          style: ApaFonts.inter(
-                            color: ApaColors.white80,
+                            color: ApaColors.webRed,
                             fontSize: 14.sp,
-                            height: 20 / 14,
-                          ),
-                        ),
-                        SizedBox(height: 24.h),
-                        Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: widget.onDonatePressed,
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 8.h),
-                              child: Text(
-                                donateButton,
-                                style: ApaFonts.inter(
-                                  color: ApaColors.primaryRed,
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 1.2,
-                                ),
-                              ),
-                            ),
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1.4,
                           ),
                         ),
                       ],
                     ),
                   ),
+                  SizedBox(height: 32.h),
+                  if (wide)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          flex: 11,
+                          child: _EditorBody(
+                            paragraphs: paragraphs,
+                            rich: rich,
+                          ),
+                        ),
+                        SizedBox(width: 56.w),
+                        Expanded(
+                          flex: 10,
+                          child: _AsideColumn(
+                            factsTitle: factsTitle,
+                            factRows: factRows,
+                            donateTitle: donateTitle,
+                            donateText: donateText,
+                            donateButton: donateButton,
+                            onDonatePressed: widget.onDonatePressed,
+                          ),
+                        ),
+                      ],
+                    )
+                  else ...[
+                    _EditorBody(paragraphs: paragraphs, rich: rich),
+                    SizedBox(height: 34.h),
+                    _AsideColumn(
+                      factsTitle: factsTitle,
+                      factRows: factRows,
+                      donateTitle: donateTitle,
+                      donateText: donateText,
+                      donateButton: donateButton,
+                      onDonatePressed: widget.onDonatePressed,
+                    ),
+                  ],
                   if (moreProjects.isNotEmpty) ...[
                     SizedBox(height: 48.h),
+                    Container(
+                      height: 2,
+                      color: ApaColors.webInk.withValues(alpha: 0.1),
+                    ),
+                    SizedBox(height: 40.h),
                     Text(
                       relatedTitle,
                       style: ApaFonts.inter(
-                        color: ApaColors.black,
-                        fontSize: 28.sp,
-                        fontWeight: FontWeight.w800,
+                        color: ApaColors.webInk,
+                        fontSize: 32.sp,
+                        fontWeight: FontWeight.w700,
+                        height: 1.1,
+                        letterSpacing: -0.48,
                       ),
                     ),
-                    SizedBox(height: 24.h),
+                    SizedBox(height: 12.h),
                     ...moreProjects.map(
                       (item) => Padding(
                         padding: EdgeInsets.only(bottom: 24.h),
@@ -507,6 +434,7 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
     );
   }
 
+  /// Only real `<p>` blocks — never flatten lists into fake paragraphs.
   List<String> _extractParagraphs(String html) {
     if (html.isEmpty) return const [];
     final matches = RegExp(
@@ -515,15 +443,244 @@ class _ProjectDetailPageState extends State<ProjectDetailPage> {
       dotAll: true,
     ).allMatches(html);
 
-    if (matches.isEmpty) {
-      final stripped = HtmlUtils.stripHtmlToText(html).trim();
-      return stripped.isEmpty ? const [] : [stripped];
-    }
-
     return matches
         .map((m) => HtmlUtils.stripHtmlToText(m.group(1) ?? '').trim())
         .where((s) => s.isNotEmpty)
         .toList();
+  }
+}
+
+class _EditorBody extends StatelessWidget {
+  const _EditorBody({
+    required this.paragraphs,
+    required this.rich,
+  });
+
+  final List<String> paragraphs;
+  final ProjectCardContent rich;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...paragraphs.map(
+          (p) => Padding(
+            padding: EdgeInsets.only(bottom: 16.h),
+            child: Text(
+              p,
+              style: ApaFonts.inter(
+                color: ApaColors.webInk,
+                fontSize: 15.5.sp,
+                height: 1.55,
+              ),
+            ),
+          ),
+        ),
+        if (rich.bullets.isNotEmpty)
+          ...rich.bullets.map((b) => ApaEditorBulletItem(text: b)),
+        if (rich.numbered.isNotEmpty) ...[
+          if (rich.bullets.isNotEmpty) SizedBox(height: 4.h),
+          ...rich.numbered.asMap().entries.map(
+                (e) => ApaNumberedItem(
+                  index: e.key + 1,
+                  text: e.value,
+                  indexColor: ApaColors.projectTypeNavy,
+                  textColor: ApaColors.webInk,
+                ),
+              ),
+        ],
+        if (rich.callouts.isNotEmpty)
+          ...rich.callouts.map((c) => ApaRedBorderCallout(text: c)),
+      ],
+    );
+  }
+}
+
+class _AsideColumn extends StatelessWidget {
+  const _AsideColumn({
+    required this.factsTitle,
+    required this.factRows,
+    required this.donateTitle,
+    required this.donateText,
+    required this.donateButton,
+    this.onDonatePressed,
+  });
+
+  final String factsTitle;
+  final List<ContentFactRow> factRows;
+  final String donateTitle;
+  final String donateText;
+  final String donateButton;
+  final VoidCallback? onDonatePressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        if (factRows.isNotEmpty) ...[
+          _QuickFactsCard(title: factsTitle, rows: factRows),
+          SizedBox(height: 24.h),
+        ],
+        _DonateCtaCard(
+          title: donateTitle,
+          text: donateText,
+          buttonLabel: donateButton,
+          onPressed: onDonatePressed,
+        ),
+      ],
+    );
+  }
+}
+
+class _QuickFactsCard extends StatelessWidget {
+  const _QuickFactsCard({required this.title, required this.rows});
+
+  final String title;
+  final List<ContentFactRow> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(24.w),
+      decoration: BoxDecoration(
+        color: ApaColors.white,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(color: ApaColors.factBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: ApaFonts.inter(
+              color: ApaColors.webInk,
+              fontSize: 20.sp,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.2,
+            ),
+          ),
+          SizedBox(height: 16.h),
+          ...rows.asMap().entries.map((entry) {
+            final row = entry.value;
+            final isLast = entry.key == rows.length - 1;
+            return Container(
+              padding: EdgeInsets.symmetric(vertical: 10.h),
+              decoration: BoxDecoration(
+                border: isLast
+                    ? null
+                    : const Border(
+                        bottom: BorderSide(color: ApaColors.factBorder),
+                      ),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Expanded(
+                    child: Text(
+                      row.label,
+                      style: ApaFonts.inter(
+                        color: ApaColors.factLabel,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 12.w),
+                  Flexible(
+                    child: Text(
+                      row.text,
+                      textAlign: TextAlign.right,
+                      style: ApaFonts.inter(
+                        color: ApaColors.webInk,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+class _DonateCtaCard extends StatelessWidget {
+  const _DonateCtaCard({
+    required this.title,
+    required this.text,
+    required this.buttonLabel,
+    this.onPressed,
+  });
+
+  final String title;
+  final String text;
+  final String buttonLabel;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(24.w),
+      decoration: BoxDecoration(
+        color: ApaColors.webInk,
+        borderRadius: BorderRadius.circular(16.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: ApaFonts.inter(
+              color: ApaColors.white,
+              fontSize: 24.sp,
+              fontWeight: FontWeight.w600,
+              height: 1.15,
+              letterSpacing: -0.24,
+            ),
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            text,
+            style: ApaFonts.inter(
+              color: ApaColors.mist,
+              fontSize: 14.sp,
+              height: 1.45,
+            ),
+          ),
+          SizedBox(height: 20.h),
+          SizedBox(
+            width: double.infinity,
+            height: 60.h,
+            child: Material(
+              color: ApaColors.webInk,
+              borderRadius: BorderRadius.circular(999),
+              child: InkWell(
+                onTap: onPressed,
+                borderRadius: BorderRadius.circular(999),
+                child: Center(
+                  child: Text(
+                    buttonLabel,
+                    style: ApaFonts.inter(
+                      color: ApaColors.white,
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -538,82 +695,24 @@ class _MoreProjectCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = project.featuredImageUrl;
-    final type = project.projectTypeLabel ?? project.categoryLabel;
-    final body = project.tagLine ??
-        HtmlUtils.stripHtmlToText(project.excerpt).trim();
-
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(24.w),
         decoration: BoxDecoration(
           color: ApaColors.white,
-          borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(color: ApaColors.gray200),
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: ApaColors.factBorder),
         ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            AspectRatio(
-              aspectRatio: 348 / 200,
-              child: imageUrl != null && imageUrl.isNotEmpty
-                  ? Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      errorBuilder: (context, error, stackTrace) => Image.asset(
-                        ApaAssets.projectsHero,
-                        fit: BoxFit.cover,
-                      ),
-                    )
-                  : Image.asset(
-                      ApaAssets.projectsHero,
-                      fit: BoxFit.cover,
-                    ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(20.w),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (type.isNotEmpty)
-                    Text(
-                      type.toUpperCase(),
-                      style: ApaFonts.inter(
-                        color: ApaColors.navy,
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  if (type.isNotEmpty) SizedBox(height: 8.h),
-                  Text(
-                    project.title,
-                    style: ApaFonts.inter(
-                      color: ApaColors.black,
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.w800,
-                      height: 26 / 20,
-                    ),
-                  ),
-                  if (body.isNotEmpty) ...[
-                    SizedBox(height: 8.h),
-                    Text(
-                      body,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: ApaFonts.inter(
-                        color: ApaColors.gray600,
-                        fontSize: 14.sp,
-                        height: 20 / 14,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
+        child: Text(
+          project.title,
+          style: ApaFonts.inter(
+            color: ApaColors.webInk,
+            fontSize: 20.sp,
+            fontWeight: FontWeight.w600,
+            height: 1.2,
+          ),
         ),
       ),
     );

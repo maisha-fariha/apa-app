@@ -262,6 +262,8 @@ class PostsRepository extends BaseRepository<PostItem> {
           'project_labels',
           'donate_cta',
           'site_logo_url',
+          'ledger',
+          'ledger_columns',
         ]) {
           if (!map.containsKey(key)) continue;
           acf[key] = map[key];

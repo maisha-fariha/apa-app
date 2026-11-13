@@ -302,16 +302,66 @@ class ApaBulletItem extends StatelessWidget {
   }
 }
 
+/// Web `editor-content` disc bullet (`--sky` 6px marker).
+class ApaEditorBulletItem extends StatelessWidget {
+  const ApaEditorBulletItem({super.key, required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 6.h),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 20.w,
+            child: Padding(
+              padding: EdgeInsets.only(top: 8.h),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(
+                    color: ApaColors.webSky,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: ApaFonts.inter(
+                color: ApaColors.webInk,
+                fontSize: 15.5.sp,
+                height: 22.5 / 15.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Numbered list item matching web Projects `ol` blocks.
 class ApaNumberedItem extends StatelessWidget {
   const ApaNumberedItem({
     super.key,
     required this.index,
     required this.text,
+    this.indexColor = ApaColors.black,
+    this.textColor = ApaColors.gray900,
   });
 
   final int index;
   final String text;
+  final Color indexColor;
+  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
@@ -328,7 +378,7 @@ class ApaNumberedItem extends StatelessWidget {
                 fontSize: 15.sp,
                 fontWeight: FontWeight.w700,
                 height: 22.5 / 15,
-                color: ApaColors.black,
+                color: indexColor,
               ),
             ),
           ),
@@ -336,7 +386,7 @@ class ApaNumberedItem extends StatelessWidget {
             child: Text(
               text,
               style: ApaFonts.inter(
-                color: ApaColors.gray900,
+                color: textColor,
                 fontSize: 15.sp,
                 height: 22.5 / 15,
               ),

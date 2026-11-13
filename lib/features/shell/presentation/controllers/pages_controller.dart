@@ -11,6 +11,7 @@ import '../../../../data/models/post/post_item_extensions.dart';
 import '../../../../data/models/post/post_model.dart';
 import '../../../../data/models/post/project_list_utils.dart';
 import '../../../../data/repositories/posts_repository.dart';
+import '../../../transparency/domain/transparency_page_content.dart';
 import '../mapping/apa_page_templates.dart';
 import '../models/apa_nav_item.dart';
 import '../widgets/apa_more_sheet.dart';
@@ -54,6 +55,19 @@ class PagesController extends BaseListController<PostItem>
 
   final RxBool newsHasMore = false.obs;
   final RxBool loadingMoreNews = false.obs;
+
+  /// Transparency project ledger (web `?ledger_page=N`).
+  ///
+  /// Page 1 comes from `get-post-details` `ledger`; later pages are loaded with
+  /// `get-paginated-posts` using the same offset math as the website.
+  final RxMap<int, List<TransparencyLedgerItem>> ledgerPagesByNumber =
+      <int, List<TransparencyLedgerItem>>{}.obs;
+  final RxList<TransparencyLedgerColumn> ledgerColumns =
+      <TransparencyLedgerColumn>[].obs;
+  final RxInt ledgerPage = 1.obs;
+  final RxInt ledgerTotalPages = 1.obs;
+  final RxInt ledgerPerPage = 5.obs;
+  final RxBool loadingLedgerPage = false.obs;
 
   /// Global Settings page (`post_id=5`) — shared labels / donate CTA / logo.
   final Rxn<PostItem> globalSettings = Rxn<PostItem>();
@@ -241,6 +255,11 @@ class PagesController extends BaseListController<PostItem>
           !projectsCatalogLoaded.value) {
         unawaited(_ensureProjectsCatalog(cached));
       }
+      if (cached != null &&
+          _isTransparencyPageId(pageId) &&
+          !ledgerPagesByNumber.containsKey(1)) {
+        _seedLedgerPageOne(cached);
+      }
       return;
     }
     if (!force && _loadingDetails.contains(pageId)) return;
@@ -262,6 +281,9 @@ class PagesController extends BaseListController<PostItem>
           _resetListPagingForPage(pageId, details);
           if (_isProjectsPageId(pageId)) {
             unawaited(_ensureProjectsCatalog(details));
+          }
+          if (_isTransparencyPageId(pageId)) {
+            _seedLedgerPageOne(details);
           }
         },
         failure: (_) {},
@@ -294,9 +316,15 @@ class PagesController extends BaseListController<PostItem>
             if (_isProjectsPageId(pageId)) {
               unawaited(_ensureProjectsCatalog(details));
             }
+            if (_isTransparencyPageId(pageId)) {
+              _seedLedgerPageOne(details);
+            }
           } else if (_isProjectsPageId(pageId) &&
               !projectsCatalogLoaded.value) {
             unawaited(_ensureProjectsCatalog(details));
+          } else if (_isTransparencyPageId(pageId) &&
+              !ledgerPagesByNumber.containsKey(1)) {
+            _seedLedgerPageOne(details);
           }
         },
         failure: (_) {},
@@ -414,6 +442,7 @@ class PagesController extends BaseListController<PostItem>
   void _resetListPagingForPage(int pageId, PostItem details) {
     final projectsShell = pageByTemplate(ApaPageTemplates.projects);
     final newsPage = pageByTemplate(ApaPageTemplates.news);
+    final transparencyPage = pageByTemplate(ApaPageTemplates.transparency);
     final pagination = details.listPagination;
 
     if (projectsShell?.id == pageId) {
@@ -434,11 +463,19 @@ class PagesController extends BaseListController<PostItem>
       newsHasMore.value = pagination.hasMore;
       clearNewsSearch();
     }
+    if (transparencyPage?.id == pageId) {
+      _seedLedgerPageOne(details);
+    }
   }
 
   bool _isProjectsPageId(int pageId) {
     final projectsShell = pageByTemplate(ApaPageTemplates.projects);
     return projectsShell?.id == pageId;
+  }
+
+  bool _isTransparencyPageId(int pageId) {
+    final page = pageByTemplate(ApaPageTemplates.transparency);
+    return page?.id == pageId;
   }
 
   List<PostItem> get _gridProjects =>
@@ -555,6 +592,96 @@ class PagesController extends BaseListController<PostItem>
     if (pageNumber < 1 || pageNumber > total) return;
     if (pageNumber == projectsPage.value) return;
     projectsPage.value = pageNumber;
+  }
+
+  void _seedLedgerPageOne(PostItem details) {
+    final content = TransparencyPageContent.fromPost(details);
+    final pagination = details.listPagination;
+    final perPage = pagination.perPage > 0
+        ? pagination.perPage
+        : (content.pagination.perPage > 0 ? content.pagination.perPage : 5);
+
+    ledgerPerPage.value = perPage;
+    ledgerPage.value = 1;
+    ledgerColumns
+      ..clear()
+      ..addAll(content.ledgerColumns);
+    ledgerPagesByNumber
+      ..clear()
+      ..[1] = List<TransparencyLedgerItem>.unmodifiable(content.ledgerItems);
+
+    final apiPages = pagination.totalPages > 0
+        ? pagination.totalPages
+        : (content.totalProjects > 0 && perPage > 0
+            ? ((content.totalProjects + perPage - 1) ~/ perPage)
+            : 1);
+    ledgerTotalPages.value = apiPages < 1 ? 1 : apiPages;
+  }
+
+  /// Current Transparency ledger page — matches web `?ledger_page=N`.
+  List<TransparencyLedgerItem> ledgerItemsForDisplay(PostItem? page) {
+    final cached = ledgerPagesByNumber[ledgerPage.value];
+    if (cached != null) return cached;
+    if (ledgerPage.value == 1 && page != null) {
+      return TransparencyPageContent.fromPost(page).ledgerItems;
+    }
+    return const [];
+  }
+
+  /// Loads ledger page [pageNumber] the way the website does:
+  /// page 1 = `ledger` from details; page N = projects at offset `(N-1)*per_page`.
+  Future<void> goToLedgerPage(int pageNumber) async {
+    if (loadingLedgerPage.value) return;
+    final total = ledgerTotalPages.value;
+    if (pageNumber < 1 || pageNumber > total) return;
+
+    if (ledgerPagesByNumber.containsKey(pageNumber)) {
+      ledgerPage.value = pageNumber;
+      return;
+    }
+
+    final details = resolvedPageForShell(ApaShellPage.transparency);
+    if (details == null) return;
+
+    if (pageNumber == 1) {
+      _seedLedgerPageOne(details);
+      return;
+    }
+
+    if (ledgerColumns.isEmpty) {
+      _seedLedgerPageOne(details);
+    }
+
+    final perPage = ledgerPerPage.value > 0 ? ledgerPerPage.value : 5;
+    final offset = (pageNumber - 1) * perPage;
+    loadingLedgerPage.value = true;
+    try {
+      final result = await repository.getPaginatedPosts(
+        postType: ApaApiConfig.postTypeProjects,
+        limit: perPage,
+        offset: offset,
+      );
+      result.when(
+        success: (pageResult) {
+          final columns = ledgerColumns.toList(growable: false);
+          final rows = pageResult.posts
+              .map((post) => TransparencyLedgerItem.fromProject(post, columns))
+              .toList(growable: false);
+          ledgerPagesByNumber[pageNumber] = rows;
+          ledgerPage.value = pageNumber;
+
+          if (pageResult.totalPosts > 0 && perPage > 0) {
+            final pages = (pageResult.totalPosts + perPage - 1) ~/ perPage;
+            if (pages > ledgerTotalPages.value) {
+              ledgerTotalPages.value = pages;
+            }
+          }
+        },
+        failure: (_) {},
+      );
+    } finally {
+      loadingLedgerPage.value = false;
+    }
   }
 
   bool get isNewsSearchActive => newsSearchQuery.value.trim().isNotEmpty;

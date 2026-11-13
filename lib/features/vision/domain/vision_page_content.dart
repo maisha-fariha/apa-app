@@ -96,6 +96,10 @@ class VisionPageContent {
   factory VisionPageContent.fromPost(PostItem page) {
     final acf = page.acfFields;
     final header = _asMap(acf['common_header']);
+    final statement = _asMap(acf['vision_statement']);
+    final coreValues = _asMap(acf['core_values']);
+    final futureGoals = _asMap(acf['future_goals']);
+    final joinMission = _asMap(acf['join_mission']);
 
     return VisionPageContent(
       hideHeader: _asBool(header['hide_header']),
@@ -104,26 +108,109 @@ class VisionPageContent {
       headingTextTwo: _asString(header['heading_text_two']),
       lastContent: _asString(header['last_content']),
       imageUrl: page.featuredImageUrl,
-      statementSubheading: _asString(acf['vision_statement_subheading']),
-      statementText: _asString(acf['vision_statement_text']),
-      coreValuesTitle: _asString(acf['core_values_title']),
-      coreValues: _numberedMaps(acf, 'core_values_item_')
-          .map(_valueItem)
-          .where((item) => item.hasText)
-          .toList(),
-      futureGoalsTitle: _asString(acf['future_goals_title']),
-      futureGoals: _numberedMaps(acf, 'future_goal_item_group_')
-          .map(_goalItem)
-          .where((item) => item.hasText)
-          .toList(),
-      stats: _numberedMaps(acf, 'success_statistics_group_')
-          .map(_statItem)
-          .where((item) => item.hasText)
-          .toList(),
-      joinMissionTitle: _asString(acf['join_mission_title']),
-      joinMissionButtonText: _asString(acf['join_mission_button_text']),
-      joinMissionButtonUrl: _asString(acf['join_mission_button_url']),
+      statementSubheading: _firstNonEmpty([
+        _asString(statement['subheading']),
+        _asString(acf['vision_statement_subheading']),
+      ]),
+      statementText: _firstNonEmpty([
+        _asString(statement['text']),
+        _asString(acf['vision_statement_text']),
+      ]),
+      coreValuesTitle: _firstNonEmpty([
+        _asString(coreValues['title']),
+        _asString(acf['core_values_title']),
+      ]),
+      coreValues: _parseCoreValues(acf, coreValues),
+      futureGoalsTitle: _firstNonEmpty([
+        _asString(futureGoals['title']),
+        _asString(acf['future_goals_title']),
+      ]),
+      futureGoals: _parseGoals(acf, futureGoals),
+      stats: _parseStats(acf),
+      joinMissionTitle: _firstNonEmpty([
+        _asString(joinMission['title']),
+        _asString(acf['join_mission_title']),
+      ]),
+      joinMissionButtonText: _firstNonEmpty([
+        _asString(joinMission['button_text']),
+        _asString(acf['join_mission_button_text']),
+      ]),
+      joinMissionButtonUrl: _joinMissionUrl(joinMission, acf),
     );
+  }
+
+  static List<VisionValueItem> _parseCoreValues(
+    Map<String, dynamic> acf,
+    Map<String, dynamic> nested,
+  ) {
+    final fromItems = _asList(nested['items'])
+        .map(_valueItem)
+        .where((item) => item.hasText)
+        .toList();
+    if (fromItems.isNotEmpty) return fromItems;
+
+    return _numberedMaps(acf, 'core_values_item_')
+        .map(_valueItem)
+        .where((item) => item.hasText)
+        .toList();
+  }
+
+  static List<VisionGoalItem> _parseGoals(
+    Map<String, dynamic> acf,
+    Map<String, dynamic> nested,
+  ) {
+    final fromItems = _asList(nested['items']).map((json) {
+      return VisionGoalItem(
+        heading: _firstNonEmpty([
+          _asString(json['title']),
+          _asString(json['heading']),
+        ]),
+        subHeading: _firstNonEmpty([
+          _asString(json['description']),
+          _asString(json['sub_heading']),
+        ]),
+      );
+    }).where((item) => item.hasText).toList();
+    if (fromItems.isNotEmpty) return fromItems;
+
+    return _numberedMaps(acf, 'future_goal_item_group_')
+        .map(_goalItem)
+        .where((item) => item.hasText)
+        .toList();
+  }
+
+  static List<VisionStatItem> _parseStats(Map<String, dynamic> acf) {
+    final fromList = _asList(acf['success_stats']).map((json) {
+      return VisionStatItem(
+        heading: _firstNonEmpty([
+          _asString(json['number']),
+          _asString(json['heading']),
+        ]),
+        subHeading: _firstNonEmpty([
+          _asString(json['label']),
+          _asString(json['sub_heading']),
+        ]),
+      );
+    }).where((item) => item.hasText).toList();
+    if (fromList.isNotEmpty) return fromList;
+
+    return _numberedMaps(acf, 'success_statistics_group_')
+        .map(_statItem)
+        .where((item) => item.hasText)
+        .toList();
+  }
+
+  static String _joinMissionUrl(
+    Map<String, dynamic> joinMission,
+    Map<String, dynamic> acf,
+  ) {
+    final link = joinMission['button_link'];
+    if (link is Map) {
+      final url = _asString(link['url']);
+      if (url.isNotEmpty) return url;
+    }
+    if (link is String && link.trim().isNotEmpty) return link.trim();
+    return _asString(acf['join_mission_button_url']);
   }
 
   static VisionValueItem _valueItem(Map<String, dynamic> json) {
@@ -166,6 +253,14 @@ class VisionPageContent {
     return [for (final key in keys) matches[key]!];
   }
 
+  static List<Map<String, dynamic>> _asList(dynamic value) {
+    if (value is! List) return const [];
+    return value
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList();
+  }
+
   static Map<String, dynamic> _asMap(dynamic value) {
     if (value is Map) return Map<String, dynamic>.from(value);
     return {};
@@ -174,6 +269,13 @@ class VisionPageContent {
   static String _asString(dynamic value) {
     if (value == null || value is bool) return '';
     return value.toString().trim();
+  }
+
+  static String _firstNonEmpty(List<String> values) {
+    for (final value in values) {
+      if (value.isNotEmpty) return value;
+    }
+    return '';
   }
 
   static bool _asBool(dynamic value) {

@@ -16,7 +16,7 @@ import '../../../shell/presentation/mapping/apa_page_templates.dart';
 import '../../../shell/presentation/models/apa_nav_item.dart';
 import '../../domain/transparency_page_content.dart';
 
-/// Transparency Page — Figma frame `9:508`.
+/// Transparency page — matches live web `page-transparency.php`.
 class TransparencyPage extends StatelessWidget {
   const TransparencyPage({
     super.key,
@@ -42,7 +42,7 @@ class TransparencyPage extends StatelessWidget {
       child: ColoredBox(
         color: ApaColors.white,
         child: RefreshIndicator(
-          color: ApaColors.primaryRed,
+          color: ApaColors.webRed,
           onRefresh: () async {
             await pagesController?.loadDetailsForTemplate(
               ApaPageTemplates.transparency,
@@ -58,11 +58,12 @@ class TransparencyPage extends StatelessWidget {
               SliverToBoxAdapter(child: _buildHero(pagesController)),
               SliverToBoxAdapter(
                 child: ApaPageWidth(
+                  maxWidth: 1100,
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(
-                      R.isTabletLandscape(context) ? 48 : 24.w,
-                      40.h,
-                      R.isTabletLandscape(context) ? 48 : 24.w,
+                      R.isTabletLandscape(context) ? 48 : 22.w,
+                      56.h,
+                      R.isTabletLandscape(context) ? 48 : 22.w,
                       navBottomPad,
                     ),
                     child: _buildBody(context, pagesController),
@@ -89,7 +90,7 @@ class TransparencyPage extends StatelessWidget {
         imageAsset: ApaAssets.transparencyHero,
         imageUrl: content.imageUrl ?? imageUrl,
         useAssetFallback: false,
-        height: 540,
+        height: 520,
         badge: content.topTagLine,
         headline: _headlineSpans(content),
         subtitle: content.lastContent.isEmpty ? null : content.lastContent,
@@ -101,16 +102,16 @@ class TransparencyPage extends StatelessWidget {
     final oneStyle = ApaFonts.inter(
       color: ApaColors.white,
       fontSize: 36.sp,
-      fontWeight: FontWeight.w800,
-      height: 40 / 36,
-      letterSpacing: -0.5,
+      fontWeight: FontWeight.w700,
+      height: 1.02,
+      letterSpacing: -0.9,
     );
     final twoStyle = ApaFonts.inter(
-      color: ApaColors.primaryRedDeep,
+      color: ApaColors.webRed,
       fontSize: 36.sp,
-      fontWeight: FontWeight.w800,
-      height: 40 / 36,
-      letterSpacing: -0.5,
+      fontWeight: FontWeight.w700,
+      height: 1.02,
+      letterSpacing: -0.9,
     );
 
     final one = content.headingTextOne;
@@ -139,6 +140,12 @@ class TransparencyPage extends StatelessWidget {
       if (ConnectivityController.registered) {
         ConnectivityController.to.isOnline.value;
       }
+      pagesController.ledgerPage.value;
+      pagesController.ledgerTotalPages.value;
+      pagesController.loadingLedgerPage.value;
+      // Track cached page rows so page 2+ updates after fetch.
+      pagesController.ledgerPagesByNumber[pagesController.ledgerPage.value];
+
       final content = _content(pagesController);
       if (content == null) {
         final loadingList =
@@ -150,7 +157,7 @@ class TransparencyPage extends StatelessWidget {
           return Padding(
             padding: EdgeInsets.symmetric(vertical: 48.h),
             child: const Center(
-              child: CircularProgressIndicator(color: ApaColors.primaryRed),
+              child: CircularProgressIndicator(color: ApaColors.webRed),
             ),
           );
         }
@@ -165,52 +172,60 @@ class TransparencyPage extends StatelessWidget {
         return const SizedBox.shrink();
       }
 
-      final desktop = R.isTabletLandscape(context);
+      final ledgerItems = pagesController.ledgerItemsForDisplay(
+        pagesController.resolvedPageForShell(ApaShellPage.transparency),
+      );
+      final totalPages = pagesController.ledgerTotalPages.value;
+      final currentPage = pagesController.ledgerPage.value;
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (content.hasFunding) ...[
-            if (desktop)
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  if (content.funding.hasRaised)
-                    _RaisedBox(amount: content.funding.raisedLabel),
-                  if (content.funding.hasRaised && content.funding.hasProgress)
-                    SizedBox(width: 40.w),
-                  if (content.funding.hasProgress)
-                    Expanded(
-                      child: _ProgressBlock(funding: content.funding),
-                    ),
-                ],
-              )
-            else ...[
-              if (content.funding.hasRaised)
-                _RaisedBox(amount: content.funding.raisedLabel),
-              if (content.funding.hasRaised && content.funding.hasProgress)
-                SizedBox(height: 24.h),
-              if (content.funding.hasProgress)
-                _ProgressBlock(funding: content.funding),
+            if (content.funding.hasRaised)
+              _RaisedBox(
+                amount: content.funding.raisedLabel,
+                caption: content.funding.raisedCaption,
+              ),
+            if (content.funding.hasProgress) ...[
+              SizedBox(height: 18.h),
+              _ProgressBlock(funding: content.funding),
             ],
-            SizedBox(height: 24.h),
-            const ColoredBox(
-              color: ApaColors.black,
-              child: SizedBox(height: 1, width: double.infinity),
+            SizedBox(height: 40.h),
+            Container(
+              height: 2,
+              color: ApaColors.webInk.withValues(alpha: 0.1),
             ),
-            SizedBox(height: 32.h),
+            SizedBox(height: 40.h),
           ],
           if (content.hasLedger) ...[
             Text(
-              'PROJECT LEDGER',
+              content.ledgerTitle.toUpperCase(),
               style: ApaFonts.inter(
-                color: ApaColors.black,
-                fontSize: 28.sp,
-                fontWeight: FontWeight.w800,
-                height: 34 / 28,
+                color: ApaColors.webInk,
+                fontSize: 32.sp,
+                fontWeight: FontWeight.w700,
+                height: 1.1,
+                letterSpacing: -0.48,
               ),
             ),
             SizedBox(height: 24.h),
-            _LedgerTable(items: content.ledgerItems),
+            _LedgerTable(
+              projectHeading: content.projectColumnHeading,
+              columns: content.ledgerColumns.isNotEmpty
+                  ? content.ledgerColumns
+                  : pagesController.ledgerColumns.toList(growable: false),
+              items: ledgerItems,
+            ),
+            if (totalPages > 1) ...[
+              SizedBox(height: 32.h),
+              _LedgerPagination(
+                currentPage: currentPage,
+                totalPages: totalPages,
+                loading: pagesController.loadingLedgerPage.value,
+                onPageSelected: pagesController.goToLedgerPage,
+              ),
+            ],
             SizedBox(height: 48.h),
           ],
           if (content.hasCommitments) ...[
@@ -218,38 +233,16 @@ class TransparencyPage extends StatelessWidget {
               Text(
                 content.commitmentTitle.toUpperCase(),
                 style: ApaFonts.inter(
-                  color: ApaColors.black,
-                  fontSize: 28.sp,
-                  fontWeight: FontWeight.w800,
-                  height: 34 / 28,
+                  color: ApaColors.webInk,
+                  fontSize: 32.sp,
+                  fontWeight: FontWeight.w700,
+                  height: 1.1,
+                  letterSpacing: -0.48,
                 ),
               ),
             if (content.commitments.isNotEmpty) ...[
-              SizedBox(height: 28.h),
-              if (desktop)
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    for (var i = 0; i < content.commitments.length; i++) ...[
-                      if (i > 0) const SizedBox(width: 28),
-                      Expanded(
-                        child: _CommitmentBlock(
-                          title: content.commitments[i].title,
-                          body: content.commitments[i].body,
-                        ),
-                      ),
-                    ],
-                  ],
-                )
-              else ...[
-                for (var i = 0; i < content.commitments.length; i++) ...[
-                  if (i > 0) const _ThickSeparator(),
-                  _CommitmentBlock(
-                    title: content.commitments[i].title,
-                    body: content.commitments[i].body,
-                  ),
-                ],
-              ],
+              SizedBox(height: 34.h),
+              _CommitmentGrid(items: content.commitments),
             ],
           ],
         ],
@@ -272,9 +265,10 @@ class TransparencyPage extends StatelessWidget {
 }
 
 class _RaisedBox extends StatelessWidget {
-  const _RaisedBox({required this.amount});
+  const _RaisedBox({required this.amount, required this.caption});
 
   final String amount;
+  final String caption;
 
   @override
   Widget build(BuildContext context) {
@@ -282,15 +276,18 @@ class _RaisedBox extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: IntrinsicWidth(
         child: Container(
-          constraints: BoxConstraints(minWidth: 280.w),
-          padding: EdgeInsets.symmetric(
-            horizontal: 16.w,
-            vertical: 12.h,
-          ),
+          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
           decoration: BoxDecoration(
             color: ApaColors.white,
-            borderRadius: BorderRadius.circular(8.r),
-            border: Border.all(color: ApaColors.black, width: 2),
+            borderRadius: BorderRadius.circular(6.r),
+            border: Border.all(color: ApaColors.webInk, width: 2),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x33636363),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             children: [
@@ -298,24 +295,24 @@ class _RaisedBox extends StatelessWidget {
                 amount,
                 maxLines: 1,
                 style: ApaFonts.inter(
-                  color: ApaColors.nearBlack,
-                  fontSize: 32.sp,
-                  fontWeight: FontWeight.w800,
-                  height: 32 / 28,
+                  color: ApaColors.webInk,
+                  fontSize: 34.sp,
+                  fontWeight: FontWeight.w700,
+                  height: 1,
+                  letterSpacing: -0.68,
                 ),
               ),
               SizedBox(height: 4.h),
               Text(
-                'RAISED TO DATE',
+                caption.toUpperCase(),
                 maxLines: 1,
                 softWrap: false,
                 textAlign: TextAlign.center,
                 style: ApaFonts.inter(
-                  color: ApaColors.primaryRed,
-                  fontSize: 20.sp,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.6,
-                  height: 1.1,
+                  color: ApaColors.webRed,
+                  fontSize: 24.sp,
+                  fontWeight: FontWeight.w600,
+                  height: 1.05,
                 ),
               ),
             ],
@@ -339,23 +336,23 @@ class _ProgressBlock extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(9999),
           child: SizedBox(
-            height: 14.h,
+            height: 14,
             child: LinearProgressIndicator(
               value: funding.progressValue,
-              backgroundColor: ApaColors.gray100,
-              color: ApaColors.navy,
+              backgroundColor: ApaColors.mist,
+              color: ApaColors.projectTypeNavy,
             ),
           ),
         ),
         if (funding.progressCaption.isNotEmpty) ...[
-          SizedBox(height: 12.h),
+          SizedBox(height: 16.h),
           Text(
             funding.progressCaption,
             style: ApaFonts.inter(
-              color: ApaColors.gray700,
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w600,
-              height: 20 / 14,
+              color: ApaColors.factLabel,
+              fontSize: 15.sp,
+              fontWeight: FontWeight.w400,
+              height: 1.4,
             ),
           ),
         ],
@@ -364,240 +361,416 @@ class _ProgressBlock extends StatelessWidget {
   }
 }
 
-class _ThickSeparator extends StatelessWidget {
-  const _ThickSeparator();
+class _CommitmentGrid extends StatelessWidget {
+  const _CommitmentGrid({required this.items});
+
+  final List<TransparencyCommitment> items;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 20.h),
-      child: const ColoredBox(
-        color: ApaColors.gray200,
-        child: SizedBox(height: 3, width: double.infinity),
+    return Container(
+      color: ApaColors.webInk,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final wide = constraints.maxWidth >= 520;
+          if (!wide) {
+            return Column(
+              children: [
+                for (var i = 0; i < items.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 2),
+                  _CommitmentCard(item: items[i]),
+                ],
+              ],
+            );
+          }
+          return IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < items.length; i++) ...[
+                  if (i > 0) const SizedBox(width: 2),
+                  Expanded(child: _CommitmentCard(item: items[i])),
+                ],
+              ],
+            ),
+          );
+        },
       ),
     );
   }
 }
 
-class _CommitmentBlock extends StatelessWidget {
-  const _CommitmentBlock({required this.title, required this.body});
+class _CommitmentCard extends StatelessWidget {
+  const _CommitmentCard({required this.item});
 
-  final String title;
-  final String body;
+  final TransparencyCommitment item;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (title.isNotEmpty)
-          Text(
-            title,
-            style: ApaFonts.inter(
-              color: ApaColors.black,
-              fontSize: 22.sp,
-              fontWeight: FontWeight.w800,
-              height: 28 / 22,
-            ),
-          ),
-        if (body.isNotEmpty) ...[
-          SizedBox(height: 8.h),
-          Text(
-            body,
-            style: ApaFonts.inter(
-              color: ApaColors.gray700,
-              fontSize: 15.sp,
-              height: 22 / 15,
-            ),
-          ),
-        ],
-      ],
+    return ColoredBox(
+      color: ApaColors.white,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(24.w, 26.h, 24.w, 28.h),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (item.title.isNotEmpty)
+              Text(
+                item.title,
+                style: ApaFonts.inter(
+                  color: ApaColors.webInk,
+                  fontSize: 22.sp,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.22,
+                  height: 1.2,
+                ),
+              ),
+            if (item.body.isNotEmpty) ...[
+              SizedBox(height: 6.h),
+              Text(
+                item.body,
+                style: ApaFonts.inter(
+                  color: ApaColors.factLabel,
+                  fontSize: 16.sp,
+                  height: 1.45,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }
 
 class _LedgerTable extends StatelessWidget {
-  const _LedgerTable({required this.items});
+  const _LedgerTable({
+    required this.projectHeading,
+    required this.columns,
+    required this.items,
+  });
 
+  final String projectHeading;
+  final List<TransparencyLedgerColumn> columns;
   final List<TransparencyLedgerItem> items;
 
-  /// Comfortable width where 11/12sp table text fits without shrinking.
-  static const double _comfortableWidth = 560;
+  /// Web `overflow-x-auto` — keep readable column mins, scroll on narrow screens.
+  static const double _projectMin = 200;
+  static const double _textMin = 112;
+  static const double _badgeMin = 128;
+  static const double _moneyMin = 104;
+
+  double _columnMinWidth(TransparencyLedgerColumn col) {
+    if (col.isBadge) return _badgeMin;
+    if (col.isRight) return _moneyMin;
+    return _textMin;
+  }
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final scale = (constraints.maxWidth / _comfortableWidth).clamp(0.72, 1.0);
-        final gap = 8.0 * scale;
+    final colCount = 1 + columns.length;
+    final widths = <double>[
+      _projectMin,
+      for (final col in columns) _columnMinWidth(col),
+    ];
+    final tableWidth = widths.fold<double>(0, (sum, w) => sum + w);
+    final viewport = MediaQuery.sizeOf(context).width;
+    final sidePad = R.isTabletLandscape(context) ? 96.0 : 44.w;
+    final available = (viewport - sidePad).clamp(0.0, double.infinity);
+    final width = tableWidth < available ? available : tableWidth;
 
-        final headerStyle = ApaFonts.inter(
-          color: ApaColors.gray500,
-          fontSize: 11.sp * scale,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.25 * scale,
-        );
-        final projectStyle = ApaFonts.inter(
-          color: ApaColors.nearBlack,
-          fontSize: 12.sp * scale,
-          fontWeight: FontWeight.w600,
-          height: 16 / 12,
-        );
-        final communityStyle = ApaFonts.inter(
-          color: ApaColors.gray800,
-          fontSize: 12.sp * scale,
-          fontWeight: FontWeight.w600,
-        );
-        final committedStyle = ApaFonts.inter(
-          color: ApaColors.nearBlack,
-          fontSize: 12.sp * scale,
-          fontWeight: FontWeight.w700,
-        );
+    // Stretch columns proportionally when there is extra room.
+    final scale = width / tableWidth;
+    final scaled = [for (final w in widths) w * scale];
 
-        Widget fitCell(
-          String text,
-          TextStyle style, {
-          TextAlign align = TextAlign.left,
-          EdgeInsetsGeometry? padding,
-        }) {
-          final alignment = align == TextAlign.right
-              ? Alignment.centerRight
-              : Alignment.centerLeft;
-          return Padding(
-            padding: padding ?? EdgeInsets.fromLTRB(0, 14.h, gap, 14.h),
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: alignment,
-              child: Text(
-                text,
-                style: style,
-                maxLines: 1,
-                softWrap: false,
-                textAlign: align,
-              ),
-            ),
-          );
-        }
-
-        return Table(
-          columnWidths: const {
-            0: FlexColumnWidth(2.8),
-            1: FlexColumnWidth(1.7),
-            2: FlexColumnWidth(2.3),
-            3: FlexColumnWidth(1.6),
+    // Match web `.overflow-x-auto`: full-width when possible, else swipe horizontally.
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      primary: false,
+      physics: const BouncingScrollPhysics(),
+      child: SizedBox(
+        width: width,
+        child: Table(
+          columnWidths: {
+            for (var i = 0; i < scaled.length; i++)
+              i: FixedColumnWidth(scaled[i]),
           },
           defaultVerticalAlignment: TableCellVerticalAlignment.middle,
           children: [
             TableRow(
-              decoration: const BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: ApaColors.black, width: 2),
-                ),
-              ),
               children: [
-                fitCell(
-                  'PROJECT',
-                  headerStyle,
-                  padding: EdgeInsets.fromLTRB(0, 0, gap, 12.h),
-                ),
-                fitCell(
-                  'COMMUNITY',
-                  headerStyle,
-                  padding: EdgeInsets.fromLTRB(0, 0, gap, 12.h),
-                ),
-                fitCell(
-                  'STATUS',
-                  headerStyle,
-                  padding: EdgeInsets.fromLTRB(0, 0, gap, 12.h),
-                ),
-                fitCell(
-                  'COMMITTED',
-                  headerStyle,
-                  align: TextAlign.right,
-                  padding: EdgeInsets.fromLTRB(0, 0, 0, 12.h),
-                ),
+                _headerCell(projectHeading, alignRight: false),
+                for (final col in columns)
+                  _headerCell(col.heading, alignRight: col.isRight),
               ],
             ),
             for (final item in items)
               TableRow(
-                decoration: const BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: ApaColors.gray200),
-                  ),
-                ),
                 children: [
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(0, 14.h, gap, 14.h),
-                    child: Text(
-                      item.project,
-                      style: projectStyle,
-                      softWrap: true,
-                    ),
-                  ),
-                  fitCell(item.community, communityStyle),
-                  Padding(
-                    padding: EdgeInsets.fromLTRB(0, 10.h, gap, 10.h),
-                    child: item.status.isEmpty
-                        ? const SizedBox.shrink()
-                        : FittedBox(
-                            fit: BoxFit.scaleDown,
-                            alignment: Alignment.centerLeft,
-                            child: _StatusBadge(
-                              status: item.status,
-                              highlighted: item.highlightStatus,
-                              fontSize: 10.sp * scale,
-                              horizontalPadding: 8 * scale,
+                  _projectCell(item.project),
+                  for (var i = 0; i < colCount - 1; i++)
+                    _bodyCell(
+                      i < item.cells.length
+                          ? item.cells[i]
+                          : const TransparencyLedgerCell(
+                              value: '',
+                              display: 'text',
+                              align: 'left',
+                              textColor: '',
+                              bgColor: '',
+                              radius: null,
+                              highlighted: false,
                             ),
-                          ),
-                  ),
-                  fitCell(
-                    item.committed,
-                    committedStyle,
-                    align: TextAlign.right,
-                    padding: EdgeInsets.fromLTRB(0, 14.h, 0, 14.h),
-                  ),
+                      fallbackAlignRight:
+                          i < columns.length ? columns[i].isRight : false,
+                      fallbackIsBadge:
+                          i < columns.length ? columns[i].isBadge : false,
+                    ),
                 ],
               ),
           ],
-        );
-      },
+        ),
+      ),
+    );
+  }
+
+  Widget _headerCell(String text, {required bool alignRight}) {
+    return Container(
+      padding: EdgeInsets.only(
+        bottom: 12.h,
+        right: alignRight ? 0 : 12.w,
+        left: alignRight ? 12.w : 0,
+      ),
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: ApaColors.webInk, width: 3),
+        ),
+      ),
+      child: Text(
+        text.toUpperCase(),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        textAlign: alignRight ? TextAlign.right : TextAlign.left,
+        style: ApaFonts.inter(
+          color: ApaColors.factLabel,
+          fontSize: 12.sp,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1.44,
+        ),
+      ),
+    );
+  }
+
+  Widget _projectCell(String text) {
+    return Container(
+      padding: EdgeInsets.fromLTRB(0, 15.h, 12.w, 15.h),
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: ApaColors.factBorder),
+        ),
+      ),
+      child: Text(
+        text,
+        style: ApaFonts.inter(
+          color: ApaColors.webInk,
+          fontSize: 15.5.sp,
+          fontWeight: FontWeight.w600,
+          height: 1.35,
+        ),
+      ),
+    );
+  }
+
+  Widget _bodyCell(
+    TransparencyLedgerCell cell, {
+    required bool fallbackAlignRight,
+    required bool fallbackIsBadge,
+  }) {
+    final right = cell.isRight || fallbackAlignRight;
+    final asBadge = cell.isBadge || (fallbackIsBadge && !cell.isEmpty);
+    return Container(
+      padding: EdgeInsets.fromLTRB(
+        right ? 12.w : 0,
+        15.h,
+        right ? 0 : 12.w,
+        15.h,
+      ),
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: ApaColors.factBorder),
+        ),
+      ),
+      child: Align(
+        alignment: right ? Alignment.centerRight : Alignment.centerLeft,
+        child: cell.isEmpty
+            ? const SizedBox.shrink()
+            : asBadge
+                ? _LedgerBadge(cell: cell)
+                : Text(
+                    cell.value,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: right ? TextAlign.right : TextAlign.left,
+                    style: ApaFonts.inter(
+                      color: ApaColors.webInk,
+                      fontSize: 15.5.sp,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+      ),
     );
   }
 }
 
-class _StatusBadge extends StatelessWidget {
-  const _StatusBadge({
-    required this.status,
-    required this.highlighted,
-    required this.fontSize,
-    required this.horizontalPadding,
-  });
+class _LedgerBadge extends StatelessWidget {
+  const _LedgerBadge({required this.cell});
 
-  final String status;
-  final bool highlighted;
-  final double fontSize;
-  final double horizontalPadding;
+  final TransparencyLedgerCell cell;
 
   @override
   Widget build(BuildContext context) {
+    final bg = _parseColor(
+      cell.bgColor,
+      fallback: cell.highlighted
+          ? ApaColors.projectTypeNavy
+          : ApaColors.mist,
+    );
+    final fg = _parseColor(
+      cell.textColor,
+      fallback: cell.highlighted ? ApaColors.white : ApaColors.webInk,
+    );
+    final radius = cell.radius ?? 999;
+
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: horizontalPadding,
-        vertical: 4.h,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
       decoration: BoxDecoration(
-        color: highlighted ? ApaColors.navy : ApaColors.gray100,
-        borderRadius: BorderRadius.circular(9999),
+        color: bg,
+        borderRadius: BorderRadius.circular(radius),
       ),
       child: Text(
-        status,
+        cell.value.toUpperCase(),
         maxLines: 1,
         softWrap: false,
         style: ApaFonts.inter(
-          color: highlighted ? ApaColors.white : ApaColors.nearBlack,
-          fontSize: fontSize,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.2,
+          color: fg,
+          fontSize: 11.sp,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 1.1,
+        ),
+      ),
+    );
+  }
+}
+
+Color _parseColor(String raw, {required Color fallback}) {
+  final value = raw.trim();
+  if (value.isEmpty) return fallback;
+  var hex = value.replaceFirst('#', '');
+  if (hex.length == 3) {
+    hex = hex.split('').map((c) => '$c$c').join();
+  }
+  if (hex.length == 6) hex = 'FF$hex';
+  final parsed = int.tryParse(hex, radix: 16);
+  if (parsed == null) return fallback;
+  return Color(parsed);
+}
+
+class _LedgerPagination extends StatelessWidget {
+  const _LedgerPagination({
+    required this.currentPage,
+    required this.totalPages,
+    required this.loading,
+    required this.onPageSelected,
+  });
+
+  final int currentPage;
+  final int totalPages;
+  final bool loading;
+  final ValueChanged<int>? onPageSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (totalPages <= 1) return const SizedBox.shrink();
+
+    final canPrev = currentPage > 1 && !loading;
+    final canNext = currentPage < totalPages && !loading;
+
+    return Center(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (currentPage > 1) ...[
+            _PagerButton(
+              label: '←',
+              selected: false,
+              enabled: canPrev,
+              onTap:
+                  canPrev ? () => onPageSelected?.call(currentPage - 1) : null,
+            ),
+            const SizedBox(width: 8),
+          ],
+          for (var page = 1; page <= totalPages; page++) ...[
+            if (page > 1) const SizedBox(width: 8),
+            _PagerButton(
+              label: '$page',
+              selected: page == currentPage,
+              enabled: !loading,
+              onTap: (!loading && page != currentPage)
+                  ? () => onPageSelected?.call(page)
+                  : null,
+            ),
+          ],
+          if (currentPage < totalPages) ...[
+            const SizedBox(width: 8),
+            _PagerButton(
+              label: '→',
+              selected: false,
+              enabled: canNext,
+              onTap:
+                  canNext ? () => onPageSelected?.call(currentPage + 1) : null,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _PagerButton extends StatelessWidget {
+  const _PagerButton({
+    required this.label,
+    required this.selected,
+    required this.enabled,
+    this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final filled = selected;
+    return Material(
+      color: filled ? ApaColors.webInk : Colors.transparent,
+      child: InkWell(
+        onTap: enabled ? onTap : null,
+        child: Container(
+          width: 40,
+          height: 40,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            border: Border.all(color: ApaColors.webInk, width: 2),
+          ),
+          child: Text(
+            label,
+            style: ApaFonts.inter(
+              color: filled ? ApaColors.white : ApaColors.webInk,
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
       ),
     );
