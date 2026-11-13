@@ -2,7 +2,30 @@
 //
 // We only support the subset of HTML that the APA API returns for:
 // - bullet lists in `content` (expects `<li>...</li>` items)
+// - project card blocks: `ul` / `ol` / `blockquote`
 // - simple footer markup (expects `<h2>` / `<p>` text)
+
+/// Structured Projects card body from ACF `card_content`.
+class ProjectCardContent {
+  const ProjectCardContent({
+    required this.bullets,
+    required this.numbered,
+    required this.callouts,
+  });
+
+  final List<String> bullets;
+  final List<String> numbered;
+  final List<String> callouts;
+
+  static const empty = ProjectCardContent(
+    bullets: [],
+    numbered: [],
+    callouts: [],
+  );
+
+  bool get isEmpty =>
+      bullets.isEmpty && numbered.isEmpty && callouts.isEmpty;
+}
 
 class HtmlUtils {
   /// Decodes common HTML entities (named + numeric).
@@ -46,6 +69,8 @@ class HtmlUtils {
 
   /// Extracts plain bullet strings from HTML like:
   /// `<ul><li>Item 1</li><li>Item 2</li></ul>`
+  ///
+  /// Prefer [projectCardContentFromHtml] when `<ol>` / `<blockquote>` matter.
   static List<String> bulletsFromHtml(String html) {
     if (html.trim().isEmpty) return const [];
 
@@ -64,6 +89,58 @@ class HtmlUtils {
       if (inner.isNotEmpty) out.add(inner);
     }
 
+    return out;
+  }
+
+  /// Parses Projects `card_content` the way the web theme does:
+  /// disc bullets (`ul`), numbered items (`ol`), red-border callouts (`blockquote`).
+  static ProjectCardContent projectCardContentFromHtml(String html) {
+    final value = html.trim();
+    if (value.isEmpty) return ProjectCardContent.empty;
+
+    return ProjectCardContent(
+      bullets: _listItemsInside(value, 'ul'),
+      numbered: _listItemsInside(value, 'ol'),
+      callouts: _blockquoteTexts(value),
+    );
+  }
+
+  static List<String> _listItemsInside(String html, String tag) {
+    final out = <String>[];
+    final blocks = RegExp(
+      '<$tag[^>]*>(.*?)</$tag>',
+      caseSensitive: false,
+      dotAll: true,
+    ).allMatches(html);
+    for (final block in blocks) {
+      out.addAll(bulletsFromHtml(block.group(1) ?? ''));
+    }
+    return out;
+  }
+
+  static List<String> _blockquoteTexts(String html) {
+    final out = <String>[];
+    for (final match in RegExp(
+      r'<blockquote[^>]*>(.*?)</blockquote>',
+      caseSensitive: false,
+      dotAll: true,
+    ).allMatches(html)) {
+      final inner = match.group(1) ?? '';
+      final paragraphs = RegExp(
+        r'<p[^>]*>(.*?)</p>',
+        caseSensitive: false,
+        dotAll: true,
+      ).allMatches(inner);
+      if (paragraphs.isNotEmpty) {
+        for (final p in paragraphs) {
+          final text = stripHtmlToText(p.group(1) ?? '').trim();
+          if (text.isNotEmpty) out.add(text);
+        }
+      } else {
+        final text = stripHtmlToText(inner).trim();
+        if (text.isNotEmpty) out.add(text);
+      }
+    }
     return out;
   }
 

@@ -130,10 +130,25 @@ extension PostItemProjectsX on PostItem {
 
   /// Bullets from post `content`, falling back to ACF `card_content` (Projects grid).
   List<String> get contentBullets {
+    final rich = projectCardContent;
+    if (rich.bullets.isNotEmpty) return rich.bullets;
     final fromContent = HtmlUtils.bulletsFromHtml(content);
     if (fromContent.isNotEmpty) return fromContent;
     final card = acfFields['card_content']?.toString() ?? '';
     return HtmlUtils.bulletsFromHtml(card);
+  }
+
+  /// Web Projects card body: disc bullets, numbered list, red-border callouts.
+  ProjectCardContent get projectCardContent {
+    final card = (acfFields['card_content']?.toString() ?? '').trim();
+    if (card.isNotEmpty) {
+      return HtmlUtils.projectCardContentFromHtml(card);
+    }
+    final fromContent = content.trim();
+    if (fromContent.isNotEmpty) {
+      return HtmlUtils.projectCardContentFromHtml(fromContent);
+    }
+    return ProjectCardContent.empty;
   }
 }
 

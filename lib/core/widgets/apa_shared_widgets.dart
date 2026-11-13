@@ -302,6 +302,83 @@ class ApaBulletItem extends StatelessWidget {
   }
 }
 
+/// Numbered list item matching web Projects `ol` blocks.
+class ApaNumberedItem extends StatelessWidget {
+  const ApaNumberedItem({
+    super.key,
+    required this.index,
+    required this.text,
+  });
+
+  final int index;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12.h),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 28.w,
+            child: Text(
+              '$index.',
+              style: ApaFonts.inter(
+                fontSize: 15.sp,
+                fontWeight: FontWeight.w700,
+                height: 22.5 / 15,
+                color: ApaColors.black,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: ApaFonts.inter(
+                color: ApaColors.gray900,
+                fontSize: 15.sp,
+                height: 22.5 / 15,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Web Projects `blockquote`: gray fill + 4px left red rail.
+class ApaRedBorderCallout extends StatelessWidget {
+  const ApaRedBorderCallout({super.key, required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.only(top: 16.h, bottom: 8.h),
+      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
+      decoration: const BoxDecoration(
+        color: ApaColors.calloutFill,
+        border: Border(
+          left: BorderSide(color: ApaColors.webRed, width: 4),
+        ),
+      ),
+      child: Text(
+        text,
+        style: ApaFonts.inter(
+          color: ApaColors.black,
+          fontSize: 15.sp,
+          height: 22.5 / 15,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    );
+  }
+}
+
 class ApaSectionLabel extends StatelessWidget {
   const ApaSectionLabel(this.text, {super.key});
 

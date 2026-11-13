@@ -6,9 +6,15 @@ abstract final class ApaColors {
   static const Color primaryRedAlt = Color(0xFFE60028);
   static const Color primaryRedDeep = Color(0xFFCE1126);
   static const Color primaryRedBorder = Color(0x80EF4444);
+  /// Web `--red` used on Projects hero accent + blockquote rail.
+  static const Color webRed = Color(0xFFF3002D);
 
   static const Color navy = Color(0xFF002B80);
   static const Color navyBlue = Color(0xFF0033A0);
+  /// Web Projects type label (`text-[#00209f]`).
+  static const Color projectTypeNavy = Color(0xFF00209F);
+  /// Web blockquote fill (`#f1f2f6`).
+  static const Color calloutFill = Color(0xFFF1F2F6);
   static const Color blueDot = Color(0xFF3B82F6);
 
   static const Color locationYellow = Color(0xFFFACC15);

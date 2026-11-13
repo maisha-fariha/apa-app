@@ -8,7 +8,6 @@ import '../../../../core/constants/apa_shell_insets.dart';
 import '../../../../core/network/connectivity_controller.dart';
 import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
-import '../../../../core/utils/cms_text.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../core/utils/html_utils.dart';
 import '../../../../core/widgets/apa_empty_retry.dart';
@@ -16,21 +15,11 @@ import '../../../../core/widgets/apa_shared_widgets.dart';
 import '../../../../data/models/post/content_detail_models.dart';
 import '../../../../data/models/post/post_model.dart';
 import '../../../../data/models/post/post_item_extensions.dart';
-import '../../../../data/models/post/project_list_utils.dart';
 import '../../../shell/presentation/controllers/pages_controller.dart';
 import '../../../shell/presentation/mapping/apa_page_templates.dart';
 import '../../../shell/presentation/models/apa_nav_item.dart';
 
-/// Web-finished Projects hero copy used when ACF still has placeholders.
-abstract final class _ProjectsHeroFallback {
-  static const topTagLine = 'Phase one · Haiti';
-  static const headingTextOne = 'Three things a';
-  static const headingTextTwo = 'street needs.';
-  static const lastContent =
-      'Every project is chosen the same way: it must solve something urgent now, and still be working ten years from now.';
-}
-
-/// Projects Page — Figma frame `6:203`.
+/// Projects Page — matches live web `page-project.php`.
 class ProjectsPage extends StatelessWidget {
   const ProjectsPage({
     super.key,
@@ -72,7 +61,8 @@ class ProjectsPage extends StatelessWidget {
           child: Obx(() {
             pagesController?.items.length;
             pagesController?.pageDetailsById.length;
-            pagesController?.projectsPageItems.length;
+            pagesController?.projectsCatalog.length;
+            pagesController?.projectsCatalogLoaded.value;
             pagesController?.projectsPage.value;
             pagesController?.projectsTotalPages.value;
             pagesController?.loadingProjectsPage.value;
@@ -171,28 +161,22 @@ class ProjectsPage extends StatelessWidget {
   }) {
     final commonHeader = current?.commonHeader ?? const <String, dynamic>{};
 
-    final badge = cmsOr(
-      commonHeader['top_tag_line'],
-      _ProjectsHeroFallback.topTagLine,
-    );
-    final headingOne = cmsOr(
-      commonHeader['heading_text_one'],
-      _ProjectsHeroFallback.headingTextOne,
-    );
-    final headingTwo = cmsOr(
-      commonHeader['heading_text_two'],
-      _ProjectsHeroFallback.headingTextTwo,
-    );
-    final subtitle = cmsOr(
-      commonHeader['last_content'],
-      _ProjectsHeroFallback.lastContent,
-    );
+    // Live web shows CMS values as-is (including placeholder "Heading Text One").
+    final badge = (commonHeader['top_tag_line']?.toString() ?? '').trim();
+    final headingOne =
+        (commonHeader['heading_text_one']?.toString() ?? '').trim();
+    final headingTwo =
+        (commonHeader['heading_text_two']?.toString() ?? '').trim();
+    final subtitle = (commonHeader['last_content']?.toString() ?? '').trim();
 
+    // Web: `Heading Text One<br><span class="block text-(--red)">Heading Text Two</span>`
     final headline = <InlineSpan>[];
     if (headingOne.isNotEmpty) {
       headline.add(
         TextSpan(
-          text: '${headingOne.toUpperCase()}\n',
+          text: headingTwo.isNotEmpty
+              ? '${headingOne.toUpperCase()}\n'
+              : headingOne.toUpperCase(),
           style: ApaFonts.inter(
             color: ApaColors.white,
             fontSize: 36.sp,
@@ -208,7 +192,7 @@ class ProjectsPage extends StatelessWidget {
         TextSpan(
           text: headingTwo.toUpperCase(),
           style: ApaFonts.inter(
-            color: ApaColors.primaryRed,
+            color: ApaColors.webRed,
             fontSize: 36.sp,
             fontWeight: FontWeight.w800,
             height: 40 / 36,
@@ -243,6 +227,7 @@ class ProjectsPage extends StatelessWidget {
             logoHeight: 67.5,
             badge: badge,
             headline: headline,
+            // Web keeps the hero subcopy on one flowing paragraph under the H1.
             subtitle: subtitle,
           ),
         ),
@@ -301,7 +286,8 @@ class ProjectsPage extends StatelessWidget {
                     ),
                   ],
                   if (totalPages > 1) ...[
-                    SizedBox(height: 28.h),
+                    // Web: `mt-8` above Projects pagination.
+                    SizedBox(height: 32),
                     _ProjectsNumberedPagination(
                       currentPage: currentPage,
                       totalPages: totalPages,
@@ -345,7 +331,8 @@ class _BlackSeparator extends StatelessWidget {
   }
 }
 
-/// Web-style numbered pager: Previous · 1 2 3 · Next
+/// Live web pager (`nav.mt-8.flex...gap-2`): square `h-10 min-w-10`
+/// buttons with `border-2 border-[#0b0b0b]`, active filled, `← 1 2 3 →`.
 class _ProjectsNumberedPagination extends StatelessWidget {
   const _ProjectsNumberedPagination({
     required this.currentPage,
@@ -367,120 +354,105 @@ class _ProjectsNumberedPagination extends StatelessWidget {
     final canNext = currentPage < totalPages && !loading;
 
     return Center(
-      child: Wrap(
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 8.w,
-        runSpacing: 8.h,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _PaginationTextButton(
-            label: 'Previous',
-            enabled: canPrev,
-            onTap: canPrev ? () => onPageSelected?.call(currentPage - 1) : null,
-          ),
-          for (var page = 1; page <= totalPages; page++)
-            _PaginationPageButton(
-              page: page,
+          if (currentPage > 1) ...[
+            _PaginationSquareButton(
+              label: '←',
+              selected: false,
+              enabled: canPrev,
+              onTap:
+                  canPrev ? () => onPageSelected?.call(currentPage - 1) : null,
+            ),
+            const SizedBox(width: 8),
+          ],
+          for (var page = 1; page <= totalPages; page++) ...[
+            if (page > 1) const SizedBox(width: 8),
+            _PaginationSquareButton(
+              label: '$page',
               selected: page == currentPage,
               enabled: !loading,
               onTap: (!loading && page != currentPage)
                   ? () => onPageSelected?.call(page)
                   : null,
             ),
-          _PaginationTextButton(
-            label: 'Next',
-            enabled: canNext,
-            onTap: canNext ? () => onPageSelected?.call(currentPage + 1) : null,
-          ),
-          if (loading)
-            SizedBox(
-              width: 18.w,
-              height: 18.w,
-              child: const CircularProgressIndicator(
-                color: ApaColors.primaryRed,
-                strokeWidth: 2,
-              ),
+          ],
+          if (currentPage < totalPages) ...[
+            const SizedBox(width: 8),
+            _PaginationSquareButton(
+              label: '→',
+              selected: false,
+              enabled: canNext,
+              onTap:
+                  canNext ? () => onPageSelected?.call(currentPage + 1) : null,
             ),
+          ],
         ],
       ),
     );
   }
 }
 
-class _PaginationTextButton extends StatelessWidget {
-  const _PaginationTextButton({
+class _PaginationSquareButton extends StatefulWidget {
+  const _PaginationSquareButton({
     required this.label,
-    required this.enabled,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool enabled;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(4.r),
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
-        child: Text(
-          label,
-          style: ApaFonts.inter(
-            color: enabled ? ApaColors.black : ApaColors.gray700.withValues(alpha: 0.45),
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w600,
-            height: 1.2,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _PaginationPageButton extends StatelessWidget {
-  const _PaginationPageButton({
-    required this.page,
     required this.selected,
     required this.enabled,
     required this.onTap,
   });
 
-  final int page;
+  final String label;
   final bool selected;
   final bool enabled;
   final VoidCallback? onTap;
 
   @override
-  Widget build(BuildContext context) {
-    final child = AnimatedContainer(
-      duration: const Duration(milliseconds: 180),
-      width: 36.w,
-      height: 36.w,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: selected ? ApaColors.black : Colors.transparent,
-        border: Border.all(
-          color: selected ? ApaColors.black : ApaColors.black.withValues(alpha: 0.2),
-        ),
-        borderRadius: BorderRadius.circular(4.r),
-      ),
-      child: Text(
-        '$page',
-        style: ApaFonts.inter(
-          color: selected ? ApaColors.white : ApaColors.black,
-          fontSize: 14.sp,
-          fontWeight: FontWeight.w700,
-          height: 1,
-        ),
-      ),
-    );
+  State<_PaginationSquareButton> createState() =>
+      _PaginationSquareButtonState();
+}
 
-    if (!enabled || onTap == null) return child;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(4.r),
-      child: child,
+class _PaginationSquareButtonState extends State<_PaginationSquareButton> {
+  /// Web `border-[#0b0b0b]` / `bg-[#0b0b0b]`.
+  static const Color _ink = Color(0xFF0B0B0B);
+
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final filled = widget.selected || _hovered;
+    return MouseRegion(
+      onEnter: (_) {
+        if (widget.enabled && !widget.selected) {
+          setState(() => _hovered = true);
+        }
+      },
+      onExit: (_) {
+        if (_hovered) setState(() => _hovered = false);
+      },
+      child: GestureDetector(
+        onTap: widget.enabled ? widget.onTap : null,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: 40,
+          height: 40,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: filled ? _ink : Colors.transparent,
+            border: Border.all(color: _ink, width: 2),
+          ),
+          child: Text(
+            widget.label,
+            style: ApaFonts.inter(
+              color: filled ? ApaColors.white : _ink,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              height: 1.5,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -496,36 +468,62 @@ class _ProjectSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final label = project.projectTypeLabel ?? '';
-    final title = normalizeProjectTitle(project.title);
-    final body = project.tagLine ?? '';
-    final bullets = project.contentBullets;
+    final label = (project.projectTypeLabel ?? '').trim();
+    // Live web keeps `#2` suffixes in titles.
+    final title = project.title.trim();
+    final body = (project.tagLine ?? '').trim();
+    final rich = project.projectCardContent;
 
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ApaSectionLabel(label),
-        SizedBox(height: 8.h),
+        if (label.isNotEmpty) ...[
+          Text(
+            label.toUpperCase(),
+            style: ApaFonts.inter(
+              color: ApaColors.projectTypeNavy,
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.68,
+              height: 16 / 12,
+            ),
+          ),
+          SizedBox(height: 10.h),
+        ],
         Text(
           title,
           style: ApaFonts.inter(
             color: ApaColors.black,
-            fontSize: 28.sp,
-            fontWeight: FontWeight.w800,
-            height: 32 / 28,
+            fontSize: 20.sp,
+            fontWeight: FontWeight.w600,
+            height: 1.1,
+            letterSpacing: -0.2,
           ),
         ),
-        SizedBox(height: 8.h),
-        Text(
-          body,
-          style: ApaFonts.inter(
-            color: ApaColors.gray700,
-            fontSize: 15.sp,
-            height: 22.5 / 15,
+        if (body.isNotEmpty) ...[
+          SizedBox(height: 8.h),
+          Text(
+            body,
+            style: ApaFonts.inter(
+              color: const Color(0xFF5A5C66),
+              fontSize: 15.sp,
+              height: 22.5 / 15,
+            ),
           ),
-        ),
-        SizedBox(height: 12.h),
-        ...bullets.map((b) => ApaBulletItem(text: b)),
+        ],
+        if (rich.bullets.isNotEmpty) ...[
+          SizedBox(height: 12.h),
+          ...rich.bullets.map((b) => ApaBulletItem(text: b)),
+        ],
+        if (rich.numbered.isNotEmpty) ...[
+          SizedBox(height: rich.bullets.isEmpty ? 12.h : 4.h),
+          ...rich.numbered.asMap().entries.map(
+                (e) => ApaNumberedItem(index: e.key + 1, text: e.value),
+              ),
+        ],
+        if (rich.callouts.isNotEmpty) ...[
+          ...rich.callouts.map((c) => ApaRedBorderCallout(text: c)),
+        ],
       ],
     );
 

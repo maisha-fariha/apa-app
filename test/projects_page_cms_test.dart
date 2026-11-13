@@ -1,4 +1,4 @@
-import 'package:apa/core/utils/cms_text.dart';
+import 'package:apa/core/utils/html_utils.dart';
 import 'package:apa/data/models/post/post_item_extensions.dart';
 import 'package:apa/data/models/post/post_model.dart';
 import 'package:apa/data/models/post/project_list_utils.dart';
@@ -36,7 +36,7 @@ void main() {
           'projects': [
             {
               'id': 1,
-              'title': 'Community park',
+              'title': 'Community park & playground #2',
               'content': '',
               'taxonomies': {
                 'project_type': {
@@ -56,6 +56,7 @@ void main() {
       });
 
       final project = page.relatedProjects.single;
+      expect(project.title, contains('#2'));
       expect(project.tagLine, contains('Modern public parks'));
       expect(project.projectTypeLabel, 'Renewable street lighting');
       expect(project.contentBullets, [
@@ -64,19 +65,12 @@ void main() {
       ]);
     });
 
-    test('ignores ACF placeholder headings', () {
-      expect(isCmsPlaceholder('Heading Text One'), isTrue);
-      expect(isCmsPlaceholder('Heading Text Two'), isTrue);
-      expect(cmsOr('Heading Text One', 'Three things a'), 'Three things a');
-      expect(cmsOr('Phase one · Haiti', 'fallback'), 'Phase one · Haiti');
-    });
-
-    test('prefers canonical projects over #2 duplicates and test posts', () {
+    test('keeps live web API order including #2 and test posts', () {
       final projects = [
         parseProjectCard({
           'id': 347,
           'title': 'Community park & playground #2',
-          'acf_fields': {'tag_line': ''},
+          'acf_fields': {},
         }),
         parseProjectCard({
           'id': 339,
@@ -86,30 +80,23 @@ void main() {
         parseProjectCard({
           'id': 132,
           'title': 'Community park & playground',
-          'acf_fields': {
-            'tag_line': 'Solar-powered lights where the grid does not reach.',
-          },
-        }),
-        parseProjectCard({
-          'id': 130,
-          'title': 'Road repair — market route',
-          'acf_fields': {
-            'tag_line': 'Repairing damaged roads in underserved communities.',
-          },
-        }),
-        parseProjectCard({
-          'id': 346,
-          'title': 'Road repair — market route #2',
           'acf_fields': {},
         }),
       ];
 
-      final canonical = preferCanonicalProjects(projects);
-      expect(canonical.map((p) => p.id), [132, 130]);
-      expect(
-        canonical.first.tagLine,
-        contains('Solar-powered lights'),
-      );
+      final grid = projectsForWebGrid(projects);
+      expect(grid.map((p) => p.id), [347, 339, 132]);
+    });
+
+    test('parses ul / ol / blockquote card content like the web', () {
+      final content = HtmlUtils.projectCardContentFromHtml('''
+<ul><li>Bullet A</li><li>Bullet B</li></ul>
+<ol><li>Step 1</li><li>Step 2</li></ol>
+<blockquote><p>Red border note</p></blockquote>
+''');
+      expect(content.bullets, ['Bullet A', 'Bullet B']);
+      expect(content.numbered, ['Step 1', 'Step 2']);
+      expect(content.callouts, ['Red border note']);
     });
   });
 }

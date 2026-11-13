@@ -9,6 +9,7 @@ import '../../../../core/network/connectivity_controller.dart';
 import '../../../../data/models/post/content_detail_models.dart';
 import '../../../../data/models/post/post_item_extensions.dart';
 import '../../../../data/models/post/post_model.dart';
+import '../../../../data/models/post/project_list_utils.dart';
 import '../../../../data/repositories/posts_repository.dart';
 import '../mapping/apa_page_templates.dart';
 import '../models/apa_nav_item.dart';
@@ -32,8 +33,8 @@ class PagesController extends BaseListController<PostItem>
   /// Full page payloads loaded via `get-post-details`, keyed by post id.
   final RxMap<int, PostItem> pageDetailsById = <int, PostItem>{}.obs;
 
-  /// Current Projects grid page items (web-style numbered pagination).
-  final RxList<PostItem> projectsPageItems = <PostItem>[].obs;
+  /// Full Projects CPT catalog (canonicalized for web-matching grid copy).
+  final RxList<PostItem> projectsCatalog = <PostItem>[].obs;
 
   /// Extra news stories loaded via `get-paginated-posts` (after first page).
   final RxList<PostItem> extraNewsPosts = <PostItem>[].obs;
@@ -48,6 +49,7 @@ class PagesController extends BaseListController<PostItem>
   final RxInt projectsPage = 1.obs;
   final RxInt projectsTotalPages = 1.obs;
   final RxInt projectsPerPage = 3.obs;
+  final RxBool projectsCatalogLoaded = false.obs;
   final RxBool loadingProjectsPage = false.obs;
 
   final RxBool newsHasMore = false.obs;
@@ -233,6 +235,12 @@ class PagesController extends BaseListController<PostItem>
       if (ConnectivityController.currentlyOnline) {
         unawaited(_refreshPageDetailsInBackground(pageId));
       }
+      final cached = pageDetailsById[pageId];
+      if (cached != null &&
+          _isProjectsPageId(pageId) &&
+          !projectsCatalogLoaded.value) {
+        unawaited(_ensureProjectsCatalog(cached));
+      }
       return;
     }
     if (!force && _loadingDetails.contains(pageId)) return;
@@ -252,6 +260,9 @@ class PagesController extends BaseListController<PostItem>
         success: (details) {
           pageDetailsById[pageId] = details;
           _resetListPagingForPage(pageId, details);
+          if (_isProjectsPageId(pageId)) {
+            unawaited(_ensureProjectsCatalog(details));
+          }
         },
         failure: (_) {},
       );
@@ -280,6 +291,12 @@ class PagesController extends BaseListController<PostItem>
               previous?.listPagination.totalPages !=
                   details.listPagination.totalPages) {
             _resetListPagingForPage(pageId, details);
+            if (_isProjectsPageId(pageId)) {
+              unawaited(_ensureProjectsCatalog(details));
+            }
+          } else if (_isProjectsPageId(pageId) &&
+              !projectsCatalogLoaded.value) {
+            unawaited(_ensureProjectsCatalog(details));
           }
         },
         failure: (_) {},
@@ -402,12 +419,15 @@ class PagesController extends BaseListController<PostItem>
     if (projectsShell?.id == pageId) {
       final perPage = pagination.perPage > 0 ? pagination.perPage : 3;
       projectsPerPage.value = perPage;
-      projectsTotalPages.value =
-          pagination.totalPages > 0 ? pagination.totalPages : 1;
       projectsPage.value = 1;
-      projectsPageItems
+      projectsCatalog
         ..clear()
         ..addAll(details.relatedProjects);
+      projectsCatalogLoaded.value = false;
+      // Prefer CMS/API total_pages so pager matches web `?project_page=N`.
+      projectsTotalPages.value =
+          pagination.totalPages > 0 ? pagination.totalPages : 1;
+      _syncProjectsPagingMeta(apiTotalPages: pagination.totalPages);
     }
     if (newsPage?.id == pageId) {
       extraNewsPosts.clear();
@@ -416,71 +436,125 @@ class PagesController extends BaseListController<PostItem>
     }
   }
 
-  /// Current Projects grid page (web numbered pagination).
-  List<PostItem> projectsForDisplay(PostItem? page) {
-    if (projectsPageItems.isNotEmpty) {
-      return List<PostItem>.unmodifiable(projectsPageItems);
-    }
-    return page?.relatedProjects ?? const [];
+  bool _isProjectsPageId(int pageId) {
+    final projectsShell = pageByTemplate(ApaPageTemplates.projects);
+    return projectsShell?.id == pageId;
   }
 
-  /// Jump to a Projects grid page — same `per_page` / `total_pages` model as web.
-  Future<void> goToProjectsPage(int pageNumber) async {
-    if (loadingProjectsPage.value) return;
-    final total = projectsTotalPages.value;
-    if (pageNumber < 1 || pageNumber > total) return;
+  List<PostItem> get _gridProjects =>
+      projectsForWebGrid(projectsCatalog.toList(growable: false));
 
-    final details = resolvedPageForShell(ApaShellPage.projects);
-    if (details == null) return;
+  void _syncProjectsPagingMeta({int? apiTotalPages}) {
+    final perPage = projectsPerPage.value > 0 ? projectsPerPage.value : 3;
+    final grid = _gridProjects;
+    final fromCatalog =
+        grid.isEmpty ? 1 : ((grid.length + perPage - 1) ~/ perPage);
+    final pages = (apiTotalPages != null && apiTotalPages > 0)
+        ? apiTotalPages
+        : fromCatalog;
+    projectsTotalPages.value = pages < 1 ? 1 : pages;
+    if (projectsPage.value > projectsTotalPages.value) {
+      projectsPage.value = projectsTotalPages.value;
+    }
+    if (projectsPage.value < 1) projectsPage.value = 1;
+  }
 
-    final perPage = projectsPerPage.value > 0
-        ? projectsPerPage.value
-        : (details.listPagination.perPage > 0
-            ? details.listPagination.perPage
-            : 3);
-
-    if (pageNumber == 1) {
-      projectsPageItems
-        ..clear()
-        ..addAll(details.relatedProjects);
-      projectsPage.value = 1;
+  /// Loads all project cards, merges `#2` duplicates to web page-1 copy, then
+  /// pages the unique grid locally.
+  Future<void> _ensureProjectsCatalog(PostItem details) async {
+    if (projectsCatalogLoaded.value) {
+      _syncProjectsPagingMeta();
       return;
     }
 
-    if (pageNumber == projectsPage.value && projectsPageItems.isNotEmpty) {
-      return;
-    }
+    final perPage = details.listPagination.perPage > 0
+        ? details.listPagination.perPage
+        : 3;
+    projectsPerPage.value = perPage;
 
     if (!ConnectivityController.currentlyOnline) {
-      Get.snackbar('Error', ConnectivityController.offlineMessage);
+      projectsCatalog
+        ..clear()
+        ..addAll(details.relatedProjects);
+      projectsCatalogLoaded.value = true;
+      _syncProjectsPagingMeta(apiTotalPages: details.listPagination.totalPages);
       return;
     }
+
+    final totalRaw = details.acfFields['total_projects'];
+    final total = totalRaw is int
+        ? totalRaw
+        : int.tryParse(totalRaw?.toString() ?? '') ?? 0;
+    final limit = total > 0
+        ? total
+        : perPage *
+            (details.listPagination.totalPages > 0
+                ? details.listPagination.totalPages
+                : 5);
 
     loadingProjectsPage.value = true;
     try {
       final result = await repository.getPaginatedPosts(
         postType: ApaApiConfig.postTypeProjects,
-        limit: perPage,
-        offset: (pageNumber - 1) * perPage,
+        limit: limit < 1 ? 50 : limit,
+        offset: 0,
       );
       result.when(
         success: (pageResult) {
-          projectsPageItems
+          projectsCatalog
             ..clear()
-            ..addAll(pageResult.posts);
-          projectsPage.value = pageNumber;
-          if (pageResult.totalPosts > 0 && perPage > 0) {
-            final pages = (pageResult.totalPosts + perPage - 1) ~/ perPage;
-            if (pages > 0) projectsTotalPages.value = pages;
-          }
+            ..addAll(pageResult.posts.isNotEmpty
+                ? pageResult.posts
+                : details.relatedProjects);
+          projectsCatalogLoaded.value = true;
+          projectsPage.value = 1;
+          final apiPages = details.listPagination.totalPages > 0
+              ? details.listPagination.totalPages
+              : (pageResult.totalPosts > 0 && perPage > 0
+                  ? ((pageResult.totalPosts + perPage - 1) ~/ perPage)
+                  : 0);
+          _syncProjectsPagingMeta(apiTotalPages: apiPages);
         },
-        failure: (error) {
-          Get.snackbar('Error', error.message);
+        failure: (_) {
+          projectsCatalog
+            ..clear()
+            ..addAll(details.relatedProjects);
+          projectsCatalogLoaded.value = true;
+          _syncProjectsPagingMeta(
+            apiTotalPages: details.listPagination.totalPages,
+          );
         },
       );
     } finally {
       loadingProjectsPage.value = false;
     }
+  }
+
+  /// Current Projects grid page — web order with numbered pagination.
+  List<PostItem> projectsForDisplay(PostItem? page) {
+    final perPage = projectsPerPage.value > 0 ? projectsPerPage.value : 3;
+    final grid = _gridProjects;
+    if (grid.isNotEmpty) {
+      final index = projectsPage.value < 1 ? 0 : projectsPage.value - 1;
+      final start = index * perPage;
+      if (start >= grid.length) return const [];
+      final end = (start + perPage).clamp(0, grid.length);
+      return grid.sublist(start, end);
+    }
+    return projectsForWebGrid(page?.relatedProjects ?? const []);
+  }
+
+  /// Jump to a Projects grid page (Previous / 1 2 3 / Next).
+  Future<void> goToProjectsPage(int pageNumber) async {
+    if (loadingProjectsPage.value) return;
+    final details = resolvedPageForShell(ApaShellPage.projects);
+    if (details != null && !projectsCatalogLoaded.value) {
+      await _ensureProjectsCatalog(details);
+    }
+    final total = projectsTotalPages.value;
+    if (pageNumber < 1 || pageNumber > total) return;
+    if (pageNumber == projectsPage.value) return;
+    projectsPage.value = pageNumber;
   }
 
   bool get isNewsSearchActive => newsSearchQuery.value.trim().isNotEmpty;
