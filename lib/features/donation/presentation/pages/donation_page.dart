@@ -360,16 +360,6 @@ class DonationPage extends StatelessWidget {
                 ],
               ),
             ),
-          ] else if (controller.monthly.value) ...[
-            SizedBox(height: 16.h),
-            Text(
-              'Monthly gifts use the listed Stripe prices.',
-              style: ApaFonts.inter(
-                color: ApaColors.gray500,
-                fontSize: 13.sp,
-                height: 18 / 13,
-              ),
-            ),
           ],
           SizedBox(height: 24.h),
           ApaBlackPillButton(
@@ -378,23 +368,25 @@ class DonationPage extends StatelessWidget {
             fontSize: 16,
             verticalPadding: 20,
             horizontalPadding: 24,
-            onPressed: () {
-              if (!ConnectivityController.currentlyOnline) {
-                _showSnackBar(
-                  context,
-                  message: ConnectivityController.offlineMessage,
-                  isError: true,
-                );
-                return;
-              }
-              final error = controller.validateCurrentSelection();
-              if (error != null) {
-                _showSnackBar(context, message: error, isError: true);
-                return;
-              }
-              onContinuePressed?.call();
-              _showCompleteDonationDialog(context, controller, cms);
-            },
+            onPressed: !controller.canContinueToPayment
+                ? null
+                : () {
+                    if (!ConnectivityController.currentlyOnline) {
+                      _showSnackBar(
+                        context,
+                        message: ConnectivityController.offlineMessage,
+                        isError: true,
+                      );
+                      return;
+                    }
+                    final error = controller.validateCurrentSelection();
+                    if (error != null) {
+                      _showSnackBar(context, message: error, isError: true);
+                      return;
+                    }
+                    onContinuePressed?.call();
+                    _showCompleteDonationDialog(context, controller, cms);
+                  },
           ),
           SizedBox(height: 20.h),
           Padding(
@@ -1037,31 +1029,50 @@ class _SupportItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Web `.donation-list li::before` — 6px sky disc.
     return Padding(
       padding: EdgeInsets.only(bottom: 16.h),
-      child: Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(
-              text: bold,
-              style: ApaFonts.inter(
-                color: ApaColors.nearBlack,
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w800,
-                height: 24 / 16,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: EdgeInsets.only(top: 9.h, right: 10.w),
+            child: Container(
+              width: 6,
+              height: 6,
+              decoration: const BoxDecoration(
+                color: ApaColors.webSky,
+                shape: BoxShape.circle,
               ),
             ),
-            TextSpan(
-              text: rest,
-              style: ApaFonts.inter(
-                color: ApaColors.gray700,
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w400,
-                height: 24 / 16,
+          ),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: bold,
+                    style: ApaFonts.inter(
+                      color: ApaColors.nearBlack,
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w800,
+                      height: 24 / 16,
+                    ),
+                  ),
+                  TextSpan(
+                    text: rest,
+                    style: ApaFonts.inter(
+                      color: ApaColors.gray700,
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w400,
+                      height: 24 / 16,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

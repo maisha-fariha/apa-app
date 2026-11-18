@@ -12,8 +12,10 @@ abstract final class ApaDimens {
   static const double kHorizontalPadding = 24;
   static const double kTopPadding = 32;
   static const double kContentBottomInset = 96;
-  static const double kLogoWidth = 192;
-  static const double kLogoHeight = 72;
+  /// Home logo — keep 8:3 aspect (asset 384×144). Scaled via `.w` for both axes
+  /// so height isn’t crushed by `.h` on tall phones.
+  static const double kLogoWidth = 256;
+  static const double kLogoHeight = 96;
   static const double kHeaderTopSpacing = 16;
 
   static const double kLocationBadgeHorizontalPadding = 17;
@@ -54,7 +56,7 @@ abstract final class ApaDimens {
   static double get contentBottomInset => kContentBottomInset.h;
 
   static double get logoWidth => kLogoWidth.w;
-  static double get logoHeight => kLogoHeight.h;
+  static double get logoHeight => kLogoHeight.w;
   static double get headerTopSpacing => kHeaderTopSpacing.h;
 
   static double get locationBadgeHorizontalPadding =>

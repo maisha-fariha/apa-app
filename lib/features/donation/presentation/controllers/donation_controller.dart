@@ -43,12 +43,11 @@ class DonationController extends GetxController {
   final RxString errorMessage = ''.obs;
   final RxBool monthly = false.obs;
   final Rxn<StripePriceOption> selectedPrice = Rxn<StripePriceOption>();
-  final RxInt selectedPredefinedDollars = 20.obs;
+  /// `0` means no predefined chip selected.
+  final RxInt selectedPredefinedDollars = 0.obs;
   final RxString customAmountText = ''.obs;
   final Rxn<StripeCatalog> catalog = Rxn<StripeCatalog>();
   final TextEditingController customAmountController = TextEditingController();
-
-  static const int defaultPredefinedDollars = 20;
 
   StripePublicConfig? get config => catalog.value?.config;
 
@@ -68,6 +67,12 @@ class DonationController extends GetxController {
   bool get usingCustomAmount {
     final custom = int.tryParse(customAmountText.value.trim());
     return custom != null && custom > 0;
+  }
+
+  /// Continue to Payment is enabled only with a chip or Other amount.
+  bool get canContinueToPayment {
+    if (usingCustomAmount) return true;
+    return selectedPredefinedDollars.value > 0;
   }
 
   DonationSelection get selection {
@@ -102,6 +107,7 @@ class DonationController extends GetxController {
       customAmountText.value = customAmountController.text;
       if (customAmountController.text.trim().isNotEmpty) {
         selectedPrice.value = null;
+        selectedPredefinedDollars.value = 0;
       }
     });
     loadCatalog();
@@ -153,7 +159,10 @@ class DonationController extends GetxController {
 
       await checkout.configure(publishableKey: config.publishableKey);
       catalog.value = StripeCatalog(config: config, prices: loadedPrices);
-      _selectDefaultChip();
+      // Keep whatever the user already picked; otherwise stay unselected.
+      if (!canContinueToPayment) {
+        _clearAmountSelection();
+      }
     } catch (error) {
       if (!ConnectivityController.currentlyOnline) return;
       catalog.value = null;
@@ -173,7 +182,7 @@ class DonationController extends GetxController {
     monthly.value = value;
     customAmountController.clear();
     customAmountText.value = '';
-    _selectDefaultChip();
+    _clearAmountSelection();
   }
 
   void selectPrice(StripePriceOption price) {
@@ -200,6 +209,7 @@ class DonationController extends GetxController {
 
   bool isPredefinedSelected(int dollars) {
     if (usingCustomAmount) return false;
+    if (selectedPredefinedDollars.value <= 0) return false;
     return selectedPredefinedDollars.value == dollars;
   }
 
@@ -210,8 +220,9 @@ class DonationController extends GetxController {
     customAmountText.value = value;
     if (value.trim().isNotEmpty) {
       selectedPrice.value = null;
-    } else {
-      _selectDefaultChip();
+      selectedPredefinedDollars.value = 0;
+    } else if (!canContinueToPayment) {
+      _clearAmountSelection();
     }
   }
 
@@ -429,7 +440,8 @@ class DonationController extends GetxController {
     }
   }
 
-  void _selectDefaultChip() {
-    selectPredefinedAmount(defaultPredefinedDollars);
+  void _clearAmountSelection() {
+    selectedPredefinedDollars.value = 0;
+    selectedPrice.value = null;
   }
 }

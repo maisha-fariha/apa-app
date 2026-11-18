@@ -294,7 +294,11 @@ class ContactPage extends StatelessWidget {
           if (content.infoRows.isNotEmpty) ...[
             // Web h2 mb-3 (~12px) before list
             SizedBox(height: 12.h),
-            for (final row in content.infoRows) _ContactRow(row: row),
+            for (var i = 0; i < content.infoRows.length; i++)
+              _ContactRow(
+                row: content.infoRows[i],
+                showDivider: i < content.infoRows.length - 1,
+              ),
           ],
           if (content.hasClosingText) ...[
             SizedBox(height: content.infoRows.isEmpty ? 0 : 28.h),
@@ -312,15 +316,21 @@ class ContactPage extends StatelessWidget {
                       text: content.finalTextEnd.isEmpty
                           ? content.finalTextStart
                           : '${content.finalTextStart} ',
+                      style: ApaFonts.inter(
+                        color: ApaColors.webInk,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                        height: 1.5,
+                      ),
                     ),
                   if (content.finalTextEnd.isNotEmpty)
                     TextSpan(
-                      // Web/Figma: red accent, uppercase emphasis
-                      text: content.finalTextEnd.toUpperCase(),
+                      // Web: sentence-case accent in --red
+                      text: content.finalTextEnd,
                       style: ApaFonts.inter(
                         color: ApaColors.webRed,
                         fontSize: 16.sp,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600,
                         height: 1.5,
                       ),
                     ),
@@ -348,62 +358,71 @@ class ContactPage extends StatelessWidget {
 }
 
 class _ContactRow extends StatelessWidget {
-  const _ContactRow({required this.row});
+  const _ContactRow({
+    required this.row,
+    this.showDivider = true,
+  });
 
   final ContactInfoRow row;
+  final bool showDivider;
 
   @override
   Widget build(BuildContext context) {
-    // Web Reach Us: stacked label above value (one contact_item block).
+    // Web Reach Us: one line, left-aligned "Label value"
+    // Links use --blue (#00209f) + underline (editor-content a).
     final uri = row.actionableUri;
     final isMap = row.type.toLowerCase() == 'map' &&
         (row.embedUrl.trim().isNotEmpty || (uri?.isNotEmpty ?? false));
 
+    final labelStyle = ApaFonts.inter(
+      color: ApaColors.factLabel,
+      fontSize: 16.sp,
+      fontWeight: FontWeight.w500,
+      height: 1.4,
+    );
     final valueStyle = ApaFonts.inter(
       color: ApaColors.webInk,
-      fontSize: 15.sp,
+      fontSize: 16.sp,
+      fontWeight: FontWeight.w600,
+      height: 1.4,
+    );
+    final linkStyle = ApaFonts.inter(
+      color: ApaColors.webInk,
+      fontSize: 16.sp,
       fontWeight: FontWeight.w600,
       height: 1.4,
     );
 
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: 14.h),
-      decoration: const BoxDecoration(
-        border: Border(
-          bottom: BorderSide(color: ApaColors.factBorder),
-        ),
+      padding: EdgeInsets.symmetric(vertical: 12.h),
+      decoration: BoxDecoration(
+        border: showDivider
+            ? const Border(
+                bottom: BorderSide(color: ApaColors.factBorder),
+              )
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (row.label.isNotEmpty)
-            Text(
-              row.label,
-              style: ApaFonts.inter(
-                color: ApaColors.factLabel,
-                fontSize: 13.sp,
-                fontWeight: FontWeight.w600,
-                height: 1.3,
-              ),
-            ),
-          if (row.value.isNotEmpty) ...[
-            SizedBox(height: 4.h),
-            if (uri != null)
-              InkWell(
-                onTap: () => _open(uri),
-                child: Text(
-                  row.value,
-                  style: valueStyle.copyWith(
-                    color: ApaColors.webRed,
-                    decoration: TextDecoration.underline,
-                    decorationColor: ApaColors.webRed,
-                  ),
-                ),
-              )
-            else
-              Text(row.value, style: valueStyle),
-          ],
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              if (row.label.isNotEmpty) ...[
+                Text(row.label, style: labelStyle),
+                if (row.value.isNotEmpty) SizedBox(width: 10.w),
+              ],
+              if (row.value.isNotEmpty)
+                uri != null
+                    ? InkWell(
+                        onTap: () => _open(uri),
+                        child: Text(row.value, style: linkStyle),
+                      )
+                    : Text(row.value, style: valueStyle),
+            ],
+          ),
           if (isMap) ...[
             SizedBox(height: 12.h),
             _MapPreview(

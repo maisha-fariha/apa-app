@@ -495,7 +495,9 @@ class _LedgerTable extends StatelessWidget {
             for (var i = 0; i < scaled.length; i++)
               i: FixedColumnWidth(scaled[i]),
           },
-          defaultVerticalAlignment: TableCellVerticalAlignment.middle,
+          // Stretch every cell to the row height so bottom rules share one line
+          // (middle alignment left short cells’ borders sitting mid-row).
+          defaultVerticalAlignment: TableCellVerticalAlignment.intrinsicHeight,
           children: [
             TableRow(
               children: [
@@ -536,6 +538,8 @@ class _LedgerTable extends StatelessWidget {
 
   Widget _headerCell(String text, {required bool alignRight}) {
     return Container(
+      width: double.infinity,
+      alignment: alignRight ? Alignment.bottomRight : Alignment.bottomLeft,
       padding: EdgeInsets.only(
         bottom: 12.h,
         right: alignRight ? 0 : 12.w,
@@ -563,6 +567,8 @@ class _LedgerTable extends StatelessWidget {
 
   Widget _projectCell(String text) {
     return Container(
+      width: double.infinity,
+      alignment: Alignment.centerLeft,
       padding: EdgeInsets.fromLTRB(0, 15.h, 12.w, 15.h),
       decoration: const BoxDecoration(
         border: Border(
@@ -589,6 +595,8 @@ class _LedgerTable extends StatelessWidget {
     final right = cell.isRight || fallbackAlignRight;
     final asBadge = cell.isBadge || (fallbackIsBadge && !cell.isEmpty);
     return Container(
+      width: double.infinity,
+      alignment: right ? Alignment.centerRight : Alignment.centerLeft,
       padding: EdgeInsets.fromLTRB(
         right ? 12.w : 0,
         15.h,
@@ -600,24 +608,21 @@ class _LedgerTable extends StatelessWidget {
           bottom: BorderSide(color: ApaColors.factBorder),
         ),
       ),
-      child: Align(
-        alignment: right ? Alignment.centerRight : Alignment.centerLeft,
-        child: cell.isEmpty
-            ? const SizedBox.shrink()
-            : asBadge
-                ? _LedgerBadge(cell: cell)
-                : Text(
-                    cell.value,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: right ? TextAlign.right : TextAlign.left,
-                    style: ApaFonts.inter(
-                      color: ApaColors.webInk,
-                      fontSize: 15.5.sp,
-                      fontWeight: FontWeight.w400,
-                    ),
+      child: cell.isEmpty
+          ? const SizedBox.shrink()
+          : asBadge
+              ? _LedgerBadge(cell: cell)
+              : Text(
+                  cell.value,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: right ? TextAlign.right : TextAlign.left,
+                  style: ApaFonts.inter(
+                    color: ApaColors.webInk,
+                    fontSize: 15.5.sp,
+                    fontWeight: FontWeight.w400,
                   ),
-      ),
+                ),
     );
   }
 }
