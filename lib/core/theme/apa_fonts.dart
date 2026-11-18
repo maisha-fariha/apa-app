@@ -11,6 +11,7 @@ abstract final class ApaFonts {
     double? letterSpacing,
     FontStyle? fontStyle,
     TextDecoration? decoration,
+    Color? decorationColor,
   }) {
     return GoogleFonts.inter(
       fontSize: fontSize,
@@ -20,6 +21,7 @@ abstract final class ApaFonts {
       letterSpacing: letterSpacing,
       fontStyle: fontStyle,
       decoration: decoration,
+      decorationColor: decorationColor,
     );
   }
 

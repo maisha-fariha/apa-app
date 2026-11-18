@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:gems_core/gems_core.dart';
 import 'package:gems_data_layer/gems_data_layer.dart';
 
 import '../../../../core/network/apa_api_config.dart';
 import '../../../../core/network/connectivity_controller.dart';
+import '../../../../core/utils/apa_snackbar.dart';
 import '../../../../data/models/post/content_detail_models.dart';
 import '../../../../data/models/post/post_item_extensions.dart';
 import '../../../../data/models/post/post_model.dart';
@@ -93,8 +95,12 @@ class PagesController extends BaseListController<PostItem>
   @override
   void onInit() {
     super.onInit();
-    unawaited(loadItems());
-    unawaited(loadGlobalSettings());
+    // Controllers are registered before `runApp`. Defer the first network
+    // pass until after the first frame so Material/navigator are mounted.
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      unawaited(loadItems());
+      unawaited(loadGlobalSettings());
+    });
   }
 
   @override
@@ -126,7 +132,7 @@ class PagesController extends BaseListController<PostItem>
           if (!ConnectivityController.currentlyOnline) return;
           initialLoadSettled.value = true;
           setError(error.message);
-          Get.snackbar('Error', error.message);
+          ApaSnackbar.error(error.message);
         },
       );
     } finally {
@@ -710,7 +716,7 @@ class PagesController extends BaseListController<PostItem>
       return;
     }
     if (!ConnectivityController.currentlyOnline) {
-      Get.snackbar('Error', ConnectivityController.offlineMessage);
+      ApaSnackbar.error(ConnectivityController.offlineMessage);
       return;
     }
     if (searchingNews.value) return;
@@ -732,7 +738,7 @@ class PagesController extends BaseListController<PostItem>
           newsSearchHasMore.value = pageResult.hasMore;
         },
         failure: (error) {
-          Get.snackbar('Error', error.message);
+          ApaSnackbar.error(error.message);
         },
       );
     } finally {
@@ -750,7 +756,7 @@ class PagesController extends BaseListController<PostItem>
   Future<void> loadMoreNews() async {
     if (loadingMoreNews.value) return;
     if (!ConnectivityController.currentlyOnline) {
-      Get.snackbar('Error', ConnectivityController.offlineMessage);
+      ApaSnackbar.error(ConnectivityController.offlineMessage);
       return;
     }
 
@@ -794,7 +800,7 @@ class PagesController extends BaseListController<PostItem>
           }
         },
         failure: (error) {
-          Get.snackbar('Error', error.message);
+          ApaSnackbar.error(error.message);
         },
       );
     } finally {
