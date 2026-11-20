@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../core/network/connectivity_controller.dart';
 import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
+import '../../../../core/utils/apa_image_precache.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../core/widgets/apa_empty_retry.dart';
 import '../../../../data/models/post/post_model.dart';
@@ -76,14 +79,26 @@ class _ApaShellState extends State<ApaShell> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
       final pages = _pagesController;
+
+      // Re-warm with BuildContext DPR (main() already decoded 1x/correct DPR).
+      unawaited(precacheApaStartupImages(context));
+
       if (pages == null) return;
+
+      // loadItems also preloads Home / Projects / News / Donation details.
       await pages.loadItems();
-      await Future.wait([
-        pages.loadDetailsForTemplate(ApaPageTemplates.home),
-        pages.loadDetailsForTemplate(ApaPageTemplates.donation),
-        pages.loadGlobalSettings(),
-      ]);
+      if (!mounted) return;
+
+      unawaited(() async {
+        await pages.loadDetailsForTemplate(ApaPageTemplates.home);
+        if (!mounted) return;
+        await precacheApaNetworkImage(
+          context,
+          pages.resolvedPageForShell(ApaShellPage.home)?.featuredImageUrl,
+        );
+      }());
     });
   }
 
@@ -173,17 +188,13 @@ class _ApaShellState extends State<ApaShell> {
   }
 
   void _reloadNews() {
-    _pagesController?.loadDetailsForTemplate(
-      ApaPageTemplates.news,
-      force: true,
-    );
+    // force: false keeps startup-preloaded data on screen; refreshes in background.
+    _pagesController?.loadDetailsForTemplate(ApaPageTemplates.news);
   }
 
   void _reloadProjects() {
-    _pagesController?.loadDetailsForTemplate(
-      ApaPageTemplates.projects,
-      force: true,
-    );
+    // force: false keeps startup-preloaded data on screen; refreshes in background.
+    _pagesController?.loadDetailsForTemplate(ApaPageTemplates.projects);
   }
 
   void _reloadTransparency() {
@@ -345,7 +356,6 @@ class _ApaShellState extends State<ApaShell> {
               ApaShellPage.donation,
             ),
             onProjectPressed: _openProject,
-            imageUrl: _imageUrl(ApaShellPage.projects),
           ),
           DonationPage(
             scrollController: _donationScroll,
@@ -380,7 +390,6 @@ class _ApaShellState extends State<ApaShell> {
             scrollController: _newsScroll,
             page: pagesController?.resolvedPageForShell(ApaShellPage.news),
             onReadMore: _openArticle,
-            imageUrl: _imageUrl(ApaShellPage.news),
           ),
           VisionPage(
             scrollController: _visionScroll,

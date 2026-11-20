@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import '../../../../core/constants/apa_assets.dart';
 import '../../../../core/constants/apa_dimens.dart';
 import '../../../../core/constants/apa_shell_insets.dart';
+import '../../../../core/network/connectivity_controller.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../data/models/post/post_model.dart';
 import '../../../shell/presentation/controllers/pages_controller.dart';
@@ -56,10 +57,13 @@ class HomePage extends StatelessWidget {
       value: SystemUiOverlayStyle.light,
       child: Obx(() {
         pagesController?.pageDetailsById.length;
-        pagesController?.globalSettings.value;
+        // Rebuild when connectivity returns so the home background retries.
+        if (Get.isRegistered<ConnectivityController>()) {
+          ConnectivityController.to.isOnline.value;
+          ConnectivityController.to.imageReloadEpoch.value;
+        }
         final content = _content(pagesController);
         final bgUrl = content.imageUrl ?? imageUrl;
-        final logoUrl = pagesController?.siteLogoUrl;
 
         return Stack(
           fit: StackFit.expand,
@@ -79,12 +83,10 @@ class HomePage extends StatelessWidget {
                         scrollController: scrollController,
                         onDonatePressed: onDonatePressed,
                         content: content,
-                        logoUrl: logoUrl,
                       )
                     : _PhoneHome(
                         onDonatePressed: onDonatePressed,
                         content: content,
-                        logoUrl: logoUrl,
                       ),
               ),
             ),
@@ -99,12 +101,10 @@ class _PhoneHome extends StatelessWidget {
   const _PhoneHome({
     required this.content,
     this.onDonatePressed,
-    this.logoUrl,
   });
 
   final HomePageContent content;
   final ValueChanged<int>? onDonatePressed;
-  final String? logoUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +124,7 @@ class _PhoneHome extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     SizedBox(height: ApaDimens.headerTopSpacing),
-                    _HomeLogo(logoUrl: logoUrl),
+                    const _HomeLogo(),
                     _HomeBody(
                       key: ValueKey(
                         'home-body-${content.minimumDonateAmount}-'
@@ -149,13 +149,11 @@ class _LandscapeHome extends StatelessWidget {
     required this.content,
     this.scrollController,
     this.onDonatePressed,
-    this.logoUrl,
   });
 
   final HomePageContent content;
   final ScrollController? scrollController;
   final ValueChanged<int>? onDonatePressed;
-  final String? logoUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -174,7 +172,7 @@ class _LandscapeHome extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _HomeLogo(logoUrl: logoUrl),
+                    const _HomeLogo(),
                     SizedBox(height: ApaDimens.locationBadgeBottomSpacing),
                     _HomeBody(
                       key: ValueKey(
@@ -195,34 +193,20 @@ class _LandscapeHome extends StatelessWidget {
   }
 }
 
+/// Home uses the bundled logo only — CMS site logo caused a flash swap.
 class _HomeLogo extends StatelessWidget {
-  const _HomeLogo({this.logoUrl});
-
-  final String? logoUrl;
+  const _HomeLogo();
 
   @override
   Widget build(BuildContext context) {
-    final url = logoUrl?.trim() ?? '';
     return Center(
-      child: url.isNotEmpty
-          ? Image.network(
-              url,
-              width: ApaDimens.logoWidth,
-              height: ApaDimens.logoHeight,
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) => Image.asset(
-                ApaAssets.apaLogo,
-                width: ApaDimens.logoWidth,
-                height: ApaDimens.logoHeight,
-                fit: BoxFit.contain,
-              ),
-            )
-          : Image.asset(
-              ApaAssets.apaLogo,
-              width: ApaDimens.logoWidth,
-              height: ApaDimens.logoHeight,
-              fit: BoxFit.contain,
-            ),
+      child: Image.asset(
+        ApaAssets.apaLogo,
+        width: ApaDimens.logoWidth,
+        height: ApaDimens.logoHeight,
+        fit: BoxFit.contain,
+        gaplessPlayback: true,
+      ),
     );
   }
 }

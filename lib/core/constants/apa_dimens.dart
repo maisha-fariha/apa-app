@@ -14,7 +14,7 @@ abstract final class ApaDimens {
   static const double kContentBottomInset = 96;
   /// Home logo — keep 8:3 aspect (asset 384×144). Scaled via `.w` for both axes
   /// so height isn’t crushed by `.h` on tall phones.
-  static const double kLogoWidth = 256;
+  static const double kLogoWidth = 192;
   static const double kLogoHeight = 96;
   static const double kHeaderTopSpacing = 16;
 

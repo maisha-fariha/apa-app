@@ -27,14 +27,12 @@ class ProjectsPage extends StatelessWidget {
     this.page,
     this.onFundPressed,
     this.onProjectPressed,
-    this.imageUrl,
   });
 
   final ScrollController? scrollController;
   final PostItem? page;
   final VoidCallback? onFundPressed;
   final ValueChanged<PostItem>? onProjectPressed;
-  final String? imageUrl;
 
   PagesController? get _pagesController {
     if (!Get.isRegistered<PagesController>()) return null;
@@ -75,7 +73,9 @@ class ProjectsPage extends StatelessWidget {
                   ApaPageTemplates.projects,
                 ) ??
                 true;
-            final loading = pagesController != null &&
+            // Only block on loading when we have nothing to show yet.
+            final loading = blank &&
+                pagesController != null &&
                 ((pagesController.isLoading.value &&
                         pagesController.items.isEmpty) ||
                     pagesController.isLoadingDetailsForTemplate(
@@ -83,33 +83,23 @@ class ProjectsPage extends StatelessWidget {
                     ));
 
             if (loading) {
-              return const ColoredBox(
-                color: ApaColors.white,
-                child: Center(
+              return _ProjectsHeroScaffold(
+                scrollController: scrollController,
+                navBottomPad: navBottomPad,
+                child: const Center(
                   child: CircularProgressIndicator(color: ApaColors.primaryRed),
                 ),
               );
             }
 
             if (blank) {
-              return ColoredBox(
-                color: ApaColors.white,
-                child: ListView(
-                  controller: scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: EdgeInsets.fromLTRB(
-                    20.w,
-                    48.h,
-                    20.w,
-                    navBottomPad,
+              return _ProjectsHeroScaffold(
+                scrollController: scrollController,
+                navBottomPad: navBottomPad,
+                child: ApaEmptyRetry.forConnectivity(
+                  onRetry: () => pagesController?.retryLoad(
+                    template: ApaPageTemplates.projects,
                   ),
-                  children: [
-                    ApaEmptyRetry.forConnectivity(
-                      onRetry: () => pagesController?.retryLoad(
-                        template: ApaPageTemplates.projects,
-                      ),
-                    ),
-                  ],
                 ),
               );
             }
@@ -202,7 +192,6 @@ class ProjectsPage extends StatelessWidget {
       );
     }
 
-    final heroImage = current?.featuredImageUrl ?? imageUrl;
     final isLandscape = R.isTabletLandscape(context);
     // Landscape hero row stays 3-up; extra projects stack below (no layout break).
     final rowProjects =
@@ -218,9 +207,8 @@ class ProjectsPage extends StatelessWidget {
       slivers: [
         SliverToBoxAdapter(
           child: ApaHeroHeader(
+            // Local asset only — CMS hero caused a delayed / blank first paint.
             imageAsset: ApaAssets.projectsHero,
-            imageUrl: heroImage,
-            useAssetFallback: false,
             height: 520,
             overlayOpacity: 0.7,
             logoWidth: 180,
@@ -671,6 +659,47 @@ class _ProjectsFooterHtml extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: children,
+    );
+  }
+}
+
+/// Shows the local Projects hero immediately while CMS body content loads.
+class _ProjectsHeroScaffold extends StatelessWidget {
+  const _ProjectsHeroScaffold({
+    required this.scrollController,
+    required this.navBottomPad,
+    required this.child,
+  });
+
+  final ScrollController? scrollController;
+  final double navBottomPad;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomScrollView(
+      controller: scrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        const SliverToBoxAdapter(
+          child: ApaHeroHeader(
+            imageAsset: ApaAssets.projectsHero,
+            height: 520,
+            overlayOpacity: 0.7,
+            logoWidth: 180,
+            logoHeight: 67.5,
+            badge: '',
+            headline: [],
+          ),
+        ),
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(20.w, 48.h, 20.w, navBottomPad),
+            child: child,
+          ),
+        ),
+      ],
     );
   }
 }

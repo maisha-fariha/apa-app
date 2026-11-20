@@ -10,6 +10,7 @@ import 'core/network/apa_api_config.dart';
 import 'core/network/connectivity_controller.dart';
 import 'core/theme/apa_fonts.dart';
 import 'core/theme/apa_theme.dart';
+import 'core/utils/apa_image_precache.dart';
 import 'core/utils/responsive.dart';
 import 'core/widgets/apa_offline_banner.dart';
 import 'features/contact/presentation/controllers/contact_controller.dart';
@@ -50,6 +51,9 @@ Future<void> main() async {
     unawaited(Get.find<ContactController>().onConnectivityRestored());
     unawaited(Get.find<DonationController>().onConnectivityRestored());
   };
+
+  // Decode home/logo assets before first frame so they paint immediately.
+  await warmApaStartupImages();
 
   runApp(const ApaApp());
 }

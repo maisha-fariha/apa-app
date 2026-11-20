@@ -25,13 +25,11 @@ class NewsPage extends StatelessWidget {
     super.key,
     this.scrollController,
     this.onReadMore,
-    this.imageUrl,
     this.page,
   });
 
   final ScrollController? scrollController;
   final ValueChanged<PostItem>? onReadMore;
-  final String? imageUrl;
   final PostItem? page;
 
   PagesController? get _pagesController {
@@ -71,7 +69,9 @@ class NewsPage extends StatelessWidget {
                   ApaPageTemplates.news,
                 ) ??
                 true;
-            final loading = pagesController != null &&
+            // Only block on loading when we have nothing to show yet.
+            final loading = blank &&
+                pagesController != null &&
                 ((pagesController.isLoading.value &&
                         pagesController.items.isEmpty) ||
                     pagesController.isLoadingDetailsForTemplate(
@@ -79,33 +79,23 @@ class NewsPage extends StatelessWidget {
                     ));
 
             if (loading) {
-              return const ColoredBox(
-                color: ApaColors.white,
-                child: Center(
+              return _NewsHeroScaffold(
+                scrollController: scrollController,
+                navBottomPad: navBottomPad,
+                child: const Center(
                   child: CircularProgressIndicator(color: ApaColors.webRed),
                 ),
               );
             }
 
             if (blank) {
-              return ColoredBox(
-                color: ApaColors.white,
-                child: ListView(
-                  controller: scrollController,
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: EdgeInsets.fromLTRB(
-                    20.w,
-                    48.h,
-                    20.w,
-                    navBottomPad,
+              return _NewsHeroScaffold(
+                scrollController: scrollController,
+                navBottomPad: navBottomPad,
+                child: ApaEmptyRetry.forConnectivity(
+                  onRetry: () => pagesController?.retryLoad(
+                    template: ApaPageTemplates.news,
                   ),
-                  children: [
-                    ApaEmptyRetry.forConnectivity(
-                      onRetry: () => pagesController?.retryLoad(
-                        template: ApaPageTemplates.news,
-                      ),
-                    ),
-                  ],
                 ),
               );
             }
@@ -131,7 +121,6 @@ class NewsPage extends StatelessWidget {
               featured: current?.featuredPost,
               otherPosts: otherPosts,
               navBottomPad: navBottomPad,
-              heroImageFallback: imageUrl,
               hasMore: hasMore,
               loadingMore: loadingMore,
               onLoadMore: pagesController == null
@@ -154,7 +143,6 @@ class _NewsScrollView extends StatelessWidget {
     required this.featured,
     required this.otherPosts,
     required this.navBottomPad,
-    required this.heroImageFallback,
     required this.hasMore,
     required this.loadingMore,
     required this.onLoadMore,
@@ -167,7 +155,6 @@ class _NewsScrollView extends StatelessWidget {
   final PostItem? featured;
   final List<PostItem> otherPosts;
   final double navBottomPad;
-  final String? heroImageFallback;
   final bool hasMore;
   final bool loadingMore;
   final VoidCallback? onLoadMore;
@@ -229,9 +216,6 @@ class _NewsScrollView extends StatelessWidget {
       );
     }
 
-    final heroImage = labels?.imageUrl ??
-        current?.featuredImageUrl ??
-        heroImageFallback;
     final showHeader = labels?.showHeader ?? true;
     final hasAnyStory = featured != null || otherPosts.isNotEmpty;
     final wide = MediaQuery.sizeOf(context).width >= 700;
@@ -247,9 +231,8 @@ class _NewsScrollView extends StatelessWidget {
           if (showHeader)
             SliverToBoxAdapter(
               child: ApaHeroHeader(
+                // Local asset only — CMS hero caused a delayed / blank first paint.
                 imageAsset: ApaAssets.newsHero,
-                imageUrl: heroImage,
-                useAssetFallback: false,
                 height: 520,
                 badge: badge,
                 headline: headline,
@@ -689,6 +672,44 @@ class _NewsCardImage extends StatelessWidget {
         width: double.infinity,
         height: double.infinity,
       ),
+    );
+  }
+}
+
+/// Shows the local News hero immediately while CMS body content loads.
+class _NewsHeroScaffold extends StatelessWidget {
+  const _NewsHeroScaffold({
+    required this.scrollController,
+    required this.navBottomPad,
+    required this.child,
+  });
+
+  final ScrollController? scrollController;
+  final double navBottomPad;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomScrollView(
+      controller: scrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        const SliverToBoxAdapter(
+          child: ApaHeroHeader(
+            imageAsset: ApaAssets.newsHero,
+            height: 520,
+            badge: '',
+            headline: [],
+          ),
+        ),
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(20.w, 48.h, 20.w, navBottomPad),
+            child: child,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -6,6 +6,7 @@ import '../constants/apa_dimens.dart';
 import '../theme/apa_colors.dart';
 import '../theme/apa_fonts.dart';
 import '../utils/responsive.dart';
+import 'apa_remote_image.dart';
 
 /// Reusable hero header used across content screens.
 class ApaHeroHeader extends StatelessWidget {
@@ -155,28 +156,13 @@ class _HeroImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final networkUrl = url?.trim();
-    if (networkUrl != null && networkUrl.isNotEmpty) {
-      return Image.network(
-        networkUrl,
-        fit: BoxFit.cover,
-        alignment: Alignment.center,
-        errorBuilder: (context, error, stackTrace) => _fallback(),
-      );
-    }
-
-    return _fallback();
-  }
-
-  Widget _fallback() {
-    if (useAssetFallback) {
-      return Image.asset(
-        asset,
-        fit: BoxFit.cover,
-        alignment: Alignment.center,
-      );
-    }
-    return const ColoredBox(color: ApaColors.black);
+    return ApaRemoteImage(
+      asset: asset,
+      url: url,
+      fit: BoxFit.cover,
+      alignment: Alignment.center,
+      useAssetFallback: useAssetFallback,
+    );
   }
 }
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/painting.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:gems_core/gems_core.dart';
@@ -25,6 +26,7 @@ class PagesController extends BaseListController<PostItem>
   final PostsRepository repository;
 
   bool _fetched = false;
+  Completer<void>? _itemsLoadCompleter;
 
   /// True only after an online fetch finishes. A startup offline blip
   /// leaves this false so the shell does not flash the retry screen.
@@ -75,6 +77,7 @@ class PagesController extends BaseListController<PostItem>
   final Rxn<PostItem> globalSettings = Rxn<PostItem>();
 
   final Set<int> _loadingDetails = <int>{};
+  final Map<int, Completer<void>> _detailsLoadCompleters = <int, Completer<void>>{};
   final Set<String> _loadingContentKeys = <String>{};
 
   bool isLoadingDetailsFor(int pageId) => _loadingDetails.contains(pageId);
@@ -105,9 +108,14 @@ class PagesController extends BaseListController<PostItem>
 
   @override
   Future<void> loadItems() async {
-    if (isLoading.value) return;
     if (_fetched && items.isNotEmpty) return;
+    // Concurrent callers (shell + onInit) must wait — not bail early — or
+    // follow-up `loadDetailsForTemplate` runs before the page list exists.
+    final inFlight = _itemsLoadCompleter;
+    if (inFlight != null) return inFlight.future;
 
+    final completer = Completer<void>();
+    _itemsLoadCompleter = completer;
     setLoading(true);
     try {
       final result = await repository.getAll();
@@ -125,6 +133,8 @@ class PagesController extends BaseListController<PostItem>
           }
           errorMessage.value = '';
           _ensureInitialSelection();
+          // Primary shell tabs ASAP so Home / Projects / News are ready.
+          _preloadPrimaryShellDetails();
         },
         failure: (error) {
           // Offline at launch is often a false reading. Stay unsettled so
@@ -137,7 +147,20 @@ class PagesController extends BaseListController<PostItem>
       );
     } finally {
       setLoading(false);
+      if (!completer.isCompleted) completer.complete();
+      if (identical(_itemsLoadCompleter, completer)) {
+        _itemsLoadCompleter = null;
+      }
     }
+  }
+
+  /// Fire-and-forget details for tabs that should feel instant on open.
+  void _preloadPrimaryShellDetails() {
+    unawaited(loadDetailsForTemplate(ApaPageTemplates.home));
+    unawaited(loadDetailsForTemplate(ApaPageTemplates.projects));
+    unawaited(loadDetailsForTemplate(ApaPageTemplates.news));
+    unawaited(loadDetailsForTemplate(ApaPageTemplates.donation));
+    unawaited(loadGlobalSettings());
   }
 
   /// Clears the one-shot fetch guard and reloads list + optional page details.
@@ -156,17 +179,58 @@ class PagesController extends BaseListController<PostItem>
     if (items.isEmpty) {
       _fetched = false;
       await loadItems();
+    } else {
+      unawaited(loadGlobalSettings(force: true));
+      // Always refresh primary shell pages (esp. Home featured background).
+      await Future.wait([
+        loadDetailsForTemplate(ApaPageTemplates.home, force: true),
+        loadDetailsForTemplate(ApaPageTemplates.projects, force: true),
+        loadDetailsForTemplate(ApaPageTemplates.news, force: true),
+        loadDetailsForTemplate(ApaPageTemplates.donation, force: true),
+      ]);
+      final selectedId = selectedPageId.value;
+      final homeId = pageByTemplate(ApaPageTemplates.home)?.id;
+      if (selectedId != null &&
+          selectedId > 0 &&
+          selectedId != homeId &&
+          pageByTemplate(ApaPageTemplates.projects)?.id != selectedId &&
+          pageByTemplate(ApaPageTemplates.news)?.id != selectedId &&
+          pageByTemplate(ApaPageTemplates.donation)?.id != selectedId) {
+        await loadPageDetails(selectedId, force: true);
+      }
     }
-    unawaited(loadGlobalSettings(force: true));
-    final selectedId = selectedPageId.value;
-    if (selectedId != null && selectedId > 0) {
-      await loadPageDetails(selectedId, force: true);
-      return;
+    // CMS URLs are ready — warm home background then force image remount.
+    final homeBg = resolvedPageForShell(ApaShellPage.home)?.featuredImageUrl;
+    if (homeBg != null && homeBg.trim().isNotEmpty) {
+      unawaited(_warmNetworkImage(homeBg.trim()));
     }
-    final home = pageByTemplate(ApaPageTemplates.home);
-    if (home != null) {
-      await loadPageDetails(home.id, force: true);
+    if (ConnectivityController.registered) {
+      ConnectivityController.to.bumpImageReload();
     }
+  }
+
+  Future<void> _warmNetworkImage(String url) async {
+    try {
+      final provider = NetworkImage(url);
+      final views = SchedulerBinding.instance.platformDispatcher.views;
+      final dpr = views.isEmpty ? 1.0 : views.first.devicePixelRatio;
+      final config = ImageConfiguration(devicePixelRatio: dpr);
+      final stream = provider.resolve(config);
+      final completer = Completer<void>();
+      late final ImageStreamListener listener;
+      listener = ImageStreamListener(
+        (ImageInfo image, bool sync) {
+          stream.removeListener(listener);
+          if (!completer.isCompleted) completer.complete();
+        },
+        onError: (Object exception, StackTrace? stackTrace) {
+          stream.removeListener(listener);
+          if (!completer.isCompleted) completer.complete();
+        },
+      );
+      stream.addListener(listener);
+      await completer.future;
+    } catch (_) {}
   }
 
   void _ensureInitialSelection() {
@@ -268,13 +332,16 @@ class PagesController extends BaseListController<PostItem>
       }
       return;
     }
-    if (!force && _loadingDetails.contains(pageId)) return;
+    final inFlight = _detailsLoadCompleters[pageId];
+    if (!force && inFlight != null) return inFlight.future;
 
     // Offline: never force a network round-trip; serve cache/memory only.
     final online = ConnectivityController.currentlyOnline;
     final useCache = !force || !online;
     if (!online && pageDetailsById.containsKey(pageId)) return;
 
+    final completer = Completer<void>();
+    _detailsLoadCompleters[pageId] = completer;
     _loadingDetails.add(pageId);
     try {
       final result = await repository.getPostDetails(
@@ -296,6 +363,10 @@ class PagesController extends BaseListController<PostItem>
       );
     } finally {
       _loadingDetails.remove(pageId);
+      if (!completer.isCompleted) completer.complete();
+      if (identical(_detailsLoadCompleters[pageId], completer)) {
+        _detailsLoadCompleters.remove(pageId);
+      }
     }
   }
 
