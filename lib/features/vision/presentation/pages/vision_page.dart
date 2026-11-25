@@ -16,7 +16,7 @@ import '../../../shell/presentation/mapping/apa_page_templates.dart';
 import '../../../shell/presentation/models/apa_nav_item.dart';
 import '../../domain/vision_page_content.dart';
 
-/// Our Vision Page — Figma frame `16:1107`.
+/// Our Vision — matches live web `page-vision.php`.
 class VisionPage extends StatelessWidget {
   const VisionPage({
     super.key,
@@ -38,13 +38,14 @@ class VisionPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final navBottomPad = ApaShellInsets.contentBottom(context);
     final pagesController = _pagesController;
+    final sidePad = R.isTabletLandscape(context) ? 48.0 : 22.w;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: ColoredBox(
         color: ApaColors.white,
         child: RefreshIndicator(
-          color: ApaColors.primaryRed,
+          color: ApaColors.webRed,
           onRefresh: () async {
             await pagesController?.loadDetailsForTemplate(
               ApaPageTemplates.vision,
@@ -57,14 +58,37 @@ class VisionPage extends StatelessWidget {
               parent: BouncingScrollPhysics(),
             ),
             slivers: [
-              SliverToBoxAdapter(child: _buildHero(pagesController)),
+              SliverToBoxAdapter(
+                child: Obx(() {
+                  pagesController?.pageDetailsById.length;
+                  pagesController?.items.length;
+                  final content = pagesController == null
+                      ? null
+                      : _visionContent(pagesController);
+                  if (content == null || !content.showHeader) {
+                    return const SizedBox.shrink();
+                  }
+                  return ApaHeroHeader(
+                    imageAsset: ApaAssets.visionHero,
+                    imageUrl: content.imageUrl ?? imageUrl,
+                    useAssetFallback: false,
+                    height: 520,
+                    badge: content.topTagLine,
+                    headline: _headlineSpans(content),
+                    subtitle: content.lastContent.isEmpty
+                        ? null
+                        : content.lastContent,
+                  );
+                }),
+              ),
               SliverToBoxAdapter(
                 child: ApaPageWidth(
+                  maxWidth: 1100,
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(
-                      R.isTabletLandscape(context) ? 48 : 24.w,
-                      48.h,
-                      R.isTabletLandscape(context) ? 48 : 24.w,
+                      sidePad,
+                      56.h,
+                      sidePad,
                       navBottomPad,
                     ),
                     child: _buildBody(context, pagesController),
@@ -78,41 +102,20 @@ class VisionPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHero(PagesController? pagesController) {
-    if (pagesController == null) return const SizedBox.shrink();
-
-    return Obx(() {
-      final content = _visionContent(pagesController);
-      if (content == null || !content.showHeader) {
-        return const SizedBox.shrink();
-      }
-
-      return ApaHeroHeader(
-        imageAsset: ApaAssets.visionHero,
-        imageUrl: content.imageUrl ?? imageUrl,
-        useAssetFallback: false,
-        height: 505,
-        badge: content.topTagLine,
-        headline: _headlineSpans(content),
-        subtitle: content.lastContent.isEmpty ? null : content.lastContent,
-      );
-    });
-  }
-
   List<InlineSpan> _headlineSpans(VisionPageContent content) {
     final oneStyle = ApaFonts.inter(
       color: ApaColors.white,
-      fontSize: 34.sp,
-      fontWeight: FontWeight.w800,
-      height: 40 / 34,
-      letterSpacing: -0.5,
+      fontSize: 36.sp,
+      fontWeight: FontWeight.w700,
+      height: 1.02,
+      letterSpacing: -0.9,
     );
     final twoStyle = ApaFonts.inter(
-      color: ApaColors.primaryRed,
-      fontSize: 34.sp,
-      fontWeight: FontWeight.w800,
-      height: 40 / 34,
-      letterSpacing: -0.5,
+      color: ApaColors.webRed,
+      fontSize: 36.sp,
+      fontWeight: FontWeight.w700,
+      height: 1.02,
+      letterSpacing: -0.9,
     );
 
     final one = content.headingTextOne;
@@ -149,7 +152,7 @@ class VisionPage extends StatelessWidget {
           return Padding(
             padding: EdgeInsets.symmetric(vertical: 48.h),
             child: const Center(
-              child: CircularProgressIndicator(color: ApaColors.primaryRed),
+              child: CircularProgressIndicator(color: ApaColors.webRed),
             ),
           );
         }
@@ -164,7 +167,8 @@ class VisionPage extends StatelessWidget {
         return const SizedBox.shrink();
       }
 
-      final desktop = R.isTabletLandscape(context);
+      final wide = MediaQuery.sizeOf(context).width >= 900;
+
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -172,97 +176,81 @@ class VisionPage extends StatelessWidget {
             if (content.statementSubheading.isNotEmpty)
               Text(
                 content.statementSubheading.toUpperCase(),
-                style: ApaFonts.inter(
-                  color: ApaColors.black,
-                  fontSize: 22.sp,
-                  fontWeight: FontWeight.w800,
-                  height: 28 / 22,
-                ),
+                style: _sectionTitleStyle(fontWeight: FontWeight.w600),
               ),
             if (content.statementText.isNotEmpty) ...[
-              SizedBox(height: 14.h),
+              SizedBox(height: 12.h),
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 720),
                 child: Text(
                   content.statementText,
                   style: ApaFonts.inter(
-                    color: ApaColors.gray700,
-                    fontSize: 16.sp,
-                    height: 24 / 16,
+                    color: ApaColors.webInk,
+                    fontSize: 20.sp,
+                    height: 1.55,
                   ),
                 ),
               ),
             ],
-            SizedBox(height: 24.h),
-            const ColoredBox(
-              color: ApaColors.black,
-              child: SizedBox(height: 1, width: double.infinity),
-            ),
-            SizedBox(height: 28.h),
+            SizedBox(height: 40.h),
+            _SectionRule(),
+            SizedBox(height: 40.h),
           ],
           if (content.hasCoreValues) ...[
             if (content.coreValuesTitle.isNotEmpty)
               Text(
                 content.coreValuesTitle.toUpperCase(),
-                style: ApaFonts.inter(
-                  color: ApaColors.black,
-                  fontSize: 22.sp,
-                  fontWeight: FontWeight.w800,
-                  height: 28 / 22,
-                ),
+                style: _sectionTitleStyle(),
               ),
             if (content.coreValues.isNotEmpty) ...[
-              SizedBox(height: 28.h),
-              _ValuesLayout(
+              SizedBox(height: 34.h),
+              _ValuesGrid(
                 items: content.coreValues,
-                desktop: desktop,
                 resolveIconUrl: pagesController.mediaSourceUrl,
               ),
             ],
             SizedBox(height: 40.h),
+            _SectionRule(),
+            SizedBox(height: 40.h),
           ],
-          if (desktop && (content.hasGoals || content.hasStats))
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (content.hasGoals)
-                  Expanded(child: _GoalsColumn(content: content)),
-                if (content.hasGoals && content.hasStats) SizedBox(width: 40.w),
-                if (content.hasStats)
-                  Expanded(child: _StatsCard(stats: content.stats)),
-              ],
-            )
-          else ...[
-            if (content.hasGoals) _GoalsColumn(content: content),
-            if (content.hasGoals && content.hasStats) SizedBox(height: 32.h),
-            if (content.hasStats) _StatsCard(stats: content.stats),
+          if (content.hasGoals) ...[
+            if (content.futureGoalsTitle.isNotEmpty)
+              Text(
+                content.futureGoalsTitle.toUpperCase(),
+                style: _sectionTitleStyle(),
+              ),
+            if (content.futureGoals.isNotEmpty) ...[
+              SizedBox(height: 26.h),
+              _GoalsList(goals: content.futureGoals),
+            ],
+          ],
+          if (content.hasStats) ...[
+            SizedBox(height: 40.h),
+            _StatsCard(stats: content.stats, wide: wide),
           ],
           if (content.hasJoinMission) ...[
-            SizedBox(height: 48.h),
-            if (content.joinMissionTitle.isNotEmpty)
-              Text(
-                content.joinMissionTitle.toUpperCase(),
-                style: ApaFonts.inter(
-                  color: ApaColors.black,
-                  fontSize: 28.sp,
-                  fontWeight: FontWeight.w800,
-                  height: 34 / 28,
-                ),
-              ),
-            if (content.joinMissionButtonText.isNotEmpty) ...[
-              SizedBox(height: 24.h),
-              ApaBlackPillButton(
-                label: content.joinMissionButtonText,
-                onPressed: onLearnMore,
-                fontSize: 16,
-                horizontalPadding: 40,
-                verticalPadding: 18,
-              ),
-            ],
+            SizedBox(height: 40.h),
+            _SectionRule(),
+            SizedBox(height: 40.h),
+            _JoinMissionRow(
+              title: content.joinMissionTitle,
+              buttonLabel: content.joinMissionButtonText,
+              onPressed: onLearnMore,
+            ),
           ],
         ],
       );
     });
+  }
+
+  TextStyle _sectionTitleStyle({FontWeight fontWeight = FontWeight.w700}) {
+    return ApaFonts.inter(
+      color: ApaColors.webInk,
+      fontSize: 34.sp,
+      fontWeight: fontWeight,
+      height: 1.1,
+      letterSpacing: -0.5,
+    );
   }
 
   VisionPageContent? _visionContent(PagesController pagesController) {
@@ -279,85 +267,81 @@ class VisionPage extends StatelessWidget {
   }
 }
 
-class _ValuesLayout extends StatelessWidget {
-  const _ValuesLayout({
+class _SectionRule extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 2,
+      width: double.infinity,
+      color: ApaColors.webInk.withValues(alpha: 0.1),
+    );
+  }
+}
+
+class _ValuesGrid extends StatelessWidget {
+  const _ValuesGrid({
     required this.items,
-    required this.desktop,
     required this.resolveIconUrl,
   });
 
   final List<VisionValueItem> items;
-  final bool desktop;
   final Future<String?> Function(int id) resolveIconUrl;
 
   @override
   Widget build(BuildContext context) {
-    if (!desktop) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (var i = 0; i < items.length; i++) ...[
-            if (i > 0) const _ValueDivider(),
-            _ValueBlock(item: items[i], resolveIconUrl: resolveIconUrl),
-          ],
-        ],
-      );
-    }
+    // Web: `grid-cols-[repeat(auto-fit,minmax(240px,1fr))] gap-0.5 bg-ink`
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        var columns = (width / 240).floor().clamp(1, items.length);
+        if (items.length <= 2) columns = items.length.clamp(1, columns);
+        if (width < 500) columns = 1;
 
-    final perRow = items.length == 4 ? 2 : 3;
-    final rows = <List<VisionValueItem>>[];
-    for (var i = 0; i < items.length; i += perRow) {
-      rows.add(
-        items.sublist(
-          i,
-          i + perRow > items.length ? items.length : i + perRow,
-        ),
-      );
-    }
+        final rows = <List<VisionValueItem>>[];
+        for (var i = 0; i < items.length; i += columns) {
+          rows.add(
+            items.sublist(
+              i,
+              i + columns > items.length ? items.length : i + columns,
+            ),
+          );
+        }
 
-    return Column(
-      children: [
-        for (var r = 0; r < rows.length; r++) ...[
-          if (r > 0) SizedBox(height: 32.h),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        return ColoredBox(
+          color: ApaColors.webInk,
+          child: Column(
             children: [
-              for (var c = 0; c < rows[r].length; c++) ...[
-                if (c > 0) const SizedBox(width: 32),
-                Expanded(
-                  child: _ValueBlock(
-                    item: rows[r][c],
-                    resolveIconUrl: resolveIconUrl,
+              for (var r = 0; r < rows.length; r++) ...[
+                if (r > 0) const SizedBox(height: 2),
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var c = 0; c < columns; c++) ...[
+                        if (c > 0) const SizedBox(width: 2),
+                        Expanded(
+                          child: c < rows[r].length
+                              ? _ValueCard(
+                                  item: rows[r][c],
+                                  resolveIconUrl: resolveIconUrl,
+                                )
+                              : const ColoredBox(color: ApaColors.white),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ],
-              for (var c = rows[r].length; c < perRow; c++)
-                const Expanded(child: SizedBox.shrink()),
             ],
           ),
-        ],
-      ],
+        );
+      },
     );
   }
 }
 
-class _ValueDivider extends StatelessWidget {
-  const _ValueDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 20.h),
-      child: const ColoredBox(
-        color: ApaColors.gray200,
-        child: SizedBox(height: 1, width: double.infinity),
-      ),
-    );
-  }
-}
-
-class _ValueBlock extends StatelessWidget {
-  const _ValueBlock({
+class _ValueCard extends StatelessWidget {
+  const _ValueCard({
     required this.item,
     required this.resolveIconUrl,
   });
@@ -367,37 +351,44 @@ class _ValueBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _ValueIcon(
-          iconId: item.iconId,
-          iconUrl: item.iconUrl,
-          resolveIconUrl: resolveIconUrl,
+    return ColoredBox(
+      color: ApaColors.white,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(24.w, 26.h, 24.w, 28.h),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _ValueIcon(
+              iconId: item.iconId,
+              iconUrl: item.iconUrl,
+              resolveIconUrl: resolveIconUrl,
+            ),
+            SizedBox(height: 10.h),
+            if (item.title.isNotEmpty)
+              Text(
+                item.title,
+                style: ApaFonts.inter(
+                  color: ApaColors.webInk,
+                  fontSize: 27.sp,
+                  fontWeight: FontWeight.w600,
+                  height: 1.1,
+                  letterSpacing: -0.27,
+                ),
+              ),
+            if (item.content.isNotEmpty) ...[
+              SizedBox(height: 6.h),
+              Text(
+                item.content,
+                style: ApaFonts.inter(
+                  color: ApaColors.factLabel,
+                  fontSize: 16.sp,
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ],
         ),
-        SizedBox(height: 10.h),
-        if (item.title.isNotEmpty)
-          Text(
-            item.title,
-            style: ApaFonts.inter(
-              color: ApaColors.black,
-              fontSize: 22.sp,
-              fontWeight: FontWeight.w800,
-              height: 28 / 22,
-            ),
-          ),
-        if (item.content.isNotEmpty) ...[
-          SizedBox(height: 8.h),
-          Text(
-            item.content,
-            style: ApaFonts.inter(
-              color: ApaColors.gray700,
-              fontSize: 16.sp,
-              height: 24 / 16,
-            ),
-          ),
-        ],
-      ],
+      ),
     );
   }
 }
@@ -413,7 +404,7 @@ class _ValueIcon extends StatelessWidget {
   final String? iconUrl;
   final Future<String?> Function(int id) resolveIconUrl;
 
-  static const _size = 26.0;
+  static const _size = 40.0;
 
   @override
   Widget build(BuildContext context) {
@@ -423,14 +414,14 @@ class _ValueIcon extends StatelessWidget {
     }
 
     final id = iconId;
-    if (id == null || id <= 0) return SizedBox(height: _size.h);
+    if (id == null || id <= 0) return const SizedBox(height: _size);
 
     return FutureBuilder<String?>(
       future: resolveIconUrl(id),
       builder: (context, snapshot) {
         final url = snapshot.data?.trim();
         if (url == null || url.isEmpty) {
-          return SizedBox(height: _size.h);
+          return const SizedBox(height: _size);
         }
         return _networkIcon(url);
       },
@@ -438,98 +429,100 @@ class _ValueIcon extends StatelessWidget {
   }
 
   Widget _networkIcon(String url) {
-    final size = _size.w;
     return Image.network(
       url,
-      width: size,
-      height: size,
+      width: _size,
+      height: _size,
       fit: BoxFit.contain,
-      errorBuilder: (context, error, stackTrace) => SizedBox(
-        width: size,
-        height: size,
-      ),
+      errorBuilder: (context, error, stackTrace) =>
+          const SizedBox(width: _size, height: _size),
     );
   }
 }
 
-class _GoalDivider extends StatelessWidget {
-  const _GoalDivider();
+class _GoalsList extends StatelessWidget {
+  const _GoalsList({required this.goals});
 
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 16.h),
-      child: const ColoredBox(
-        color: ApaColors.gray200,
-        child: SizedBox(height: 1, width: double.infinity),
-      ),
-    );
-  }
-}
-
-class _GoalsColumn extends StatelessWidget {
-  const _GoalsColumn({required this.content});
-
-  final VisionPageContent content;
+  final List<VisionGoalItem> goals;
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (content.futureGoalsTitle.isNotEmpty)
-          Text(
-            content.futureGoalsTitle.toUpperCase(),
-            style: ApaFonts.inter(
-              color: ApaColors.black,
-              fontSize: 22.sp,
-              fontWeight: FontWeight.w800,
-              height: 28 / 22,
+        for (final goal in goals)
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(vertical: 12.h),
+            decoration: const BoxDecoration(
+              border: Border(
+                bottom: BorderSide(color: ApaColors.factBorder),
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (goal.heading.isNotEmpty)
+                  Text(
+                    goal.heading,
+                    style: ApaFonts.inter(
+                      color: ApaColors.webInk,
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                      height: 1.5,
+                    ),
+                  ),
+                if (goal.subHeading.isNotEmpty) ...[
+                  SizedBox(height: 2.h),
+                  Text(
+                    goal.subHeading,
+                    style: ApaFonts.inter(
+                      color: ApaColors.factLabel,
+                      fontSize: 16.sp,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
-        if (content.futureGoals.isNotEmpty) ...[
-          SizedBox(height: 24.h),
-          for (var i = 0; i < content.futureGoals.length; i++) ...[
-            if (i > 0) const _GoalDivider(),
-            _GoalRow(
-              title: content.futureGoals[i].heading,
-              body: content.futureGoals[i].subHeading,
-            ),
-          ],
-        ],
       ],
     );
   }
 }
 
 class _StatsCard extends StatelessWidget {
-  const _StatsCard({required this.stats});
+  const _StatsCard({required this.stats, required this.wide});
 
   final List<VisionStatItem> stats;
+  final bool wide;
 
   @override
   Widget build(BuildContext context) {
+    final columns = wide && stats.length >= 4 ? 4 : 2;
     final rows = <List<VisionStatItem>>[];
-    for (var i = 0; i < stats.length; i += 2) {
+    for (var i = 0; i < stats.length; i += columns) {
       rows.add(
-        stats.sublist(i, i + 2 > stats.length ? stats.length : i + 2),
+        stats.sublist(
+          i,
+          i + columns > stats.length ? stats.length : i + columns,
+        ),
       );
     }
 
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(
-        horizontal: 32.w,
-        vertical: 40.h,
+        horizontal: 24.w,
+        vertical: wide ? 56.h : 48.h,
       ),
       decoration: BoxDecoration(
-        color: ApaColors.black,
-        borderRadius: BorderRadius.circular(16.r),
+        color: ApaColors.webInk,
+        borderRadius: BorderRadius.circular(24.r),
       ),
       child: Column(
         children: [
           for (var r = 0; r < rows.length; r++) ...[
-            if (r > 0) SizedBox(height: 32.h),
+            if (r > 0) SizedBox(height: 40.h),
             Row(
               children: [
                 for (final stat in rows[r])
@@ -539,49 +532,13 @@ class _StatsCard extends StatelessWidget {
                       label: stat.subHeading,
                     ),
                   ),
-                if (rows[r].length == 1) const Expanded(child: SizedBox.shrink()),
+                for (var i = rows[r].length; i < columns; i++)
+                  const Expanded(child: SizedBox.shrink()),
               ],
             ),
           ],
         ],
       ),
-    );
-  }
-}
-
-class _GoalRow extends StatelessWidget {
-  const _GoalRow({required this.title, required this.body});
-
-  final String title;
-  final String body;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (title.isNotEmpty)
-          Text(
-            title,
-            style: ApaFonts.inter(
-              color: ApaColors.nearBlack,
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w800,
-              height: 22 / 16,
-            ),
-          ),
-        if (body.isNotEmpty) ...[
-          SizedBox(height: 4.h),
-          Text(
-            body,
-            style: ApaFonts.inter(
-              color: ApaColors.gray600,
-              fontSize: 14.sp,
-              height: 20 / 14,
-            ),
-          ),
-        ],
-      ],
     );
   }
 }
@@ -598,27 +555,107 @@ class _StatCell extends StatelessWidget {
       children: [
         Text(
           value,
+          textAlign: TextAlign.center,
           style: ApaFonts.inter(
             color: ApaColors.white,
-            fontSize: 32.sp,
-            fontWeight: FontWeight.w800,
-            height: 40 / 32,
+            fontSize: 40.sp,
+            fontWeight: FontWeight.w700,
+            height: 1,
+            letterSpacing: -0.8,
           ),
         ),
         if (label.isNotEmpty) ...[
-          SizedBox(height: 4.h),
+          SizedBox(height: 8.h),
           Text(
             label.toUpperCase(),
             textAlign: TextAlign.center,
             style: ApaFonts.inter(
-              color: ApaColors.white60,
-              fontSize: 11.sp,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1,
+              color: ApaColors.mist,
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w400,
+              height: 1.3,
             ),
           ),
         ],
       ],
+    );
+  }
+}
+
+class _JoinMissionRow extends StatelessWidget {
+  const _JoinMissionRow({
+    required this.title,
+    required this.buttonLabel,
+    this.onPressed,
+  });
+
+  final String title;
+  final String buttonLabel;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final button = buttonLabel.isNotEmpty
+        ? ApaBlackPillButton(
+            label: buttonLabel.toUpperCase(),
+            onPressed: onPressed,
+            fontSize: 18,
+            horizontalPadding: 35,
+            verticalPadding: 16,
+          )
+        : null;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final stack = constraints.maxWidth < 520;
+        if (stack) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (title.isNotEmpty)
+                Text(
+                  title.toUpperCase(),
+                  style: ApaFonts.inter(
+                    color: ApaColors.webInk,
+                    fontSize: 34.sp,
+                    fontWeight: FontWeight.w700,
+                    height: 1.1,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              if (button != null) ...[
+                SizedBox(height: 24.h),
+                button,
+              ],
+            ],
+          );
+        }
+
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            if (title.isNotEmpty)
+              Expanded(
+                child: Text(
+                  title.toUpperCase(),
+                  style: ApaFonts.inter(
+                    color: ApaColors.webInk,
+                    fontSize: 34.sp,
+                    fontWeight: FontWeight.w700,
+                    height: 1.1,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+              )
+            else
+              const Spacer(),
+            if (button != null) ...[
+              SizedBox(width: 24.w),
+              button,
+            ],
+          ],
+        );
+      },
     );
   }
 }

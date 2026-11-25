@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import '../../../../core/network/connectivity_controller.dart';
 import '../../../../core/theme/apa_colors.dart';
 import '../../../../core/theme/apa_fonts.dart';
+import '../../../../core/utils/apa_image_precache.dart';
 import '../../../../core/utils/responsive.dart';
 import '../../../../core/widgets/apa_empty_retry.dart';
 import '../../../../data/models/post/post_model.dart';
@@ -15,6 +18,7 @@ import '../../../donation/presentation/pages/donation_page.dart';
 import '../../../home/presentation/pages/home_page.dart';
 import '../../../news/presentation/pages/article_page.dart';
 import '../../../news/presentation/pages/news_page.dart';
+import '../../../projects/presentation/pages/project_detail_page.dart';
 import '../../../projects/presentation/pages/projects_page.dart';
 import '../../../transparency/presentation/pages/transparency_page.dart';
 import '../../../vision/presentation/pages/vision_page.dart';
@@ -74,8 +78,27 @@ class _ApaShellState extends State<ApaShell> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _pagesController?.loadItems();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final pages = _pagesController;
+
+      // Re-warm with BuildContext DPR (main() already decoded 1x/correct DPR).
+      unawaited(precacheApaStartupImages(context));
+
+      if (pages == null) return;
+
+      // loadItems also preloads Home / Projects / News / Donation details.
+      await pages.loadItems();
+      if (!mounted) return;
+
+      unawaited(() async {
+        await pages.loadDetailsForTemplate(ApaPageTemplates.home);
+        if (!mounted) return;
+        await precacheApaNetworkImage(
+          context,
+          pages.resolvedPageForShell(ApaShellPage.home)?.featuredImageUrl,
+        );
+      }());
     });
   }
 
@@ -127,6 +150,12 @@ class _ApaShellState extends State<ApaShell> {
   void _go(ApaShellPage page) {
     setState(() => _page = page);
     _scrollToTop(page);
+    if (page == ApaShellPage.home) {
+      _reloadHome();
+    }
+    if (page == ApaShellPage.donation) {
+      _reloadDonation();
+    }
     if (page == ApaShellPage.contact) {
       _reloadContact();
     }
@@ -144,18 +173,28 @@ class _ApaShellState extends State<ApaShell> {
     }
   }
 
-  void _reloadNews() {
+  void _reloadHome() {
     _pagesController?.loadDetailsForTemplate(
-      ApaPageTemplates.news,
+      ApaPageTemplates.home,
       force: true,
     );
   }
 
-  void _reloadProjects() {
+  void _reloadDonation() {
     _pagesController?.loadDetailsForTemplate(
-      ApaPageTemplates.projects,
+      ApaPageTemplates.donation,
       force: true,
     );
+  }
+
+  void _reloadNews() {
+    // force: false keeps startup-preloaded data on screen; refreshes in background.
+    _pagesController?.loadDetailsForTemplate(ApaPageTemplates.news);
+  }
+
+  void _reloadProjects() {
+    // force: false keeps startup-preloaded data on screen; refreshes in background.
+    _pagesController?.loadDetailsForTemplate(ApaPageTemplates.projects);
   }
 
   void _reloadTransparency() {
@@ -254,6 +293,34 @@ class _ApaShellState extends State<ApaShell> {
     );
   }
 
+  void _openProject(PostItem project) {
+    final projectsPage =
+        _pagesController?.resolvedPageForShell(ApaShellPage.projects);
+    final more = _pagesController
+            ?.projectsForDisplay(projectsPage)
+            .where((p) => p.id != project.id)
+            .take(3)
+            .toList() ??
+        const [];
+
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => ProjectDetailPage(
+          project: project,
+          moreProjects: more,
+          onBackToProjects: () {
+            Navigator.of(context).pop();
+            _scrollToTop(ApaShellPage.projects);
+          },
+          onDonatePressed: () {
+            Navigator.of(context).pop();
+            _openByTemplate(ApaPageTemplates.donation, ApaShellPage.donation);
+          },
+        ),
+      ),
+    );
+  }
+
   String? _imageUrl(ApaShellPage page) {
     return _pagesController?.resolvedPageForShell(page)?.featuredImageUrl;
   }
@@ -269,6 +336,7 @@ class _ApaShellState extends State<ApaShell> {
         children: [
           HomePage(
             scrollController: _homeScroll,
+            page: pagesController?.resolvedPageForShell(ApaShellPage.home),
             onDonatePressed: (amount) {
               if (Get.isRegistered<DonationController>()) {
                 Get.find<DonationController>().applyHomeAmount(amount);
@@ -287,10 +355,11 @@ class _ApaShellState extends State<ApaShell> {
               ApaPageTemplates.donation,
               ApaShellPage.donation,
             ),
-            imageUrl: _imageUrl(ApaShellPage.projects),
+            onProjectPressed: _openProject,
           ),
           DonationPage(
             scrollController: _donationScroll,
+            page: pagesController?.resolvedPageForShell(ApaShellPage.donation),
             imageUrl: _imageUrl(ApaShellPage.donation),
             onPaymentSucceeded: (message) {
               _openByTemplate(ApaPageTemplates.home, ApaShellPage.home);
@@ -321,7 +390,6 @@ class _ApaShellState extends State<ApaShell> {
             scrollController: _newsScroll,
             page: pagesController?.resolvedPageForShell(ApaShellPage.news),
             onReadMore: _openArticle,
-            imageUrl: _imageUrl(ApaShellPage.news),
           ),
           VisionPage(
             scrollController: _visionScroll,

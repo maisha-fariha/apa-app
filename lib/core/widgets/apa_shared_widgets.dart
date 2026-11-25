@@ -6,6 +6,7 @@ import '../constants/apa_dimens.dart';
 import '../theme/apa_colors.dart';
 import '../theme/apa_fonts.dart';
 import '../utils/responsive.dart';
+import 'apa_remote_image.dart';
 
 /// Reusable hero header used across content screens.
 class ApaHeroHeader extends StatelessWidget {
@@ -155,28 +156,13 @@ class _HeroImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final networkUrl = url?.trim();
-    if (networkUrl != null && networkUrl.isNotEmpty) {
-      return Image.network(
-        networkUrl,
-        fit: BoxFit.cover,
-        alignment: Alignment.center,
-        errorBuilder: (context, error, stackTrace) => _fallback(),
-      );
-    }
-
-    return _fallback();
-  }
-
-  Widget _fallback() {
-    if (useAssetFallback) {
-      return Image.asset(
-        asset,
-        fit: BoxFit.cover,
-        alignment: Alignment.center,
-      );
-    }
-    return const ColoredBox(color: ApaColors.black);
+    return ApaRemoteImage(
+      asset: asset,
+      url: url,
+      fit: BoxFit.cover,
+      alignment: Alignment.center,
+      useAssetFallback: useAssetFallback,
+    );
   }
 }
 
@@ -297,6 +283,133 @@ class ApaBulletItem extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Web `editor-content` disc bullet (`--sky` 6px marker).
+class ApaEditorBulletItem extends StatelessWidget {
+  const ApaEditorBulletItem({super.key, required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 6.h),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 20.w,
+            child: Padding(
+              padding: EdgeInsets.only(top: 8.h),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(
+                    color: ApaColors.webSky,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: ApaFonts.inter(
+                color: ApaColors.webInk,
+                fontSize: 15.5.sp,
+                height: 22.5 / 15.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Numbered list item matching web Projects `ol` blocks.
+class ApaNumberedItem extends StatelessWidget {
+  const ApaNumberedItem({
+    super.key,
+    required this.index,
+    required this.text,
+    this.indexColor = ApaColors.black,
+    this.textColor = ApaColors.gray900,
+  });
+
+  final int index;
+  final String text;
+  final Color indexColor;
+  final Color textColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12.h),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 28.w,
+            child: Text(
+              '$index.',
+              style: ApaFonts.inter(
+                fontSize: 15.sp,
+                fontWeight: FontWeight.w700,
+                height: 22.5 / 15,
+                color: indexColor,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: ApaFonts.inter(
+                color: textColor,
+                fontSize: 15.sp,
+                height: 22.5 / 15,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Web Projects `blockquote`: gray fill + 4px left red rail.
+class ApaRedBorderCallout extends StatelessWidget {
+  const ApaRedBorderCallout({super.key, required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.only(top: 16.h, bottom: 8.h),
+      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
+      decoration: const BoxDecoration(
+        color: ApaColors.calloutFill,
+        border: Border(
+          left: BorderSide(color: ApaColors.webRed, width: 4),
+        ),
+      ),
+      child: Text(
+        text,
+        style: ApaFonts.inter(
+          color: ApaColors.black,
+          fontSize: 15.sp,
+          height: 22.5 / 15,
+          fontWeight: FontWeight.w500,
+        ),
       ),
     );
   }

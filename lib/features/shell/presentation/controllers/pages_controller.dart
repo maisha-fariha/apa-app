@@ -1,12 +1,20 @@
 import 'dart:async';
 
+import 'package:flutter/painting.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:gems_core/gems_core.dart';
 import 'package:gems_data_layer/gems_data_layer.dart';
 
+import '../../../../core/network/apa_api_config.dart';
 import '../../../../core/network/connectivity_controller.dart';
+import '../../../../core/utils/apa_snackbar.dart';
+import '../../../../data/models/post/content_detail_models.dart';
+import '../../../../data/models/post/post_item_extensions.dart';
 import '../../../../data/models/post/post_model.dart';
+import '../../../../data/models/post/project_list_utils.dart';
 import '../../../../data/repositories/posts_repository.dart';
+import '../../../transparency/domain/transparency_page_content.dart';
 import '../mapping/apa_page_templates.dart';
 import '../models/apa_nav_item.dart';
 import '../widgets/apa_more_sheet.dart';
@@ -18,6 +26,7 @@ class PagesController extends BaseListController<PostItem>
   final PostsRepository repository;
 
   bool _fetched = false;
+  Completer<void>? _itemsLoadCompleter;
 
   /// True only after an online fetch finishes. A startup offline blip
   /// leaves this false so the shell does not flash the retry screen.
@@ -29,7 +38,47 @@ class PagesController extends BaseListController<PostItem>
   /// Full page payloads loaded via `get-post-details`, keyed by post id.
   final RxMap<int, PostItem> pageDetailsById = <int, PostItem>{}.obs;
 
+  /// Full Projects CPT catalog (canonicalized for web-matching grid copy).
+  final RxList<PostItem> projectsCatalog = <PostItem>[].obs;
+
+  /// Extra news stories loaded via `get-paginated-posts` (after first page).
+  final RxList<PostItem> extraNewsPosts = <PostItem>[].obs;
+
+  /// Active news keyword search (`get-paginated-posts?search=`).
+  final RxString newsSearchQuery = ''.obs;
+  final RxList<PostItem> newsSearchResults = <PostItem>[].obs;
+  final RxBool newsSearchHasMore = false.obs;
+  final RxBool searchingNews = false.obs;
+
+  /// 1-based Projects grid page (web `pagination.page` / `total_pages`).
+  final RxInt projectsPage = 1.obs;
+  final RxInt projectsTotalPages = 1.obs;
+  final RxInt projectsPerPage = 3.obs;
+  final RxBool projectsCatalogLoaded = false.obs;
+  final RxBool loadingProjectsPage = false.obs;
+
+  final RxBool newsHasMore = false.obs;
+  final RxBool loadingMoreNews = false.obs;
+
+  /// Transparency project ledger (web `?ledger_page=N`).
+  ///
+  /// Page 1 comes from `get-post-details` `ledger`; later pages are loaded with
+  /// `get-paginated-posts` using the same offset math as the website.
+  final RxMap<int, List<TransparencyLedgerItem>> ledgerPagesByNumber =
+      <int, List<TransparencyLedgerItem>>{}.obs;
+  final RxList<TransparencyLedgerColumn> ledgerColumns =
+      <TransparencyLedgerColumn>[].obs;
+  final RxInt ledgerPage = 1.obs;
+  final RxInt ledgerTotalPages = 1.obs;
+  final RxInt ledgerPerPage = 5.obs;
+  final RxBool loadingLedgerPage = false.obs;
+
+  /// Global Settings page (`post_id=5`) — shared labels / donate CTA / logo.
+  final Rxn<PostItem> globalSettings = Rxn<PostItem>();
+
   final Set<int> _loadingDetails = <int>{};
+  final Map<int, Completer<void>> _detailsLoadCompleters = <int, Completer<void>>{};
+  final Set<String> _loadingContentKeys = <String>{};
 
   bool isLoadingDetailsFor(int pageId) => _loadingDetails.contains(pageId);
 
@@ -49,14 +98,24 @@ class PagesController extends BaseListController<PostItem>
   @override
   void onInit() {
     super.onInit();
-    unawaited(loadItems());
+    // Controllers are registered before `runApp`. Defer the first network
+    // pass until after the first frame so Material/navigator are mounted.
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      unawaited(loadItems());
+      unawaited(loadGlobalSettings());
+    });
   }
 
   @override
   Future<void> loadItems() async {
-    if (isLoading.value) return;
     if (_fetched && items.isNotEmpty) return;
+    // Concurrent callers (shell + onInit) must wait — not bail early — or
+    // follow-up `loadDetailsForTemplate` runs before the page list exists.
+    final inFlight = _itemsLoadCompleter;
+    if (inFlight != null) return inFlight.future;
 
+    final completer = Completer<void>();
+    _itemsLoadCompleter = completer;
     setLoading(true);
     try {
       final result = await repository.getAll();
@@ -74,6 +133,8 @@ class PagesController extends BaseListController<PostItem>
           }
           errorMessage.value = '';
           _ensureInitialSelection();
+          // Primary shell tabs ASAP so Home / Projects / News are ready.
+          _preloadPrimaryShellDetails();
         },
         failure: (error) {
           // Offline at launch is often a false reading. Stay unsettled so
@@ -81,12 +142,25 @@ class PagesController extends BaseListController<PostItem>
           if (!ConnectivityController.currentlyOnline) return;
           initialLoadSettled.value = true;
           setError(error.message);
-          Get.snackbar('Error', error.message);
+          ApaSnackbar.error(error.message);
         },
       );
     } finally {
       setLoading(false);
+      if (!completer.isCompleted) completer.complete();
+      if (identical(_itemsLoadCompleter, completer)) {
+        _itemsLoadCompleter = null;
+      }
     }
+  }
+
+  /// Fire-and-forget details for tabs that should feel instant on open.
+  void _preloadPrimaryShellDetails() {
+    unawaited(loadDetailsForTemplate(ApaPageTemplates.home));
+    unawaited(loadDetailsForTemplate(ApaPageTemplates.projects));
+    unawaited(loadDetailsForTemplate(ApaPageTemplates.news));
+    unawaited(loadDetailsForTemplate(ApaPageTemplates.donation));
+    unawaited(loadGlobalSettings());
   }
 
   /// Clears the one-shot fetch guard and reloads list + optional page details.
@@ -105,23 +179,65 @@ class PagesController extends BaseListController<PostItem>
     if (items.isEmpty) {
       _fetched = false;
       await loadItems();
+    } else {
+      unawaited(loadGlobalSettings(force: true));
+      // Always refresh primary shell pages (esp. Home featured background).
+      await Future.wait([
+        loadDetailsForTemplate(ApaPageTemplates.home, force: true),
+        loadDetailsForTemplate(ApaPageTemplates.projects, force: true),
+        loadDetailsForTemplate(ApaPageTemplates.news, force: true),
+        loadDetailsForTemplate(ApaPageTemplates.donation, force: true),
+      ]);
+      final selectedId = selectedPageId.value;
+      final homeId = pageByTemplate(ApaPageTemplates.home)?.id;
+      if (selectedId != null &&
+          selectedId > 0 &&
+          selectedId != homeId &&
+          pageByTemplate(ApaPageTemplates.projects)?.id != selectedId &&
+          pageByTemplate(ApaPageTemplates.news)?.id != selectedId &&
+          pageByTemplate(ApaPageTemplates.donation)?.id != selectedId) {
+        await loadPageDetails(selectedId, force: true);
+      }
     }
-    final selectedId = selectedPageId.value;
-    if (selectedId != null && selectedId > 0) {
-      await loadPageDetails(selectedId, force: true);
-      return;
+    // CMS URLs are ready — warm home background then force image remount.
+    final homeBg = resolvedPageForShell(ApaShellPage.home)?.featuredImageUrl;
+    if (homeBg != null && homeBg.trim().isNotEmpty) {
+      unawaited(_warmNetworkImage(homeBg.trim()));
     }
-    final home = pageByTemplate(ApaPageTemplates.home);
-    if (home != null) {
-      await loadPageDetails(home.id, force: true);
+    if (ConnectivityController.registered) {
+      ConnectivityController.to.bumpImageReload();
     }
+  }
+
+  Future<void> _warmNetworkImage(String url) async {
+    try {
+      final provider = NetworkImage(url);
+      final views = SchedulerBinding.instance.platformDispatcher.views;
+      final dpr = views.isEmpty ? 1.0 : views.first.devicePixelRatio;
+      final config = ImageConfiguration(devicePixelRatio: dpr);
+      final stream = provider.resolve(config);
+      final completer = Completer<void>();
+      late final ImageStreamListener listener;
+      listener = ImageStreamListener(
+        (ImageInfo image, bool sync) {
+          stream.removeListener(listener);
+          if (!completer.isCompleted) completer.complete();
+        },
+        onError: (Object exception, StackTrace? stackTrace) {
+          stream.removeListener(listener);
+          if (!completer.isCompleted) completer.complete();
+        },
+      );
+      stream.addListener(listener);
+      await completer.future;
+    } catch (_) {}
   }
 
   void _ensureInitialSelection() {
     if (selectedPageId.value != null) return;
     final home = pageByTemplate(ApaPageTemplates.home);
     if (home != null) {
-      selectPage(home, fetchDetails: false);
+      selectPage(home, fetchDetails: true);
     }
   }
 
@@ -197,14 +313,35 @@ class PagesController extends BaseListController<PostItem>
 
   Future<void> loadPageDetails(int pageId, {bool force = false}) async {
     if (pageId <= 0) return;
-    if (!force && pageDetailsById.containsKey(pageId)) return;
-    if (!force && _loadingDetails.contains(pageId)) return;
+    if (!force && pageDetailsById.containsKey(pageId)) {
+      // Keep showing memory/cache immediately, but refresh so CMS edits
+      // (e.g. Home minimum_donate_amount) appear without an app reinstall.
+      if (ConnectivityController.currentlyOnline) {
+        unawaited(_refreshPageDetailsInBackground(pageId));
+      }
+      final cached = pageDetailsById[pageId];
+      if (cached != null &&
+          _isProjectsPageId(pageId) &&
+          !projectsCatalogLoaded.value) {
+        unawaited(_ensureProjectsCatalog(cached));
+      }
+      if (cached != null &&
+          _isTransparencyPageId(pageId) &&
+          !ledgerPagesByNumber.containsKey(1)) {
+        _seedLedgerPageOne(cached);
+      }
+      return;
+    }
+    final inFlight = _detailsLoadCompleters[pageId];
+    if (!force && inFlight != null) return inFlight.future;
 
     // Offline: never force a network round-trip; serve cache/memory only.
     final online = ConnectivityController.currentlyOnline;
     final useCache = !force || !online;
     if (!online && pageDetailsById.containsKey(pageId)) return;
 
+    final completer = Completer<void>();
+    _detailsLoadCompleters[pageId] = completer;
     _loadingDetails.add(pageId);
     try {
       final result = await repository.getPostDetails(
@@ -212,13 +349,162 @@ class PagesController extends BaseListController<PostItem>
         useCache: useCache,
       );
       result.when(
-        success: (details) => pageDetailsById[pageId] = details,
+        success: (details) {
+          pageDetailsById[pageId] = details;
+          _resetListPagingForPage(pageId, details);
+          if (_isProjectsPageId(pageId)) {
+            unawaited(_ensureProjectsCatalog(details));
+          }
+          if (_isTransparencyPageId(pageId)) {
+            _seedLedgerPageOne(details);
+          }
+        },
+        failure: (_) {},
+      );
+    } finally {
+      _loadingDetails.remove(pageId);
+      if (!completer.isCompleted) completer.complete();
+      if (identical(_detailsLoadCompleters[pageId], completer)) {
+        _detailsLoadCompleters.remove(pageId);
+      }
+    }
+  }
+
+  Future<void> _refreshPageDetailsInBackground(int pageId) async {
+    if (_loadingDetails.contains(pageId)) return;
+    _loadingDetails.add(pageId);
+    try {
+      final result = await repository.getPostDetails(
+        pageId,
+        useCache: false,
+      );
+      result.when(
+        success: (details) {
+          final previous = pageDetailsById[pageId];
+          pageDetailsById[pageId] = details;
+          // Reset Projects/News paging when CMS pagination meta changes.
+          if (previous?.listPagination.hasMore !=
+                  details.listPagination.hasMore ||
+              previous?.listPagination.perPage !=
+                  details.listPagination.perPage ||
+              previous?.listPagination.totalPages !=
+                  details.listPagination.totalPages) {
+            _resetListPagingForPage(pageId, details);
+            if (_isProjectsPageId(pageId)) {
+              unawaited(_ensureProjectsCatalog(details));
+            }
+            if (_isTransparencyPageId(pageId)) {
+              _seedLedgerPageOne(details);
+            }
+          } else if (_isProjectsPageId(pageId) &&
+              !projectsCatalogLoaded.value) {
+            unawaited(_ensureProjectsCatalog(details));
+          } else if (_isTransparencyPageId(pageId) &&
+              !ledgerPagesByNumber.containsKey(1)) {
+            _seedLedgerPageOne(details);
+          }
+        },
         failure: (_) {},
       );
     } finally {
       _loadingDetails.remove(pageId);
     }
   }
+
+  /// Loads Global Settings once (labels, donate CTA, site logo).
+  Future<void> loadGlobalSettings({bool force = false}) async {
+    if (!force && globalSettings.value != null) return;
+
+    final online = ConnectivityController.currentlyOnline;
+    final useCache = !force || !online;
+
+    final result = await repository.getPostDetails(
+      ApaApiConfig.globalSettingsId,
+      useCache: useCache,
+    );
+    result.when(
+      success: (details) => globalSettings.value = details,
+      failure: (_) {},
+    );
+  }
+
+  static String _contentCacheKey(int postId, String postType) =>
+      '${postType.trim()}:$postId';
+
+  /// Single news/project details with `post_type` (collection folder 2).
+  Future<void> loadContentDetails(
+    int postId, {
+    required String postType,
+    bool force = false,
+  }) async {
+    if (postId <= 0 || postType.trim().isEmpty) return;
+
+    final key = _contentCacheKey(postId, postType);
+    final existing = pageDetailsById[postId];
+    if (!force &&
+        existing != null &&
+        _isTypedContentPayload(existing, postType)) {
+      return;
+    }
+    if (!force && _loadingContentKeys.contains(key)) return;
+
+    final online = ConnectivityController.currentlyOnline;
+    final useCache = !force || !online;
+    if (!online && existing != null) return;
+
+    _loadingContentKeys.add(key);
+    try {
+      final result = await repository.getPostDetails(
+        postId,
+        postType: postType,
+        useCache: useCache,
+      );
+      result.when(
+        success: (details) => pageDetailsById[postId] = details,
+        failure: (_) {},
+      );
+    } finally {
+      _loadingContentKeys.remove(key);
+    }
+  }
+
+  bool _isTypedContentPayload(PostItem item, String postType) {
+    if (item.type == postType) return true;
+    if (postType == ApaApiConfig.postTypePost) {
+      return item.acfFields.containsKey('news_facts') ||
+          item.acfFields.containsKey('related_posts');
+    }
+    if (postType == ApaApiConfig.postTypeProjects) {
+      return item.acfFields.containsKey('project_details') ||
+          item.acfFields.containsKey('related_projects');
+    }
+    return false;
+  }
+
+  bool isLoadingContentDetails(int postId, String postType) =>
+      _loadingContentKeys.contains(_contentCacheKey(postId, postType));
+
+  ContentLabels newsLabelsFor(PostItem? detail) {
+    final fromDetail = detail?.newsLabels ?? ContentLabels.empty;
+    if (!fromDetail.isEmpty) return fromDetail;
+    return globalSettings.value?.newsLabels ?? ContentLabels.empty;
+  }
+
+  ContentLabels projectLabelsFor(PostItem? detail) {
+    final fromDetail = detail?.projectLabels ?? ContentLabels.empty;
+    if (!fromDetail.isEmpty) return fromDetail;
+    return globalSettings.value?.projectLabels ?? ContentLabels.empty;
+  }
+
+  DonateCta donateCtaFor(PostItem? detail) {
+    final fromDetail = detail?.donateCta ?? DonateCta.empty;
+    if (!fromDetail.isEmpty) return fromDetail;
+    return globalSettings.value?.donateCta ?? DonateCta.empty;
+  }
+
+  String? get siteLogoUrl =>
+      globalSettings.value?.siteLogoUrl ??
+      globalSettings.value?.featuredImageUrl;
 
   Future<void> loadDetailsForTemplate(
     String template, {
@@ -228,6 +514,369 @@ class PagesController extends BaseListController<PostItem>
     if (page == null) return;
     selectPage(page, fetchDetails: false);
     await loadPageDetails(page.id, force: force);
+  }
+
+  void _resetListPagingForPage(int pageId, PostItem details) {
+    final projectsShell = pageByTemplate(ApaPageTemplates.projects);
+    final newsPage = pageByTemplate(ApaPageTemplates.news);
+    final transparencyPage = pageByTemplate(ApaPageTemplates.transparency);
+    final pagination = details.listPagination;
+
+    if (projectsShell?.id == pageId) {
+      final perPage = pagination.perPage > 0 ? pagination.perPage : 3;
+      projectsPerPage.value = perPage;
+      projectsPage.value = 1;
+      projectsCatalog
+        ..clear()
+        ..addAll(details.relatedProjects);
+      projectsCatalogLoaded.value = false;
+      // Prefer CMS/API total_pages so pager matches web `?project_page=N`.
+      projectsTotalPages.value =
+          pagination.totalPages > 0 ? pagination.totalPages : 1;
+      _syncProjectsPagingMeta(apiTotalPages: pagination.totalPages);
+    }
+    if (newsPage?.id == pageId) {
+      extraNewsPosts.clear();
+      newsHasMore.value = pagination.hasMore;
+      clearNewsSearch();
+    }
+    if (transparencyPage?.id == pageId) {
+      _seedLedgerPageOne(details);
+    }
+  }
+
+  bool _isProjectsPageId(int pageId) {
+    final projectsShell = pageByTemplate(ApaPageTemplates.projects);
+    return projectsShell?.id == pageId;
+  }
+
+  bool _isTransparencyPageId(int pageId) {
+    final page = pageByTemplate(ApaPageTemplates.transparency);
+    return page?.id == pageId;
+  }
+
+  List<PostItem> get _gridProjects =>
+      projectsForWebGrid(projectsCatalog.toList(growable: false));
+
+  void _syncProjectsPagingMeta({int? apiTotalPages}) {
+    final perPage = projectsPerPage.value > 0 ? projectsPerPage.value : 3;
+    final grid = _gridProjects;
+    final fromCatalog =
+        grid.isEmpty ? 1 : ((grid.length + perPage - 1) ~/ perPage);
+    final pages = (apiTotalPages != null && apiTotalPages > 0)
+        ? apiTotalPages
+        : fromCatalog;
+    projectsTotalPages.value = pages < 1 ? 1 : pages;
+    if (projectsPage.value > projectsTotalPages.value) {
+      projectsPage.value = projectsTotalPages.value;
+    }
+    if (projectsPage.value < 1) projectsPage.value = 1;
+  }
+
+  /// Loads all project cards, merges `#2` duplicates to web page-1 copy, then
+  /// pages the unique grid locally.
+  Future<void> _ensureProjectsCatalog(PostItem details) async {
+    if (projectsCatalogLoaded.value) {
+      _syncProjectsPagingMeta();
+      return;
+    }
+
+    final perPage = details.listPagination.perPage > 0
+        ? details.listPagination.perPage
+        : 3;
+    projectsPerPage.value = perPage;
+
+    if (!ConnectivityController.currentlyOnline) {
+      projectsCatalog
+        ..clear()
+        ..addAll(details.relatedProjects);
+      projectsCatalogLoaded.value = true;
+      _syncProjectsPagingMeta(apiTotalPages: details.listPagination.totalPages);
+      return;
+    }
+
+    final totalRaw = details.acfFields['total_projects'];
+    final total = totalRaw is int
+        ? totalRaw
+        : int.tryParse(totalRaw?.toString() ?? '') ?? 0;
+    final limit = total > 0
+        ? total
+        : perPage *
+            (details.listPagination.totalPages > 0
+                ? details.listPagination.totalPages
+                : 5);
+
+    loadingProjectsPage.value = true;
+    try {
+      final result = await repository.getPaginatedPosts(
+        postType: ApaApiConfig.postTypeProjects,
+        limit: limit < 1 ? 50 : limit,
+        offset: 0,
+      );
+      result.when(
+        success: (pageResult) {
+          projectsCatalog
+            ..clear()
+            ..addAll(pageResult.posts.isNotEmpty
+                ? pageResult.posts
+                : details.relatedProjects);
+          projectsCatalogLoaded.value = true;
+          projectsPage.value = 1;
+          final apiPages = details.listPagination.totalPages > 0
+              ? details.listPagination.totalPages
+              : (pageResult.totalPosts > 0 && perPage > 0
+                  ? ((pageResult.totalPosts + perPage - 1) ~/ perPage)
+                  : 0);
+          _syncProjectsPagingMeta(apiTotalPages: apiPages);
+        },
+        failure: (_) {
+          projectsCatalog
+            ..clear()
+            ..addAll(details.relatedProjects);
+          projectsCatalogLoaded.value = true;
+          _syncProjectsPagingMeta(
+            apiTotalPages: details.listPagination.totalPages,
+          );
+        },
+      );
+    } finally {
+      loadingProjectsPage.value = false;
+    }
+  }
+
+  /// Current Projects grid page — web order with numbered pagination.
+  List<PostItem> projectsForDisplay(PostItem? page) {
+    final perPage = projectsPerPage.value > 0 ? projectsPerPage.value : 3;
+    final grid = _gridProjects;
+    if (grid.isNotEmpty) {
+      final index = projectsPage.value < 1 ? 0 : projectsPage.value - 1;
+      final start = index * perPage;
+      if (start >= grid.length) return const [];
+      final end = (start + perPage).clamp(0, grid.length);
+      return grid.sublist(start, end);
+    }
+    return projectsForWebGrid(page?.relatedProjects ?? const []);
+  }
+
+  /// Jump to a Projects grid page (Previous / 1 2 3 / Next).
+  Future<void> goToProjectsPage(int pageNumber) async {
+    if (loadingProjectsPage.value) return;
+    final details = resolvedPageForShell(ApaShellPage.projects);
+    if (details != null && !projectsCatalogLoaded.value) {
+      await _ensureProjectsCatalog(details);
+    }
+    final total = projectsTotalPages.value;
+    if (pageNumber < 1 || pageNumber > total) return;
+    if (pageNumber == projectsPage.value) return;
+    projectsPage.value = pageNumber;
+  }
+
+  void _seedLedgerPageOne(PostItem details) {
+    final content = TransparencyPageContent.fromPost(details);
+    final pagination = details.listPagination;
+    final perPage = pagination.perPage > 0
+        ? pagination.perPage
+        : (content.pagination.perPage > 0 ? content.pagination.perPage : 5);
+
+    ledgerPerPage.value = perPage;
+    ledgerPage.value = 1;
+    ledgerColumns
+      ..clear()
+      ..addAll(content.ledgerColumns);
+    ledgerPagesByNumber
+      ..clear()
+      ..[1] = List<TransparencyLedgerItem>.unmodifiable(content.ledgerItems);
+
+    final apiPages = pagination.totalPages > 0
+        ? pagination.totalPages
+        : (content.totalProjects > 0 && perPage > 0
+            ? ((content.totalProjects + perPage - 1) ~/ perPage)
+            : 1);
+    ledgerTotalPages.value = apiPages < 1 ? 1 : apiPages;
+  }
+
+  /// Current Transparency ledger page — matches web `?ledger_page=N`.
+  List<TransparencyLedgerItem> ledgerItemsForDisplay(PostItem? page) {
+    final cached = ledgerPagesByNumber[ledgerPage.value];
+    if (cached != null) return cached;
+    if (ledgerPage.value == 1 && page != null) {
+      return TransparencyPageContent.fromPost(page).ledgerItems;
+    }
+    return const [];
+  }
+
+  /// Loads ledger page [pageNumber] the way the website does:
+  /// page 1 = `ledger` from details; page N = projects at offset `(N-1)*per_page`.
+  Future<void> goToLedgerPage(int pageNumber) async {
+    if (loadingLedgerPage.value) return;
+    final total = ledgerTotalPages.value;
+    if (pageNumber < 1 || pageNumber > total) return;
+
+    if (ledgerPagesByNumber.containsKey(pageNumber)) {
+      ledgerPage.value = pageNumber;
+      return;
+    }
+
+    final details = resolvedPageForShell(ApaShellPage.transparency);
+    if (details == null) return;
+
+    if (pageNumber == 1) {
+      _seedLedgerPageOne(details);
+      return;
+    }
+
+    if (ledgerColumns.isEmpty) {
+      _seedLedgerPageOne(details);
+    }
+
+    final perPage = ledgerPerPage.value > 0 ? ledgerPerPage.value : 5;
+    final offset = (pageNumber - 1) * perPage;
+    loadingLedgerPage.value = true;
+    try {
+      final result = await repository.getPaginatedPosts(
+        postType: ApaApiConfig.postTypeProjects,
+        limit: perPage,
+        offset: offset,
+      );
+      result.when(
+        success: (pageResult) {
+          final columns = ledgerColumns.toList(growable: false);
+          final rows = pageResult.posts
+              .map((post) => TransparencyLedgerItem.fromProject(post, columns))
+              .toList(growable: false);
+          ledgerPagesByNumber[pageNumber] = rows;
+          ledgerPage.value = pageNumber;
+
+          if (pageResult.totalPosts > 0 && perPage > 0) {
+            final pages = (pageResult.totalPosts + perPage - 1) ~/ perPage;
+            if (pages > ledgerTotalPages.value) {
+              ledgerTotalPages.value = pages;
+            }
+          }
+        },
+        failure: (_) {},
+      );
+    } finally {
+      loadingLedgerPage.value = false;
+    }
+  }
+
+  bool get isNewsSearchActive => newsSearchQuery.value.trim().isNotEmpty;
+
+  /// Non-featured news stories including load-more / search results.
+  List<PostItem> newsStoriesForDisplay(PostItem? page) {
+    if (isNewsSearchActive) {
+      return List<PostItem>.unmodifiable(newsSearchResults);
+    }
+    final first = page?.nonFeaturedPosts ?? const <PostItem>[];
+    if (extraNewsPosts.isEmpty) return first;
+    final seen = first.map((p) => p.id).toSet();
+    final featuredId = page?.featuredPost?.id;
+    return [
+      ...first,
+      for (final post in extraNewsPosts)
+        if (post.id != featuredId && seen.add(post.id)) post,
+    ];
+  }
+
+  /// Keyword search against `get-paginated-posts?post_type=post&search=`.
+  Future<void> searchNews(String query, {int limit = 10}) async {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      clearNewsSearch();
+      return;
+    }
+    if (!ConnectivityController.currentlyOnline) {
+      ApaSnackbar.error(ConnectivityController.offlineMessage);
+      return;
+    }
+    if (searchingNews.value) return;
+
+    searchingNews.value = true;
+    newsSearchQuery.value = trimmed;
+    try {
+      final result = await repository.getPaginatedPosts(
+        postType: ApaApiConfig.postTypePost,
+        limit: limit,
+        offset: 0,
+        search: trimmed,
+      );
+      result.when(
+        success: (pageResult) {
+          newsSearchResults
+            ..clear()
+            ..addAll(pageResult.posts);
+          newsSearchHasMore.value = pageResult.hasMore;
+        },
+        failure: (error) {
+          ApaSnackbar.error(error.message);
+        },
+      );
+    } finally {
+      searchingNews.value = false;
+    }
+  }
+
+  void clearNewsSearch() {
+    newsSearchQuery.value = '';
+    newsSearchResults.clear();
+    newsSearchHasMore.value = false;
+    searchingNews.value = false;
+  }
+
+  Future<void> loadMoreNews() async {
+    if (loadingMoreNews.value) return;
+    if (!ConnectivityController.currentlyOnline) {
+      ApaSnackbar.error(ConnectivityController.offlineMessage);
+      return;
+    }
+
+    final searching = isNewsSearchActive;
+    if (searching) {
+      if (!newsSearchHasMore.value) return;
+    } else if (!newsHasMore.value) {
+      return;
+    }
+
+    final page = resolvedPageForShell(ApaShellPage.news);
+    if (!searching && page == null) return;
+
+    final limit = searching
+        ? 10
+        : (page!.listPagination.loadMoreCount > 0
+            ? page.listPagination.loadMoreCount
+            : 3);
+    final already = searching
+        ? newsSearchResults.length
+        : page!.newsPosts.length + extraNewsPosts.length;
+    final excludeId = searching ? null : page!.featuredPost?.id;
+
+    loadingMoreNews.value = true;
+    try {
+      final result = await repository.getPaginatedPosts(
+        postType: ApaApiConfig.postTypePost,
+        limit: limit,
+        offset: already,
+        excludeId: excludeId,
+        search: searching ? newsSearchQuery.value : null,
+      );
+      result.when(
+        success: (pageResult) {
+          if (searching) {
+            newsSearchResults.addAll(pageResult.posts);
+            newsSearchHasMore.value = pageResult.hasMore;
+          } else {
+            extraNewsPosts.addAll(pageResult.posts);
+            newsHasMore.value = pageResult.hasMore;
+          }
+        },
+        failure: (error) {
+          ApaSnackbar.error(error.message);
+        },
+      );
+    } finally {
+      loadingMoreNews.value = false;
+    }
   }
 
   Future<String?> mediaSourceUrl(int mediaId) {

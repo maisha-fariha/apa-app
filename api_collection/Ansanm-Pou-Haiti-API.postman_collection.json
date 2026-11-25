@@ -1,0 +1,1487 @@
+{
+  "info": {
+    "_postman_id": "53631d9a-4af4-4a16-984d-cb312513f782",
+    "name": "Ansanm Pou Haiti API",
+    "description": "REST API of the Ansanm Pou Haiti website (WordPress theme).\n\n- Content: `{{baseUrl}}/ansanm-pou-haiti/v1/...`\n- Donations (Stripe): `{{baseUrl}}/encoderit-stripe/v1/...`\n\n**Setup:** import an environment (Local or Production), set its secret `apiKey` to the value of `ANSANM_POU_HAITI_REST_API_KEY` from that site's wp-config.php, and select it. Every request sends it as the `x-api-key` header (collection auth). Run folder 1 first: it saves the IDs/offsets later requests use.\n\nRequests that change data are marked in their description (submit form, payments, subscriptions, cancel).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "key",
+        "value": "x-api-key",
+        "type": "string"
+      },
+      {
+        "key": "value",
+        "value": "{{apiKey}}",
+        "type": "string"
+      },
+      {
+        "key": "in",
+        "value": "header",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "1. Pages (get-post-details)",
+      "description": "One request per page template. `get-post-details` returns the page, its ACF fields (`acf_fields`) and, per template, the extra data the website shows on first load. IDs are collection variables (same IDs locally and on production after the content import).",
+      "item": [
+        {
+          "name": "Home page",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ansanm-pou-haiti/v1/get-post-details?post_id={{homePageId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ansanm-pou-haiti",
+                "v1",
+                "get-post-details"
+              ],
+              "query": [
+                {
+                  "key": "post_id",
+                  "value": "{{homePageId}}"
+                }
+              ]
+            },
+            "description": "Front page (front-page.php): all Home Page ACF content in `acf_fields`."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Has acf_fields\", () => pm.expect(j).to.have.property(\"acf_fields\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Projects page (first grid page)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ansanm-pou-haiti/v1/get-post-details?post_id={{projectsPageId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ansanm-pou-haiti",
+                "v1",
+                "get-post-details"
+              ],
+              "query": [
+                {
+                  "key": "post_id",
+                  "value": "{{projectsPageId}}"
+                }
+              ]
+            },
+            "description": "page-project.php: `projects` (cards of the first grid page), `count`, `total_projects`, `pagination` {page, per_page, total_pages, has_more}. Load the next pages with **3. Lists > Projects - next page**."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Has acf_fields\", () => pm.expect(j).to.have.property(\"acf_fields\"));",
+                  "pm.test(\"projects + pagination\", () => { pm.expect(j.projects).to.be.an(\"array\"); pm.expect(j.pagination).to.have.property(\"per_page\"); });",
+                  "pm.collectionVariables.set(\"projectsPerPage\", j.pagination.per_page);",
+                  "pm.collectionVariables.set(\"projectsOffset\", j.projects.length);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "News page (featured + first load)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ansanm-pou-haiti/v1/get-post-details?post_id={{newsPageId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ansanm-pou-haiti",
+                "v1",
+                "get-post-details"
+              ],
+              "query": [
+                {
+                  "key": "post_id",
+                  "value": "{{newsPageId}}"
+                }
+              ]
+            },
+            "description": "page-news.php: `featured_post` (the featured story, or the newest), `posts` (rest of the first load), `pagination` {page, first_load_count, load_more_count, total_pages, has_more}. Next stories: **3. Lists > News - load more**."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Has acf_fields\", () => pm.expect(j).to.have.property(\"acf_fields\"));",
+                  "pm.test(\"featured_post + posts\", () => { pm.expect(j).to.have.property(\"featured_post\"); pm.expect(j.posts).to.be.an(\"array\"); });",
+                  "if (j.featured_post) { pm.collectionVariables.set(\"featuredPostId\", j.featured_post.id); }",
+                  "pm.collectionVariables.set(\"newsLoadMore\", j.pagination.load_more_count);",
+                  "pm.collectionVariables.set(\"newsOffset\", j.posts.length);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Transparency page (funding + ledger)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ansanm-pou-haiti/v1/get-post-details?post_id={{transparencyPageId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ansanm-pou-haiti",
+                "v1",
+                "get-post-details"
+              ],
+              "query": [
+                {
+                  "key": "post_id",
+                  "value": "{{transparencyPageId}}"
+                }
+              ]
+            },
+            "description": "page-transparency.php: `funding_progress` (raised = offline + Stripe, target, percent), `ledger_columns` (Table Columns settings: heading, fact, display, align, colors, radius, highlight) and `ledger` rows (fixed keys community/status/committed/highlight + `cells`, one per column), `count`, `total_projects`, `pagination`."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Has acf_fields\", () => pm.expect(j).to.have.property(\"acf_fields\"));",
+                  "pm.test(\"funding + ledger\", () => { pm.expect(j).to.have.property(\"funding_progress\"); pm.expect(j.ledger).to.be.an(\"array\"); pm.expect(j.ledger_columns).to.be.an(\"array\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Contact page (contact items)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ansanm-pou-haiti/v1/get-post-details?post_id={{contactPageId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ansanm-pou-haiti",
+                "v1",
+                "get-post-details"
+              ],
+              "query": [
+                {
+                  "key": "post_id",
+                  "value": "{{contactPageId}}"
+                }
+              ]
+            },
+            "description": "page-contact.php: `contact_items` - one per line with label, type (email | phone | whatsapp | text | map), value, link (mailto: / tel: / https://wa.me/...; empty for text), is_link, embed_url (map rows)."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Has acf_fields\", () => pm.expect(j).to.have.property(\"acf_fields\"));",
+                  "pm.test(\"contact_items\", () => pm.expect(j.contact_items).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Our Vision page",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ansanm-pou-haiti/v1/get-post-details?post_id={{visionPageId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ansanm-pou-haiti",
+                "v1",
+                "get-post-details"
+              ],
+              "query": [
+                {
+                  "key": "post_id",
+                  "value": "{{visionPageId}}"
+                }
+              ]
+            },
+            "description": "page-vision.php: vision_statement, core_values, future_goals, success_stats, join_mission in `acf_fields`."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Has acf_fields\", () => pm.expect(j).to.have.property(\"acf_fields\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Donation page",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ansanm-pou-haiti/v1/get-post-details?post_id={{donationPageId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ansanm-pou-haiti",
+                "v1",
+                "get-post-details"
+              ],
+              "query": [
+                {
+                  "key": "post_id",
+                  "value": "{{donationPageId}}"
+                }
+              ]
+            },
+            "description": "page-donation.php: page content groups/repeaters in `acf_fields` (the Stripe form itself uses the Stripe endpoints)."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Has acf_fields\", () => pm.expect(j).to.have.property(\"acf_fields\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Global Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ansanm-pou-haiti/v1/get-post-details?post_id={{globalSettingsId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ansanm-pou-haiti",
+                "v1",
+                "get-post-details"
+              ],
+              "query": [
+                {
+                  "key": "post_id",
+                  "value": "{{globalSettingsId}}"
+                }
+              ]
+            },
+            "description": "Global Settings page: `site_logo_url`, and in `acf_fields` the Theme Settings, Donate Card (`donate_cta`), News Article Labels (`news_single`) and Project Page Labels (`project_single`)."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"Has acf_fields\", () => pm.expect(j).to.have.property(\"acf_fields\"));",
+                  "pm.test(\"site settings groups\", () => { pm.expect(j.acf_fields).to.have.property(\"donate_cta\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Page by slug",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ansanm-pou-haiti/v1/get-post-details?slug=our-vision&post_type=page",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ansanm-pou-haiti",
+                "v1",
+                "get-post-details"
+              ],
+              "query": [
+                {
+                  "key": "slug",
+                  "value": "our-vision"
+                },
+                {
+                  "key": "post_type",
+                  "value": "page"
+                }
+              ]
+            },
+            "description": "Any page or post can also be looked up by `slug` (with `post_type` page, post or projects)."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Page details (POST body)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ansanm-pou-haiti/v1/get-post-details",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ansanm-pou-haiti",
+                "v1",
+                "get-post-details"
+              ]
+            },
+            "description": "Same endpoint with a JSON body instead of query parameters.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"post_id\": \"{{contactPageId}}\",\n  \"post_type\": \"page\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2. Single project & news post",
+      "description": "Detail pages: the full item plus everything its page shows.",
+      "item": [
+        {
+          "name": "Single project",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ansanm-pou-haiti/v1/get-post-details?post_id={{projectId}}&post_type=projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ansanm-pou-haiti",
+                "v1",
+                "get-post-details"
+              ],
+              "query": [
+                {
+                  "key": "post_id",
+                  "value": "{{projectId}}"
+                },
+                {
+                  "key": "post_type",
+                  "value": "projects",
+                  "description": "Optional: rejects the call if the ID is another type"
+                }
+              ]
+            },
+            "description": "A project: `acf_fields` (tag_line, project_details, card_content), `project_details` (quick facts rows: label, text), `related_projects` (3 \"More projects\" cards), `project_labels` (back_label, back_link, facts_title, related_title - Global Settings > Project Page Labels) and `donate_cta`."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"project extras\", () => { [\"project_details\",\"related_projects\",\"project_labels\",\"donate_cta\"].forEach(k => pm.expect(j).to.have.property(k)); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Single news post",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ansanm-pou-haiti/v1/get-post-details?post_id={{postId}}&post_type=post",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ansanm-pou-haiti",
+                "v1",
+                "get-post-details"
+              ],
+              "query": [
+                {
+                  "key": "post_id",
+                  "value": "{{postId}}"
+                },
+                {
+                  "key": "post_type",
+                  "value": "post"
+                }
+              ]
+            },
+            "description": "A news post: `news_facts` (quick facts rows, category first), `related_posts` (3 \"More stories\"), `news_labels` (back_label, back_link, facts_title, related_title - Global Settings > News Article Labels) and `donate_cta`."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"news extras\", () => { [\"news_facts\",\"related_posts\",\"news_labels\",\"donate_cta\"].forEach(k => pm.expect(j).to.have.property(k)); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Project by slug",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ansanm-pou-haiti/v1/get-post-details?slug=solar-street-lighting-phase-1&post_type=projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ansanm-pou-haiti",
+                "v1",
+                "get-post-details"
+              ],
+              "query": [
+                {
+                  "key": "slug",
+                  "value": "solar-street-lighting-phase-1"
+                },
+                {
+                  "key": "post_type",
+                  "value": "projects"
+                }
+              ]
+            },
+            "description": "Look a project up by its slug."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3. Lists & pagination",
+      "description": "Paginated list for any post type. Parameters: `post_type` (or `type`), `limit` (or `per_page`), `offset` (or `page`), `exclude` (IDs, comma separated), `search` (or `s`), `category` / `category_name`, `orderby`, `order`, `status`. Response: `posts`, `total_posts`, `has_more`.",
+      "item": [
+        {
+          "name": "Projects - next page",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ansanm-pou-haiti/v1/get-paginated-posts?post_type=projects&limit={{projectsPerPage}}&offset={{projectsOffset}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ansanm-pou-haiti",
+                "v1",
+                "get-paginated-posts"
+              ],
+              "query": [
+                {
+                  "key": "post_type",
+                  "value": "projects"
+                },
+                {
+                  "key": "limit",
+                  "value": "{{projectsPerPage}}"
+                },
+                {
+                  "key": "offset",
+                  "value": "{{projectsOffset}}"
+                }
+              ]
+            },
+            "description": "Next page of the Projects grid after **Projects page**: limit = pagination.per_page, offset = projects already received (both saved by that request). Items have the same shape as `projects`."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"posts array\", () => pm.expect(j.posts).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "News - load more",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ansanm-pou-haiti/v1/get-paginated-posts?post_type=post&exclude={{featuredPostId}}&limit={{newsLoadMore}}&offset={{newsOffset}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ansanm-pou-haiti",
+                "v1",
+                "get-paginated-posts"
+              ],
+              "query": [
+                {
+                  "key": "post_type",
+                  "value": "post"
+                },
+                {
+                  "key": "exclude",
+                  "value": "{{featuredPostId}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "{{newsLoadMore}}"
+                },
+                {
+                  "key": "offset",
+                  "value": "{{newsOffset}}"
+                }
+              ]
+            },
+            "description": "Next stories after **News page**: exclude the featured story, limit = pagination.load_more_count, offset = non-featured posts already received (all saved by that request)."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.test(\"posts array\", () => pm.expect(j.posts).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Search posts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ansanm-pou-haiti/v1/get-paginated-posts?post_type=post&search=community&limit=5&offset=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ansanm-pou-haiti",
+                "v1",
+                "get-paginated-posts"
+              ],
+              "query": [
+                {
+                  "key": "post_type",
+                  "value": "post"
+                },
+                {
+                  "key": "search",
+                  "value": "community"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                },
+                {
+                  "key": "category",
+                  "value": "",
+                  "description": "Category slug or ID",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Keyword search with a category filter."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Paginated posts (POST body)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ansanm-pou-haiti/v1/get-paginated-posts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ansanm-pou-haiti",
+                "v1",
+                "get-paginated-posts"
+              ]
+            },
+            "description": "Same as above with a JSON body.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"post_type\": \"projects\",\n  \"limit\": 3,\n  \"offset\": 0,\n  \"orderby\": \"date\",\n  \"order\": \"DESC\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get posts (alias)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ansanm-pou-haiti/v1/get-posts?post_type=post&limit=3&offset=0",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ansanm-pou-haiti",
+                "v1",
+                "get-posts"
+              ],
+              "query": [
+                {
+                  "key": "post_type",
+                  "value": "post"
+                },
+                {
+                  "key": "limit",
+                  "value": "3"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Alias of get-paginated-posts."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "All posts of a type",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ansanm-pou-haiti/v1/get-all-posts?post_type=projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ansanm-pou-haiti",
+                "v1",
+                "get-all-posts"
+              ],
+              "query": [
+                {
+                  "key": "post_type",
+                  "value": "projects"
+                }
+              ]
+            },
+            "description": "Every item of a post type (no pagination). Parameters: `post_type` (or `type`), `limit` / `per_page`, `search` / `s`, `status`."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4. Contact form (Forminator)",
+      "description": "The contact form (Forminator form 47; the form ID is fixed on the server).",
+      "item": [
+        {
+          "name": "Get form fields",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ansanm-pou-haiti/v1/get-form",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ansanm-pou-haiti",
+                "v1",
+                "get-form"
+              ]
+            },
+            "description": "Field list (ids, types, labels, required, options) to build the form."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Submit form entry",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/ansanm-pou-haiti/v1/submit-form",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ansanm-pou-haiti",
+                "v1",
+                "submit-form"
+              ]
+            },
+            "description": "**Creates a real entry** (and sends the form's notification e-mails). Send the field ids from **Get form fields** as keys, either at the top level or inside `fields`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fields\": {\n    \"name-1\": \"Test Sender\",\n    \"email-1\": \"test@example.com\",\n    \"select-1\": \"Volunteering\",\n    \"textarea-1\": \"Test message from Postman - please ignore.\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Stripe donations",
+      "description": "`payments` and `subscriptions` POST accept the `x-api-key` header (app) or a reCAPTCHA token (website). Status / cancel calls need the `status_access_token` returned when the payment or subscription was created, sent as `Authorization: Bearer <token>` (saved automatically). Use **test** mode keys while trying these: they create real Stripe objects.",
+      "item": [
+        {
+          "name": "Stripe config",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/encoderit-stripe/v1/config",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "encoderit-stripe",
+                "v1",
+                "config"
+              ]
+            },
+            "description": "Publishable key, currency, mode (test/live), custom amount limits."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Products & prices",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/encoderit-stripe/v1/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "encoderit-stripe",
+                "v1",
+                "products"
+              ]
+            },
+            "description": "Active donation amounts (each row is a product + its one price): one_time and recurring (monthly). Saves the first one-time and first monthly price ID."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "const one = (j.products || []).find(p => p.price_type === \"one_time\");",
+                  "const mon = (j.products || []).find(p => p.price_type === \"recurring\");",
+                  "if (one) pm.collectionVariables.set(\"priceIdOneTime\", one.stripe_price_id);",
+                  "if (mon) pm.collectionVariables.set(\"priceIdMonthly\", mon.stripe_price_id);",
+                  "pm.test(\"products array\", () => pm.expect(j.products).to.be.an(\"array\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "One-time payment - custom amount",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/encoderit-stripe/v1/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "encoderit-stripe",
+                "v1",
+                "payments"
+              ]
+            },
+            "description": "Custom amount in dollars (e.g. 25 or 25.50; min/max from the Stripe settings). Returns client_secret (confirm with Stripe.js / mobile SDK), payment_reference and status_access_token (saved).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payment_type\": \"custom\",\n  \"amount\": 25,\n  \"email\": \"donor@example.com\",\n  \"name\": \"Test Donor\",\n  \"source\": \"app\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set(\"paymentReference\", j.payment_reference);",
+                  "pm.collectionVariables.set(\"statusToken\", j.status_access_token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "One-time payment - predefined amount",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/encoderit-stripe/v1/payments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "encoderit-stripe",
+                "v1",
+                "payments"
+              ]
+            },
+            "description": "One of the preset amounts, by its one-time price ID (from **Products & prices**).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payment_type\": \"predefined\",\n  \"price_id\": \"{{priceIdOneTime}}\",\n  \"email\": \"donor@example.com\",\n  \"name\": \"Test Donor\",\n  \"source\": \"app\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set(\"paymentReference\", j.payment_reference);",
+                  "pm.collectionVariables.set(\"statusToken\", j.status_access_token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Payment status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/encoderit-stripe/v1/payments/{{paymentReference}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "encoderit-stripe",
+                "v1",
+                "payments",
+                "{{paymentReference}}"
+              ]
+            },
+            "description": "Status of a payment by its payment_reference (re-checked with Stripe while not succeeded). Authorization: Bearer status_access_token (or ?token=).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{statusToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Monthly subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/encoderit-stripe/v1/subscriptions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "encoderit-stripe",
+                "v1",
+                "subscriptions"
+              ]
+            },
+            "description": "Monthly donation by a recurring price ID (from **Products & prices**). Returns client_secret, subscription_reference and status_access_token (saved).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price_id\": \"{{priceIdMonthly}}\",\n  \"email\": \"donor@example.com\",\n  \"name\": \"Test Donor\",\n  \"source\": \"app\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const j = pm.response.json();",
+                  "pm.collectionVariables.set(\"subscriptionReference\", j.subscription_reference);",
+                  "pm.collectionVariables.set(\"subscriptionToken\", j.status_access_token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Subscription status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/encoderit-stripe/v1/subscriptions/{{subscriptionReference}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "encoderit-stripe",
+                "v1",
+                "subscriptions",
+                "{{subscriptionReference}}"
+              ]
+            },
+            "description": "Status, current period and cancellation of a subscription by its subscription_reference. Authorization: Bearer status_access_token.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{subscriptionToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancel subscription",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/encoderit-stripe/v1/subscriptions/{{subscriptionReference}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "encoderit-stripe",
+                "v1",
+                "subscriptions",
+                "{{subscriptionReference}}",
+                "cancel"
+              ]
+            },
+            "description": "**Cancels the subscription in Stripe immediately.** Authorization: Bearer status_access_token.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{subscriptionToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6. Stripe webhook (Stripe calls this)",
+      "description": "Called by Stripe, not by apps. It only accepts events signed with the webhook secret (Stripe-Signature header), so a hand-made request is rejected (400) - that is the expected result. To test real events use the Stripe CLI: `stripe listen --forward-to {{baseUrl}}/encoderit-stripe/v1/webhook` and `stripe trigger payment_intent.succeeded`.",
+      "item": [
+        {
+          "name": "Webhook (expects a Stripe signature)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Stripe-Signature",
+                "value": "t=0,v1=invalid"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/encoderit-stripe/v1/webhook",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "encoderit-stripe",
+                "v1",
+                "webhook"
+              ]
+            },
+            "description": "Unsigned request: expected to be rejected.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"evt_test\",\n  \"type\": \"payment_intent.succeeded\",\n  \"data\": {\n    \"object\": {\n      \"id\": \"pi_test\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Unsigned event is rejected\", () => pm.expect(pm.response.code).to.be.oneOf([400, 401, 403]));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7. API docs (OpenAPI)",
+      "description": "Machine-readable specs (no key needed).",
+      "item": [
+        {
+          "name": "OpenAPI - content API",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/ansanm-pou-haiti/v1/openapi.json",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "ansanm-pou-haiti",
+                "v1",
+                "openapi.json"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "OpenAPI - Stripe API",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/encoderit-stripe/v1/openapi.json",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "encoderit-stripe",
+                "v1",
+                "openapi.json"
+              ]
+            },
+            "description": "",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "homePageId",
+      "value": "7"
+    },
+    {
+      "key": "projectsPageId",
+      "value": "44"
+    },
+    {
+      "key": "newsPageId",
+      "value": "53"
+    },
+    {
+      "key": "transparencyPageId",
+      "value": "14"
+    },
+    {
+      "key": "contactPageId",
+      "value": "10"
+    },
+    {
+      "key": "visionPageId",
+      "value": "51"
+    },
+    {
+      "key": "donationPageId",
+      "value": "17"
+    },
+    {
+      "key": "globalSettingsId",
+      "value": "5"
+    },
+    {
+      "key": "projectId",
+      "value": "128"
+    },
+    {
+      "key": "postId",
+      "value": "273"
+    },
+    {
+      "key": "projectsPerPage",
+      "value": "9"
+    },
+    {
+      "key": "projectsOffset",
+      "value": "9"
+    },
+    {
+      "key": "featuredPostId",
+      "value": ""
+    },
+    {
+      "key": "newsLoadMore",
+      "value": "3"
+    },
+    {
+      "key": "newsOffset",
+      "value": "0"
+    },
+    {
+      "key": "priceIdOneTime",
+      "value": ""
+    },
+    {
+      "key": "priceIdMonthly",
+      "value": ""
+    },
+    {
+      "key": "paymentReference",
+      "value": ""
+    },
+    {
+      "key": "statusToken",
+      "value": ""
+    },
+    {
+      "key": "subscriptionReference",
+      "value": ""
+    },
+    {
+      "key": "subscriptionToken",
+      "value": ""
+    }
+  ]
+}

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:gems_core/gems_core.dart';
 import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/constants/apa_assets.dart';
 import '../../../../core/constants/apa_shell_insets.dart';
@@ -19,7 +20,7 @@ import '../../domain/contact_page_content.dart';
 import '../controllers/contact_controller.dart';
 import '../widgets/contact_dynamic_form.dart';
 
-/// Contact Us Page — Figma frame `17:1286`.
+/// Contact Us — matches live web `page-contact.php`.
 class ContactPage extends StatelessWidget {
   const ContactPage({
     super.key,
@@ -47,13 +48,21 @@ class ContactPage extends StatelessWidget {
     final navBottomPad = ApaShellInsets.contentBottom(context);
     final formController = _formController;
     final pagesController = _pagesController;
+    // Web `.container`: 16px mobile, 30px ≥768. `.column-gap` / lg split at 1024.
+    final width = MediaQuery.sizeOf(context).width;
+    final sidePad = width >= 1280
+        ? 80.0
+        : width >= 768
+            ? 30.0
+            : 16.0;
+    final wide = width >= 1024;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: ColoredBox(
         color: ApaColors.white,
         child: RefreshIndicator(
-          color: ApaColors.primaryRed,
+          color: ApaColors.webRed,
           onRefresh: () async {
             await Future.wait([
               if (formController != null) formController.loadForm(force: true),
@@ -70,25 +79,55 @@ class ContactPage extends StatelessWidget {
               parent: BouncingScrollPhysics(),
             ),
             slivers: [
-              SliverToBoxAdapter(child: _buildHero(pagesController)),
+              SliverToBoxAdapter(
+                child: Obx(() {
+                  pagesController?.pageDetailsById.length;
+                  pagesController?.items.length;
+                  final content = pagesController == null
+                      ? null
+                      : _contactContent(pagesController);
+                  if (content == null || !content.showHeader) {
+                    return const SizedBox.shrink();
+                  }
+                  return ApaHeroHeader(
+                    imageAsset: ApaAssets.contactHero,
+                    imageUrl: content.imageUrl ?? imageUrl,
+                    useAssetFallback: false,
+                    height: 520,
+                    badge: content.topTagLine,
+                    headline: _headlineSpans(content),
+                    subtitle: content.lastContent.isEmpty
+                        ? null
+                        : content.lastContent,
+                  );
+                }),
+              ),
               SliverToBoxAdapter(
                 child: ApaPageWidth(
+                  maxWidth: 1440,
                   child: Padding(
+                    // Web `.sectionPadding`: 70px vertical on mobile.
                     padding: EdgeInsets.fromLTRB(
-                      R.isTabletLandscape(context) ? 48 : 20.w,
-                      32.h,
-                      R.isTabletLandscape(context) ? 48 : 20.w,
+                      sidePad,
+                      70.h,
+                      sidePad,
                       navBottomPad,
                     ),
-                    child: R.isTabletLandscape(context)
+                    child: wide
                         ? Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
-                                child: _buildFormColumn(context, formController),
+                                flex: 11,
+                                child: _buildFormColumn(
+                                  context,
+                                  formController,
+                                ),
                               ),
-                              SizedBox(width: 48.w),
+                              // Web `.column-gap` ≥1024: 60px
+                              SizedBox(width: 60),
                               Expanded(
+                                flex: 10,
                                 child: _buildReachUs(pagesController),
                               ),
                             ],
@@ -97,7 +136,8 @@ class ContactPage extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _buildFormColumn(context, formController),
-                              SizedBox(height: 24.h),
+                              // Web `.column-gap` mobile: 32px
+                              SizedBox(height: 32.h),
                               _buildReachUs(pagesController),
                             ],
                           ),
@@ -111,42 +151,20 @@ class ContactPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHero(PagesController? pagesController) {
-    if (pagesController == null) return const SizedBox.shrink();
-
-    return Obx(() {
-      final content = _contactContent(pagesController);
-      if (content == null || !content.showHeader) {
-        return const SizedBox.shrink();
-      }
-
-      return ApaHeroHeader(
-        imageAsset: ApaAssets.contactHero,
-        imageUrl: content.imageUrl ?? imageUrl,
-        useAssetFallback: false,
-        height: 500,
-        badge: content.topTagLine,
-        headline: _headlineSpans(content),
-        subtitle:
-            content.lastContent.isEmpty ? null : content.lastContent,
-      );
-    });
-  }
-
   List<InlineSpan> _headlineSpans(ContactPageContent content) {
     final oneStyle = ApaFonts.inter(
       color: ApaColors.white,
-      fontSize: 40.sp,
-      fontWeight: FontWeight.w800,
-      height: 42 / 40,
-      letterSpacing: -0.5,
+      fontSize: 36.sp,
+      fontWeight: FontWeight.w700,
+      height: 1.02,
+      letterSpacing: -0.9,
     );
     final twoStyle = ApaFonts.inter(
-      color: ApaColors.primaryRed,
-      fontSize: 40.sp,
-      fontWeight: FontWeight.w800,
-      height: 42 / 40,
-      letterSpacing: -0.5,
+      color: ApaColors.webRed,
+      fontSize: 36.sp,
+      fontWeight: FontWeight.w700,
+      height: 1.02,
+      letterSpacing: -0.9,
     );
 
     final one = content.headingTextOne;
@@ -237,7 +255,7 @@ class ContactPage extends StatelessWidget {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
-        backgroundColor: isError ? ApaColors.primaryRed : ApaColors.black,
+        backgroundColor: isError ? ApaColors.webRed : ApaColors.webInk,
         content: Text(
           message,
           style: ApaFonts.inter(
@@ -262,30 +280,35 @@ class ContactPage extends StatelessWidget {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (content.infoRows.isNotEmpty) ...[
-            Text(
-              'REACH US',
-              style: ApaFonts.inter(
-                color: ApaColors.black,
-                fontSize: 32.sp,
-                fontWeight: FontWeight.w800,
-                height: 40 / 32,
-              ),
+          Text(
+            content.reachHeading.toUpperCase(),
+            style: ApaFonts.inter(
+              color: ApaColors.webInk,
+              // Web h2: clamp(34px…) font-semibold uppercase leading-[1.1]
+              fontSize: 34.sp,
+              fontWeight: FontWeight.w600,
+              height: 1.1,
+              letterSpacing: -0.5,
             ),
-            SizedBox(height: 24.h),
-            for (final row in content.infoRows)
-              _ContactRow(label: row.label, value: row.value),
+          ),
+          if (content.infoRows.isNotEmpty) ...[
+            // Web h2 mb-3 (~12px) before list
+            SizedBox(height: 12.h),
+            for (var i = 0; i < content.infoRows.length; i++)
+              _ContactRow(
+                row: content.infoRows[i],
+                showDivider: i < content.infoRows.length - 1,
+              ),
           ],
           if (content.hasClosingText) ...[
-            SizedBox(height: content.infoRows.isEmpty ? 0 : 32.h),
+            SizedBox(height: content.infoRows.isEmpty ? 0 : 28.h),
             Text.rich(
               TextSpan(
                 style: ApaFonts.inter(
-                  color: ApaColors.nearBlack,
+                  color: ApaColors.webInk,
                   fontSize: 16.sp,
-                  fontWeight: FontWeight.w700,
-                  height: 24 / 16,
-                  letterSpacing: 0.4,
+                  fontWeight: FontWeight.w500,
+                  height: 1.5,
                 ),
                 children: [
                   if (content.finalTextStart.isNotEmpty)
@@ -293,13 +316,22 @@ class ContactPage extends StatelessWidget {
                       text: content.finalTextEnd.isEmpty
                           ? content.finalTextStart
                           : '${content.finalTextStart} ',
+                      style: ApaFonts.inter(
+                        color: ApaColors.webInk,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                        height: 1.5,
+                      ),
                     ),
                   if (content.finalTextEnd.isNotEmpty)
                     TextSpan(
+                      // Web: sentence-case accent in --red
                       text: content.finalTextEnd,
                       style: ApaFonts.inter(
-                        color: ApaColors.primaryRed,
+                        color: ApaColors.webRed,
                         fontSize: 16.sp,
+                        fontWeight: FontWeight.w600,
+                        height: 1.5,
                       ),
                     ),
                 ],
@@ -326,40 +358,129 @@ class ContactPage extends StatelessWidget {
 }
 
 class _ContactRow extends StatelessWidget {
-  const _ContactRow({required this.label, required this.value});
+  const _ContactRow({
+    required this.row,
+    this.showDivider = true,
+  });
 
-  final String label;
-  final String value;
+  final ContactInfoRow row;
+  final bool showDivider;
 
   @override
   Widget build(BuildContext context) {
+    // Web Reach Us: one line, left-aligned "Label value"
+    // Links use --blue (#00209f) + underline (editor-content a).
+    final uri = row.actionableUri;
+    final isMap = row.type.toLowerCase() == 'map' &&
+        (row.embedUrl.trim().isNotEmpty || (uri?.isNotEmpty ?? false));
+
+    final labelStyle = ApaFonts.inter(
+      color: ApaColors.factLabel,
+      fontSize: 16.sp,
+      fontWeight: FontWeight.w500,
+      height: 1.4,
+    );
+    final valueStyle = ApaFonts.inter(
+      color: ApaColors.webInk,
+      fontSize: 16.sp,
+      fontWeight: FontWeight.w600,
+      height: 1.4,
+    );
+    final linkStyle = ApaFonts.inter(
+      color: ApaColors.webInk,
+      fontSize: 16.sp,
+      fontWeight: FontWeight.w600,
+      height: 1.4,
+    );
+
     return Container(
       width: double.infinity,
-      padding: EdgeInsets.symmetric(vertical: 16.h),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: ApaColors.gray200)),
+      padding: EdgeInsets.symmetric(vertical: 12.h),
+      decoration: BoxDecoration(
+        border: showDivider
+            ? const Border(
+                bottom: BorderSide(color: ApaColors.factBorder),
+              )
+            : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: ApaFonts.inter(
-              color: ApaColors.gray500,
-              fontSize: 13.sp,
-              fontWeight: FontWeight.w600,
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              if (row.label.isNotEmpty) ...[
+                Text(row.label, style: labelStyle),
+                if (row.value.isNotEmpty) SizedBox(width: 10.w),
+              ],
+              if (row.value.isNotEmpty)
+                uri != null
+                    ? InkWell(
+                        onTap: () => _open(uri),
+                        child: Text(row.value, style: linkStyle),
+                      )
+                    : Text(row.value, style: valueStyle),
+            ],
           ),
-          SizedBox(height: 4.h),
-          Text(
-            value,
-            style: ApaFonts.inter(
-              color: ApaColors.nearBlack,
-              fontSize: 15.sp,
-              fontWeight: FontWeight.w600,
+          if (isMap) ...[
+            SizedBox(height: 12.h),
+            _MapPreview(
+              embedUrl: row.embedUrl.trim().isNotEmpty
+                  ? row.embedUrl.trim()
+                  : uri!,
             ),
-          ),
+          ],
         ],
+      ),
+    );
+  }
+
+  Future<void> _open(String raw) async {
+    final uri = Uri.tryParse(raw);
+    if (uri == null) return;
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+}
+
+class _MapPreview extends StatelessWidget {
+  const _MapPreview({required this.embedUrl});
+
+  final String embedUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: ApaColors.mist,
+      borderRadius: BorderRadius.circular(12.r),
+      child: InkWell(
+        onTap: () async {
+          final uri = Uri.tryParse(embedUrl);
+          if (uri == null) return;
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        },
+        borderRadius: BorderRadius.circular(12.r),
+        child: SizedBox(
+          width: double.infinity,
+          height: 160.h,
+          child: Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.map_outlined, color: ApaColors.webInk, size: 20.sp),
+                SizedBox(width: 8.w),
+                Text(
+                  'Open map',
+                  style: ApaFonts.inter(
+                    color: ApaColors.webInk,
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

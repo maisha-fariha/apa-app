@@ -1,5 +1,10 @@
+import 'content_detail_models.dart';
+import 'paginated_posts.dart';
 import 'post_model.dart';
+import 'project_post_parser.dart';
 import '../../../core/utils/html_utils.dart';
+
+export 'project_post_parser.dart' show parseProjectCard;
 
 extension PostItemProjectsX on PostItem {
   Map<String, dynamic> get commonHeader {
@@ -10,17 +15,39 @@ extension PostItemProjectsX on PostItem {
     return const {};
   }
 
+  /// First-page project cards from `get-post-details`.
+  ///
+  /// Prefers the collection field `projects`, falls back to `related_projects`.
   List<PostItem> get relatedProjects {
-    final raw = acfFields['related_projects'];
+    final raw = acfFields['projects'] ?? acfFields['related_projects'];
     if (raw is! List) return const [];
 
     return raw
         .whereType<Map>()
-        .map((item) => PostItem.fromJson(Map<String, dynamic>.from(item)))
+        .map((item) => parseProjectCard(Map<String, dynamic>.from(item)))
         .toList();
   }
 
+  PageListPagination get listPagination {
+    final raw = acfFields['pagination'];
+    if (raw is Map) {
+      return PageListPagination.fromJson(Map<String, dynamic>.from(raw));
+    }
+    return PageListPagination.empty;
+  }
+
   String? get footerHtml {
+    final footer = pageFooter;
+    if (!footer.isEmpty) {
+      final parts = <String>[];
+      if (footer.title.isNotEmpty) {
+        parts.add('<h2>${footer.title}</h2>');
+      }
+      if (footer.content.isNotEmpty) {
+        parts.add('<p>${footer.content}</p>');
+      }
+      return parts.isEmpty ? null : parts.join();
+    }
     final raw = acfFields['footer'];
     if (raw is String && raw.trim().isNotEmpty) {
       return raw.trim();
@@ -28,10 +55,50 @@ extension PostItemProjectsX on PostItem {
     return null;
   }
 
+  /// Structured `footer` from Projects / similar ACF pages.
+  PageFooterSection get pageFooter {
+    final raw = acfFields['footer'];
+    if (raw is Map) {
+      return PageFooterSection.fromJson(Map<String, dynamic>.from(raw));
+    }
+    if (raw is String && raw.trim().isNotEmpty) {
+      final blocks = HtmlUtils.extractHeaderAndParagraphs(raw);
+      var title = '';
+      final paragraphs = <String>[];
+      for (final block in blocks) {
+        final text = (block['text'] ?? '').trim();
+        if (text.isEmpty) continue;
+        if (block['type'] == 'h2' && title.isEmpty) {
+          title = text;
+        } else if (block['type'] == 'p') {
+          paragraphs.add(text);
+        }
+      }
+      if (title.isEmpty && paragraphs.isEmpty) {
+        final plain = HtmlUtils.stripHtmlToText(raw);
+        if (plain.isEmpty) return PageFooterSection.empty;
+        return PageFooterSection(title: '', content: plain, buttonTitle: '');
+      }
+      return PageFooterSection(
+        title: title,
+        content: paragraphs.join('\n\n'),
+        buttonTitle: '',
+      );
+    }
+    return PageFooterSection.empty;
+  }
+
   String? get tagLine {
     final raw = acfFields['tag_line'];
     if (raw is String && raw.trim().isNotEmpty) {
       return raw.trim();
+    }
+    final quick = acfFields['quick_facts'];
+    if (quick is Map) {
+      final fromQuick = quick['tag_line'];
+      if (fromQuick is String && fromQuick.trim().isNotEmpty) {
+        return fromQuick.trim();
+      }
     }
     return null;
   }
@@ -54,10 +121,35 @@ extension PostItemProjectsX on PostItem {
         return HtmlUtils.decodeEntities(name.trim());
       }
     }
+    final direct = acfFields['category'];
+    if (direct is String && direct.trim().isNotEmpty) {
+      return HtmlUtils.decodeEntities(direct.trim());
+    }
     return null;
   }
 
-  List<String> get contentBullets => HtmlUtils.bulletsFromHtml(content);
+  /// Bullets from post `content`, falling back to ACF `card_content` (Projects grid).
+  List<String> get contentBullets {
+    final rich = projectCardContent;
+    if (rich.bullets.isNotEmpty) return rich.bullets;
+    final fromContent = HtmlUtils.bulletsFromHtml(content);
+    if (fromContent.isNotEmpty) return fromContent;
+    final card = acfFields['card_content']?.toString() ?? '';
+    return HtmlUtils.bulletsFromHtml(card);
+  }
+
+  /// Web Projects card body: disc bullets, numbered list, red-border callouts.
+  ProjectCardContent get projectCardContent {
+    final card = (acfFields['card_content']?.toString() ?? '').trim();
+    if (card.isNotEmpty) {
+      return HtmlUtils.projectCardContentFromHtml(card);
+    }
+    final fromContent = content.trim();
+    if (fromContent.isNotEmpty) {
+      return HtmlUtils.projectCardContentFromHtml(fromContent);
+    }
+    return ProjectCardContent.empty;
+  }
 }
 
 extension PostItemNewsX on PostItem {
@@ -93,8 +185,13 @@ extension PostItemNewsX on PostItem {
     return PostItem.fromJson(json);
   }
 
-  /// First post marked `is_featured == true`, or the first post overall.
+  /// Featured story from `featured_post`, else first `is_featured` post.
   PostItem? get featuredPost {
+    final raw = acfFields['featured_post'];
+    if (raw is Map) {
+      return _parseNewsPost(Map<String, dynamic>.from(raw));
+    }
+
     final posts = newsPosts;
     if (posts.isEmpty) return null;
     for (final p in posts) {
@@ -194,5 +291,66 @@ extension PostItemNewsX on PostItem {
   bool get isFeatured {
     final flag = acfFields['is_featured'];
     return flag == true || flag == 1 || flag == '1' || flag == 'true';
+  }
+}
+
+extension PostItemContentDetailX on PostItem {
+  /// Related news cards from a single-news `get-post-details` response.
+  List<PostItem> get relatedNewsPosts {
+    final raw = acfFields['related_posts'];
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((item) => PostItemNewsX._parseNewsPost(Map<String, dynamic>.from(item)))
+        .toList();
+  }
+
+  /// Fact rows from single news (`news_facts`) or single project (`project_details`).
+  List<ContentFactRow> get contentFactRows {
+    final raw = acfFields['news_facts'] ??
+        acfFields['project_details'] ??
+        acfFields['details'];
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((item) => ContentFactRow.fromJson(Map<String, dynamic>.from(item)))
+        .where((row) => row.label.isNotEmpty || row.text.isNotEmpty)
+        .toList();
+  }
+
+  ContentLabels get newsLabels {
+    final raw = acfFields['news_labels'] ?? acfFields['news_single'];
+    if (raw is Map) {
+      return ContentLabels.fromJson(Map<String, dynamic>.from(raw));
+    }
+    return ContentLabels.empty;
+  }
+
+  ContentLabels get projectLabels {
+    final raw = acfFields['project_labels'] ?? acfFields['project_single'];
+    if (raw is Map) {
+      return ContentLabels.fromJson(Map<String, dynamic>.from(raw));
+    }
+    return ContentLabels.empty;
+  }
+
+  DonateCta get donateCta {
+    final raw = acfFields['donate_cta'];
+    if (raw is Map) {
+      return DonateCta.fromJson(Map<String, dynamic>.from(raw));
+    }
+    return DonateCta.empty;
+  }
+
+  String? get siteLogoUrl {
+    final root = acfFields['site_logo_url'];
+    if (root is String && root.trim().isNotEmpty) return root.trim();
+    final nested = acfFields['site_logo'];
+    if (nested is Map) {
+      final url = nested['url'] ?? nested['site_logo_url'];
+      if (url is String && url.trim().isNotEmpty) return url.trim();
+    }
+    if (nested is String && nested.trim().isNotEmpty) return nested.trim();
+    return null;
   }
 }

@@ -43,12 +43,11 @@ class DonationController extends GetxController {
   final RxString errorMessage = ''.obs;
   final RxBool monthly = false.obs;
   final Rxn<StripePriceOption> selectedPrice = Rxn<StripePriceOption>();
-  final RxInt selectedPredefinedDollars = 20.obs;
+  /// `0` means no predefined chip selected.
+  final RxInt selectedPredefinedDollars = 0.obs;
   final RxString customAmountText = ''.obs;
   final Rxn<StripeCatalog> catalog = Rxn<StripeCatalog>();
   final TextEditingController customAmountController = TextEditingController();
-
-  static const int defaultPredefinedDollars = 20;
 
   StripePublicConfig? get config => catalog.value?.config;
 
@@ -68,6 +67,12 @@ class DonationController extends GetxController {
   bool get usingCustomAmount {
     final custom = int.tryParse(customAmountText.value.trim());
     return custom != null && custom > 0;
+  }
+
+  /// Continue to Payment is enabled only with a chip or Other amount.
+  bool get canContinueToPayment {
+    if (usingCustomAmount) return true;
+    return selectedPredefinedDollars.value > 0;
   }
 
   DonationSelection get selection {
@@ -102,6 +107,7 @@ class DonationController extends GetxController {
       customAmountText.value = customAmountController.text;
       if (customAmountController.text.trim().isNotEmpty) {
         selectedPrice.value = null;
+        selectedPredefinedDollars.value = 0;
       }
     });
     loadCatalog();
@@ -153,7 +159,10 @@ class DonationController extends GetxController {
 
       await checkout.configure(publishableKey: config.publishableKey);
       catalog.value = StripeCatalog(config: config, prices: loadedPrices);
-      _selectDefaultChip();
+      // Keep whatever the user already picked; otherwise stay unselected.
+      if (!canContinueToPayment) {
+        _clearAmountSelection();
+      }
     } catch (error) {
       if (!ConnectivityController.currentlyOnline) return;
       catalog.value = null;
@@ -173,7 +182,7 @@ class DonationController extends GetxController {
     monthly.value = value;
     customAmountController.clear();
     customAmountText.value = '';
-    _selectDefaultChip();
+    _clearAmountSelection();
   }
 
   void selectPrice(StripePriceOption price) {
@@ -200,6 +209,7 @@ class DonationController extends GetxController {
 
   bool isPredefinedSelected(int dollars) {
     if (usingCustomAmount) return false;
+    if (selectedPredefinedDollars.value <= 0) return false;
     return selectedPredefinedDollars.value == dollars;
   }
 
@@ -210,8 +220,9 @@ class DonationController extends GetxController {
     customAmountText.value = value;
     if (value.trim().isNotEmpty) {
       selectedPrice.value = null;
-    } else {
-      _selectDefaultChip();
+      selectedPredefinedDollars.value = 0;
+    } else if (!canContinueToPayment) {
+      _clearAmountSelection();
     }
   }
 
@@ -277,6 +288,10 @@ class DonationController extends GetxController {
     final loaded = catalog.value!;
     isProcessing.value = true;
     try {
+      final predefinedPriceId = current.price?.stripePriceId.trim() ?? '';
+      final usePredefinedOneTime =
+          !current.monthly && !current.custom && predefinedPriceId.isNotEmpty;
+
       final sessionResult = current.monthly
           ? await repository.createSubscription(
               priceId: current.price!.stripePriceId,
@@ -284,10 +299,13 @@ class DonationController extends GetxController {
               name: name.trim(),
             )
           : await repository.createOneTimePayment(
-              amountDollars: current.amountDollars,
               email: email.trim(),
               name: name.trim(),
               currency: loaded.config.currency,
+              custom: !usePredefinedOneTime,
+              amountDollars:
+                  usePredefinedOneTime ? null : current.amountDollars,
+              priceId: usePredefinedOneTime ? predefinedPriceId : null,
             );
 
       StripeCheckoutSession? session;
@@ -384,7 +402,46 @@ class DonationController extends GetxController {
     setCustomAmount('$dollars');
   }
 
-  void _selectDefaultChip() {
-    selectPredefinedAmount(defaultPredefinedDollars);
+  /// True when the last monthly checkout left cancel credentials on device.
+  bool get canCancelRememberedSubscription =>
+      repository.rememberedSubscription() != null;
+
+  /// Cancels the last app-created subscription (Bearer status token).
+  Future<DonationCheckoutResult> cancelRememberedSubscription() async {
+    if (!ConnectivityController.currentlyOnline) {
+      return const DonationCheckoutResult.failure(
+        ConnectivityController.offlineMessage,
+      );
+    }
+    if (isProcessing.value) {
+      return const DonationCheckoutResult.failure(
+        'Payment is already in progress.',
+      );
+    }
+
+    isProcessing.value = true;
+    try {
+      final result = await repository.cancelRememberedSubscription();
+      String? failure;
+      result.when(
+        success: (_) {},
+        failure: (error) => failure = error.message,
+      );
+      if (failure != null) {
+        return DonationCheckoutResult.failure(failure!);
+      }
+      return const DonationCheckoutResult.success();
+    } catch (_) {
+      return const DonationCheckoutResult.failure(
+        'Unable to cancel the subscription. Please try again.',
+      );
+    } finally {
+      isProcessing.value = false;
+    }
+  }
+
+  void _clearAmountSelection() {
+    selectedPredefinedDollars.value = 0;
+    selectedPrice.value = null;
   }
 }

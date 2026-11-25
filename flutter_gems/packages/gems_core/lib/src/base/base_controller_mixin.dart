@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:gems_data_layer/gems_data_layer.dart';
 import '../result/result.dart';
@@ -21,18 +23,49 @@ mixin BaseControllerMixin<T> on BaseListController<T> {
         success: (data) {
           onSuccess(data);
           if (showSuccessMessage) {
-            Get.snackbar('Success', successMessage ?? 'Operation successful');
+            _safeSnack(
+              'Success',
+              successMessage ?? 'Operation successful',
+            );
           }
         },
         failure: (error) {
           setError(error.message);
           onError?.call(error);
-          Get.snackbar('Error', error.message);
+          _safeSnack('Error', error.message);
         },
       );
     } finally {
       setLoading(false);
     }
+  }
+
+  /// Avoid GetX `Get.snackbar` — Get 4.6.6 uses `Overlay.of(overlayContext)`
+  /// and crashes when the navigator Overlay is not ready.
+  void _safeSnack(String title, String message) {
+    final text = message.trim();
+    if (text.isEmpty) return;
+
+    void present() {
+      final context = Get.context ?? Get.key.currentContext;
+      if (context == null) return;
+      final messenger = ScaffoldMessenger.maybeOf(context);
+      if (messenger == null) return;
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            behavior: SnackBarBehavior.floating,
+            content: Text('$title: $text'),
+          ),
+        );
+    }
+
+    if (Get.context != null || Get.key.currentContext != null) {
+      present();
+      return;
+    }
+    SchedulerBinding.instance.addPostFrameCallback((_) => present());
   }
 
   /// Handle list result

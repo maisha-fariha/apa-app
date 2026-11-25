@@ -30,7 +30,7 @@ class ContactDynamicForm extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         for (var i = 0; i < fields.length; i++) ...[
-          if (i > 0) SizedBox(height: 20.h),
+          if (i > 0) SizedBox(height: 16.h),
           _ContactFormField(
             key: ValueKey(
               '${fields[i].id}-${fields[i].type}-${fields[i].label}-'
@@ -42,16 +42,69 @@ class ContactDynamicForm extends StatelessWidget {
           ),
         ],
         SizedBox(height: 24.h),
-        ApaBlackPillButton(
+        // Web Forminator submit: full-width, 12px radius, ink fill, fw700.
+        _ForminatorSubmitButton(
           label: isSubmitting ? 'SENDING' : 'SEND MESSAGE',
-          expanded: true,
-          fontSize: 15,
-          verticalPadding: 14,
-          horizontalPadding: 24,
           isLoading: isSubmitting,
           onPressed: isSubmitting ? null : onSubmit,
         ),
       ],
+    );
+  }
+}
+
+class _ForminatorSubmitButton extends StatelessWidget {
+  const _ForminatorSubmitButton({
+    required this.label,
+    required this.isLoading,
+    this.onPressed,
+  });
+
+  final String label;
+  final bool isLoading;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onPressed != null && !isLoading;
+    return SizedBox(
+      width: double.infinity,
+      child: Material(
+        color: enabled ? ApaColors.webInk : ApaColors.webInk.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(12.r),
+        child: InkWell(
+          onTap: enabled ? onPressed : null,
+          borderRadius: BorderRadius.circular(12.r),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: 50.h),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 35.w, vertical: 14.h),
+              child: Center(
+                child: isLoading
+                    ? SizedBox(
+                        width: 18.sp,
+                        height: 18.sp,
+                        child: const CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: ApaColors.white,
+                        ),
+                      )
+                    : Text(
+                        label.toUpperCase(),
+                        textAlign: TextAlign.center,
+                        style: ApaFonts.inter(
+                          color: ApaColors.white,
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1,
+                          height: 1.2,
+                        ),
+                      ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -64,7 +117,7 @@ class ContactFormLoading extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 48.h),
       child: const Center(
-        child: CircularProgressIndicator(color: ApaColors.primaryRed),
+        child: CircularProgressIndicator(color: ApaColors.webRed),
       ),
     );
   }
@@ -90,7 +143,7 @@ class ContactFormError extends StatelessWidget {
           Text(
             message,
             style: ApaFonts.inter(
-              color: ApaColors.gray700,
+              color: ApaColors.factLabel,
               fontSize: 15.sp,
               height: 22 / 15,
             ),
@@ -108,7 +161,7 @@ class ContactFormError extends StatelessWidget {
                 messenger.showSnackBar(
                   const SnackBar(
                     content: Text(ConnectivityController.offlineMessage),
-                    backgroundColor: ApaColors.primaryRed,
+                    backgroundColor: ApaColors.webRed,
                   ),
                 );
                 return;
@@ -134,7 +187,7 @@ class ContactFormMessage extends StatelessWidget {
       child: Text(
         text,
         style: ApaFonts.inter(
-          color: ApaColors.gray700,
+          color: ApaColors.factLabel,
           fontSize: 15.sp,
           height: 22 / 15,
         ),
@@ -171,7 +224,7 @@ class _ContactFormField extends StatelessWidget {
           Text(
             field.description.trim(),
             style: ApaFonts.inter(
-              color: ApaColors.gray500,
+              color: ApaColors.factLabel,
               fontSize: 12.sp,
               height: 18 / 12,
             ),
@@ -185,7 +238,7 @@ class _ContactFormField extends StatelessWidget {
             child: Text(
               error,
               style: ApaFonts.inter(
-                color: ApaColors.primaryRed,
+                color: ApaColors.webRed,
                 fontSize: 12.sp,
                 fontWeight: FontWeight.w600,
               ),
@@ -322,7 +375,7 @@ class _HtmlOrHeading extends StatelessWidget {
     return Text(
       text,
       style: ApaFonts.inter(
-        color: ApaColors.gray700,
+        color: ApaColors.factLabel,
         fontSize: 14.sp,
         height: 20 / 14,
       ),
@@ -339,14 +392,14 @@ class _FieldLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final labelStyle = ApaFonts.inter(
-      color: ApaColors.gray700,
-      fontSize: 13.sp,
-      fontWeight: FontWeight.w700,
-      height: 20 / 13,
+      color: ApaColors.webInk,
+      fontSize: 14.sp,
+      fontWeight: FontWeight.w600,
+      height: 20 / 14,
     );
 
     return Padding(
-      padding: EdgeInsets.only(bottom: 6.h),
+      padding: EdgeInsets.only(bottom: 8.h),
       child: Text.rich(
         TextSpan(
           style: labelStyle,
@@ -355,7 +408,7 @@ class _FieldLabel extends StatelessWidget {
             if (required)
               TextSpan(
                 text: ' *',
-                style: labelStyle.copyWith(color: ApaColors.primaryRed),
+                style: labelStyle.copyWith(color: ApaColors.webRed),
               ),
           ],
         ),
@@ -364,13 +417,13 @@ class _FieldLabel extends StatelessWidget {
   }
 }
 
-class _ApaTextField extends StatelessWidget {
+class _ApaTextField extends StatefulWidget {
   const _ApaTextField({
     required this.controller,
     this.keyboardType,
     this.placeholder,
     this.maxLines = 1,
-    this.minHeight = 48,
+    this.minHeight = 50,
     this.enabled = true,
     this.hasError = false,
     this.readOnly = false,
@@ -388,31 +441,57 @@ class _ApaTextField extends StatelessWidget {
   final VoidCallback? onTap;
 
   @override
+  State<_ApaTextField> createState() => _ApaTextFieldState();
+}
+
+class _ApaTextFieldState extends State<_ApaTextField> {
+  late final FocusNode _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Web Forminator: 12px radius, 2px ink border, focus → red.
+    final focused = _focusNode.hasFocus;
+    final borderColor = widget.hasError || focused
+        ? ApaColors.webRed
+        : ApaColors.webInk;
+
     return Container(
-      constraints: BoxConstraints(minHeight: minHeight.h),
+      constraints: BoxConstraints(minHeight: widget.minHeight.h),
       decoration: BoxDecoration(
         color: ApaColors.white,
-        borderRadius: BorderRadius.circular(10.r),
-        border: Border.all(
-          color: hasError ? ApaColors.primaryRed : ApaColors.black,
-        ),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: borderColor, width: 2),
       ),
       child: TextField(
-        controller: controller,
-        keyboardType: keyboardType,
-        maxLines: maxLines,
-        enabled: enabled,
-        readOnly: readOnly,
-        onTap: onTap,
+        controller: widget.controller,
+        focusNode: _focusNode,
+        keyboardType: widget.keyboardType,
+        maxLines: widget.maxLines,
+        enabled: widget.enabled,
+        readOnly: widget.readOnly,
+        onTap: widget.onTap,
         style: ApaFonts.inter(
-          color: ApaColors.nearBlack,
+          color: ApaColors.webInk,
           fontSize: 15.sp,
         ),
         decoration: InputDecoration(
-          hintText: placeholder?.trim().isEmpty ?? true ? null : placeholder,
+          hintText: widget.placeholder?.trim().isEmpty ?? true
+              ? null
+              : widget.placeholder,
           hintStyle: ApaFonts.inter(
-            color: ApaColors.gray400,
+            color: ApaColors.factLabel,
             fontSize: 15.sp,
           ),
           border: InputBorder.none,
@@ -457,22 +536,23 @@ class _ApaSelectField extends StatelessWidget {
         value != null && values.contains(value) ? value : null;
 
     return Container(
-      constraints: BoxConstraints(minHeight: 48.h),
+      constraints: BoxConstraints(minHeight: 50.h),
       padding: EdgeInsets.symmetric(horizontal: 16.w),
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: ApaColors.white,
-        borderRadius: BorderRadius.circular(10.r),
+        borderRadius: BorderRadius.circular(12.r),
         border: Border.all(
-          color: hasError ? ApaColors.primaryRed : ApaColors.black,
+          color: hasError ? ApaColors.webRed : ApaColors.webInk,
+          width: 2,
         ),
       ),
       child: Theme(
         data: Theme.of(context).copyWith(
-          highlightColor: ApaColors.primaryRed,
-          focusColor: ApaColors.primaryRed,
-          hoverColor: ApaColors.primaryRed,
-          splashColor: ApaColors.primaryRed.withValues(alpha: 0.24),
+          highlightColor: ApaColors.webRed,
+          focusColor: ApaColors.webRed,
+          hoverColor: ApaColors.webRed,
+          splashColor: ApaColors.webRed.withValues(alpha: 0.24),
         ),
         child: DropdownButtonHideUnderline(
           child: DropdownButton<String>(
@@ -484,7 +564,7 @@ class _ApaSelectField extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: ApaFonts.inter(
-                color: ApaColors.gray400,
+                color: ApaColors.factLabel,
                 fontSize: 15.sp,
                 fontWeight: FontWeight.w500,
                 height: 1.3,
@@ -492,14 +572,14 @@ class _ApaSelectField extends StatelessWidget {
             ),
             isExpanded: true,
             itemHeight: null,
-            dropdownColor: ApaColors.black,
+            dropdownColor: ApaColors.webInk,
             icon: Icon(
               Icons.keyboard_arrow_down,
               size: 20.sp,
-              color: ApaColors.nearBlack,
+              color: ApaColors.webInk,
             ),
             style: ApaFonts.inter(
-              color: ApaColors.nearBlack,
+              color: ApaColors.webInk,
               fontSize: 15.sp,
               fontWeight: FontWeight.w500,
               height: 1.3,
@@ -518,7 +598,7 @@ class _ApaSelectField extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: ApaFonts.inter(
-                          color: ApaColors.nearBlack,
+                          color: ApaColors.webInk,
                           fontSize: 15.sp,
                           fontWeight: FontWeight.w500,
                           height: 1.3,
@@ -541,7 +621,7 @@ class _ApaSelectField extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: values[i] == selected
-                          ? ApaColors.primaryRed
+                          ? ApaColors.webRed
                           : Colors.transparent,
                       borderRadius: BorderRadius.circular(4.r),
                     ),
@@ -598,12 +678,12 @@ class _ApaRadioGroup extends StatelessWidget {
               title: Text(
                 option.displayLabel,
                 style: ApaFonts.inter(
-                  color: ApaColors.nearBlack,
+                  color: ApaColors.webInk,
                   fontSize: 15.sp,
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              activeColor: ApaColors.primaryRed,
+              activeColor: ApaColors.webRed,
               contentPadding: EdgeInsets.zero,
               visualDensity: VisualDensity.compact,
             ),
@@ -636,12 +716,12 @@ class _ApaCheckboxGroup extends StatelessWidget {
         title: Text(
           field.displayLabel,
           style: ApaFonts.inter(
-            color: ApaColors.nearBlack,
+            color: ApaColors.webInk,
             fontSize: 15.sp,
             fontWeight: FontWeight.w500,
           ),
         ),
-        activeColor: ApaColors.primaryRed,
+        activeColor: ApaColors.webRed,
         contentPadding: EdgeInsets.zero,
         controlAffinity: ListTileControlAffinity.leading,
         visualDensity: VisualDensity.compact,
@@ -659,12 +739,12 @@ class _ApaCheckboxGroup extends StatelessWidget {
             title: Text(
               option.displayLabel,
               style: ApaFonts.inter(
-                color: ApaColors.nearBlack,
+                color: ApaColors.webInk,
                 fontSize: 15.sp,
                 fontWeight: FontWeight.w500,
               ),
             ),
-            activeColor: ApaColors.primaryRed,
+            activeColor: ApaColors.webRed,
             contentPadding: EdgeInsets.zero,
             controlAffinity: ListTileControlAffinity.leading,
             visualDensity: VisualDensity.compact,

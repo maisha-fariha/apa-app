@@ -2,6 +2,8 @@
 abstract final class ApiEndpoints {
   static const String getAllPosts = '/ansanm-pou-haiti/v1/get-all-posts';
   static const String getPostDetails = '/ansanm-pou-haiti/v1/get-post-details/';
+  static const String getPaginatedPosts =
+      '/ansanm-pou-haiti/v1/get-paginated-posts';
   static const String getForm = '/ansanm-pou-haiti/v1/get-form/';
   static const String submitForm = '/ansanm-pou-haiti/v1/submit-form/';
   static const String wpMedia = '/wp/v2/media';
@@ -11,11 +13,17 @@ abstract final class ApiEndpoints {
   static const String stripePayments = '/encoderit-stripe/v1/payments';
   static const String stripeSubscriptions = '/encoderit-stripe/v1/subscriptions';
 
+  /// Identifies PaymentSheet / app-originated Stripe requests in WP.
+  static const String stripeSourceApp = 'app';
+
   static String stripePaymentStatus(String paymentReference) =>
       '$stripePayments/$paymentReference';
 
   static String stripeSubscriptionStatus(String subscriptionReference) =>
       '$stripeSubscriptions/$subscriptionReference';
+
+  static String stripeSubscriptionCancel(String subscriptionReference) =>
+      '$stripeSubscriptions/$subscriptionReference/cancel';
 
   /// Custom scheme used by PaymentSheet redirect methods (Cash App Pay, 3DS).
   static const String stripeReturnUrl = 'apa://safepay';
